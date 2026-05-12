@@ -12,6 +12,7 @@ const links = publicationLinks(publication);
 const authorParts = highlightedAuthorParts(publication.author);
 const thumbHref =
   publication.pdf ?? publication.url ?? publication.website ?? undefined;
+const dialogId = `bib-${publication.id}`;
 ---
 
 <article class:list={["publication-item", compact && "publication-item--compact"]}>
@@ -45,22 +46,93 @@ const thumbHref =
         )
       }
     </p>
-    <div class="publication-meta">
-      <span class="publication-venue">
-        {publication.venue ? <i>{publication.venue}</i> : publication.type}, {publication.year}
-      </span>
+    <p class="publication-venue">
+      {publication.venue ? <i>{publication.venue}</i> : publication.type}, {publication.year}
+    </p>
+    {publication.abstract && !compact && <p class="publication-abstract">{publication.abstract}</p>}
+    {(links.length > 0 || publication.bibtexShow) && (
       <div class="publication-links">
         {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
-        {
-          publication.bibtexShow && (
-            <details class="publication-bibtex">
-              <summary>BibTeX</summary>
-              <pre><code>{publication.raw}</code></pre>
-            </details>
-          )
-        }
+        {publication.bibtexShow && (
+          <button
+            type="button"
+            class="publication-link publication-link--button"
+            data-bib-open={dialogId}
+            aria-haspopup="dialog"
+          >
+            BibTeX
+          </button>
+        )}
       </div>
-    </div>
-    {publication.abstract && !compact && <p class="muted" style="margin-top: 8px; font-size: 13.5px; line-height: 1.5;">{publication.abstract}</p>}
+    )}
+    {publication.bibtexShow && (
+      <dialog id={dialogId} class="bibtex-dialog" aria-label={`BibTeX for ${publication.title}`}>
+        <div class="bibtex-dialog__header">
+          <span class="bibtex-dialog__title">BibTeX · {publication.title}</span>
+          <div class="bibtex-dialog__actions">
+            <button type="button" class="button bibtex-dialog__copy" data-bib-copy>Copy</button>
+            <button type="button" class="bibtex-dialog__close" data-bib-close aria-label="Close">×</button>
+          </div>
+        </div>
+        <pre class="bibtex-dialog__code"><code>{publication.raw}</code></pre>
+      </dialog>
+    )}
   </div>
 </article>
+
+<script>
+  // Idempotently wire up BibTeX dialog openers, closers, and copy buttons
+  // across every PublicationItem on the page. Re-running this is a no-op
+  // thanks to the `data-bib-wired` marker.
+  function wireBibtex(scope: ParentNode = document) {
+    for (const trigger of scope.querySelectorAll<HTMLButtonElement>(
+      "[data-bib-open]:not([data-bib-wired])"
+    )) {
+      trigger.dataset.bibWired = "true";
+      trigger.addEventListener("click", () => {
+        const id = trigger.getAttribute("data-bib-open");
+        if (!id) return;
+        const dialog = document.getElementById(id) as HTMLDialogElement | null;
+        dialog?.showModal();
+      });
+    }
+    for (const closer of scope.querySelectorAll<HTMLButtonElement>(
+      "[data-bib-close]:not([data-bib-wired])"
+    )) {
+      closer.dataset.bibWired = "true";
+      closer.addEventListener("click", () => {
+        closer.closest("dialog")?.close();
+      });
+    }
+    for (const copier of scope.querySelectorAll<HTMLButtonElement>(
+      "[data-bib-copy]:not([data-bib-wired])"
+    )) {
+      copier.dataset.bibWired = "true";
+      copier.addEventListener("click", async () => {
+        const dialog = copier.closest("dialog");
+        const text = dialog?.querySelector("code")?.textContent?.trim() ?? "";
+        try {
+          await navigator.clipboard.writeText(text);
+          const original = copier.textContent;
+          copier.textContent = "Copied";
+          window.setTimeout(() => {
+            copier.textContent = original;
+          }, 1200);
+        } catch {
+          /* clipboard unavailable */
+        }
+      });
+    }
+    for (const dialog of scope.querySelectorAll<HTMLDialogElement>(
+      "dialog.bibtex-dialog:not([data-bib-wired])"
+    )) {
+      dialog.dataset.bibWired = "true";
+      // Click on the backdrop (i.e., outside the inner content) closes the dialog.
+      dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    }
+  }
+  wireBibtex();
+</script>
+

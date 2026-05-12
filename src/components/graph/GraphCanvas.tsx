@@ -24,6 +24,7 @@ export default function GraphCanvas({
   onSelect
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const fgRef = useRef<any>(null);
   // Width is `null` until we've measured the container. We deliberately do
   // NOT pass a hardcoded fallback into react-force-graph: if we did, the
   // dynamic-import race (cached chunk vs. ResizeObserver's first callback)
@@ -63,6 +64,29 @@ export default function GraphCanvas({
     [graph]
   );
 
+  // Tune the d3-force simulation so hubs get more personal space than the
+  // small entries around them. The default many-body strength is a flat
+  // -30 per node; we make hubs noticeably more repulsive, and we lengthen
+  // links that touch a hub so the cluster around each hub fans out.
+  useEffect(() => {
+    if (!ForceGraph || !fgRef.current) return;
+    const fg = fgRef.current;
+    const charge = fg.d3Force?.("charge");
+    if (charge) {
+      charge.strength((node: any) => (node.type === "hub" ? -180 : -45));
+      charge.distanceMax?.(280);
+    }
+    const link = fg.d3Force?.("link");
+    if (link) {
+      link.distance((edge: any) => {
+        const s = typeof edge.source === "object" ? edge.source.type : undefined;
+        const t = typeof edge.target === "object" ? edge.target.type : undefined;
+        return s === "hub" || t === "hub" ? 60 : 35;
+      });
+    }
+    fg.d3ReheatSimulation?.();
+  }, [ForceGraph, graphData]);
+
   return (
     <div
       ref={containerRef}
@@ -70,10 +94,15 @@ export default function GraphCanvas({
     >
       {ForceGraph && width != null ? (
         <ForceGraph
+          ref={fgRef}
           width={width}
           height={height}
           graphData={graphData}
           nodeRelSize={5}
+          // d3-force uses `nodeRelSize * sqrt(nodeVal)` as the collision
+          // radius (and the auto-size). Giving hubs a larger val widens the
+          // empty bubble around each hub so its satellites don't crowd it.
+          nodeVal={(node: any) => (node.type === "hub" ? 6 : 1)}
           nodeLabel={(node: any) => node.title}
           cooldownTicks={80}
           linkDirectionalParticles={0}
@@ -122,7 +151,7 @@ function drawNode(
   globalScale: number,
   state: { selected: boolean; dimmed: boolean; labelMode: "auto" | "hubs" | "none" }
 ) {
-  const radius = node.type === "hub" ? 8 : node.type === "paper" ? 6 : 5;
+  const radius = node.type === "hub" ? 6 : node.type === "paper" ? 5 : 4;
   const color = nodeColor(node.type);
   ctx.save();
   ctx.globalAlpha = state.dimmed ? 0.18 : 1;

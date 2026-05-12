@@ -580,27 +580,32 @@ pre {
   color: var(--color-fg);
 }
 
-.publication-meta {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin: 5px 0 0;
+.publication-venue {
+  margin: 4px 0 0;
   color: var(--color-muted);
   font-family: var(--font-ui);
   font-size: 13px;
 }
 
-.publication-meta i,
 .publication-venue i {
   color: var(--color-fg-soft);
   font-style: italic;
 }
 
+.publication-abstract {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  line-height: 1.55;
+  max-width: 64ch;
+}
+
 .publication-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 5px;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .publication-link {
@@ -608,13 +613,17 @@ pre {
   font-size: 10.5px;
   color: var(--color-accent);
   border: 0.5px solid var(--color-accent-line);
-  padding: 0 5px;
+  padding: 2px 7px;
   border-radius: 3px;
   background: var(--color-accent-soft);
   text-decoration: none;
-  line-height: 1.7;
+  line-height: 1.5;
   display: inline-flex;
   align-items: center;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background var(--dur-fast) var(--ease-quiet),
+    color var(--dur-fast) var(--ease-quiet);
 }
 
 .publication-link:hover {
@@ -622,18 +631,120 @@ pre {
   color: var(--color-bg);
 }
 
-.publication-bibtex {
-  flex-basis: 100%;
-  margin-top: 6px;
+.publication-link--button {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  border-color: var(--color-border);
 }
 
-.publication-bibtex summary {
-  cursor: pointer;
+.publication-link--button:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-fg);
+  border-color: var(--color-rule);
+}
+
+/* ── BibTeX dialog popup ────────────────────────────────────────────── */
+
+.bibtex-dialog {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  padding: 0;
+  width: min(96vw, 720px);
+  max-height: 86vh;
+  /* Tailwind's preflight resets `* { margin: 0 }`, which clobbers the
+     browser's default centering of <dialog>. Restore it explicitly. */
+  inset: 0;
+  margin: auto;
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-ui);
+}
+
+.bibtex-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-fg) 35%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.bibtex-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  border-radius: 8px 8px 0 0;
+}
+
+.bibtex-dialog__title {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-fg-soft);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.bibtex-dialog__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bibtex-dialog__copy {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--color-muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  padding: 5px 12px;
+}
+
+.bibtex-dialog__close {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bibtex-dialog__close:hover {
+  color: var(--color-fg);
+  border-color: var(--color-rule);
+}
+
+.bibtex-dialog__code {
+  margin: 0;
+  padding: 18px;
+  background: var(--color-bg);
+  border: 0;
+  border-radius: 0 0 8px 8px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--color-fg-soft);
+  overflow-x: auto;
+  max-height: calc(86vh - 60px);
+}
+
+.bibtex-dialog__code code {
+  font: inherit;
+  color: inherit;
+  white-space: pre;
 }
 
 .publication-year {
@@ -654,7 +765,11 @@ pre {
 
 /* Compact variant (used inside latest-strip / hero) */
 .publication-item--compact .publication-preview,
-.publication-item--compact .publication-bibtex {
+.publication-item--compact .publication-link--button {
+  display: none;
+}
+
+.publication-item--compact .publication-abstract {
   display: none;
 }
 
