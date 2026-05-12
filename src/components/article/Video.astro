@@ -1,0 +1,16 @@
+---
+type Props = {
+  src: string;
+  poster?: string;
+  caption?: string;
+};
+
+const { src, poster, caption } = Astro.props;
+---
+
+<figure class="article-figure">
+  <video controls preload="metadata" poster={poster}>
+    <source src={src} />
+  </video>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>

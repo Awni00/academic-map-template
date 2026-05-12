@@ -1,0 +1,40 @@
+---
+import fs from "node:fs/promises";
+import yaml from "js-yaml";
+import { getCollection, render } from "astro:content";
+
+import HomeLayout from "../layouts/HomeLayout.astro";
+import { siteConfig } from "../config/site";
+import { buildGraphIndex } from "../lib/graph/buildGraph";
+import { loadPublications } from "../lib/publications/parseBibtex";
+
+const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
+const pages = await getCollection("pages", ({ data }) => data.draft !== true);
+const home = pages.find((page) => page.id === "home");
+
+if (!home) throw new Error("Missing src/content/pages/home.mdx");
+
+const { Content } = await render(home);
+const graph = buildGraphIndex(writingEntries, { collectWarnings: false }).index;
+const publications = await loadPublications();
+const selectedPublications = publications
+  .filter((publication) => publication.selected)
+  .slice(0, siteConfig.homepage.selectedPublications.maxItems);
+const recentWriting = graph.nodes
+  .filter((node) => node.type !== "hub" && node.date)
+  .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
+  .slice(0, siteConfig.homepage.recentWriting.maxItems);
+const newsSource = await fs.readFile("src/data/news.yaml", "utf8");
+const news = (yaml.load(newsSource) as Array<{ date: string; title: string; url?: string }>).slice(
+  0,
+  siteConfig.homepage.news.maxItems
+);
+---
+
+<HomeLayout
+  graph={graph}
+  recentWriting={recentWriting}
+  selectedPublications={selectedPublications}
+  news={news}
+  Content={Content}
+/>

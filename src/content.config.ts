@@ -1,0 +1,69 @@
+import { defineCollection, z } from "astro:content";
+import { glob } from "astro/loaders";
+
+const entryTypes = ["hub", "paper", "post", "note", "teaching", "project"] as const;
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected YYYY-MM-DD")
+  .optional();
+
+const externalLinks = z
+  .object({
+    paper: z.string().url().or(z.string().startsWith("/")).optional(),
+    arxiv: z.string().optional(),
+    doi: z.string().optional(),
+    code: z.string().url().or(z.string().startsWith("/")).optional(),
+    slides: z.string().url().or(z.string().startsWith("/")).optional(),
+    poster: z.string().url().or(z.string().startsWith("/")).optional(),
+    website: z.string().url().or(z.string().startsWith("/")).optional(),
+    video: z.string().url().or(z.string().startsWith("/")).optional()
+  })
+  .partial()
+  .optional();
+
+const writing = defineCollection({
+  loader: glob({
+    base: "./src/content/writing",
+    pattern: "**/*.{md,mdx}",
+    retainBody: true
+  }),
+  schema: z.object({
+    title: z.string(),
+    type: z.enum(entryTypes),
+    slug: z.string().optional(),
+    aliases: z.array(z.string()).default([]),
+    date: dateString,
+    updated: dateString,
+    summary: z.string().optional(),
+    tags: z.array(z.string()).default([]),
+    links: z.array(z.string()).default([]),
+    featured: z.boolean().default(false),
+    draft: z.boolean().default(false),
+    theme: z.enum(["global", "system", "light", "dark"]).default("global"),
+    external: externalLinks,
+    layout: z
+      .object({
+        sidebar: z.boolean().optional(),
+        localGraph: z.boolean().optional(),
+        toc: z.boolean().optional()
+      })
+      .optional()
+  })
+});
+
+const pages = defineCollection({
+  loader: glob({
+    base: "./src/content/pages",
+    pattern: "**/*.{md,mdx}",
+    retainBody: true
+  }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().optional(),
+    draft: z.boolean().default(false),
+    navTitle: z.string().optional()
+  })
+});
+
+export const collections = { pages, writing };

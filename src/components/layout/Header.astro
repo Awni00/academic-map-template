@@ -1,0 +1,29 @@
+---
+import ThemeToggle from "./ThemeToggle";
+import { siteConfig } from "../../config/site";
+import { themeConfig } from "../../config/theme";
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="site-brand" href="/">{siteConfig.name}</a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <div class="site-nav__links">
+        {
+          siteConfig.nav.map((item) => {
+            const href = item.href.replace(/\/$/, "") || "/";
+            const isCurrent = currentPath === href || (href !== "/" && currentPath.startsWith(`${href}/`));
+            return (
+              <a href={item.href} aria-current={isCurrent ? "page" : undefined}>
+                {item.label}
+              </a>
+            );
+          })
+        }
+      </div>
+      {themeConfig.allowToggle && <ThemeToggle client:load />}
+    </nav>
+  </div>
+</header>

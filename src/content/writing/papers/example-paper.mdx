@@ -1,0 +1,73 @@
+---
+title: "Chain-of-Thought Information"
+type: "paper"
+aliases:
+  - CoT information
+date: "2026-05-12"
+updated: "2026-05-12"
+summary: "An explainer for a sample paper on information-theoretic views of chain-of-thought reasoning."
+tags:
+  - chain-of-thought
+  - learning-theory
+  - information-theory
+links:
+  - machine-learning-theory
+  - research-papers
+draft: false
+theme: global
+external:
+  arxiv: "https://arxiv.org/abs/2601.00000"
+  code: "https://github.com/example/cot-information"
+---
+
+This explainer treats chain-of-thought as an intermediate representation that can reveal useful information about a model's computation. It belongs to [[machine-learning-theory]] and appears in the [[research-papers]] hub.
+
+<Aside>
+Margin notes become inline notes on mobile. They are useful for technical commentary without interrupting the main proof.
+</Aside>
+
+## Setup
+
+Let $X$ be an input, $Y$ be a target, and $Z$ be a chain-of-thought transcript sampled from a model.
+
+<MathBlock title="Information carried by a rationale">
+The conditional information term below measures how much the rationale changes the predictive distribution.
+</MathBlock>
+
+$$
+I(Z;Y\mid X)=\mathbb{E}\left[\log \frac{p(Y\mid X,Z)}{p(Y\mid X)}\right].
+$$
+
+<Theorem title="Toy sufficiency criterion" label="thm:sufficiency">
+If $Y\perp X\mid Z$, then the transcript $Z$ is sufficient for prediction in this toy model.
+</Theorem>
+
+<Proof>
+The conditional independence assumption gives \(p(Y\mid X,Z)=p(Y\mid Z)\). Substituting this into the risk decomposition removes the direct dependence on \(X\).
+</Proof>
+
+<Callout type="warning" title="Interpretability caveat">
+High mutual information does not imply that a transcript is faithful to the model's internal computation.
+</Callout>
+
+## Figure
+
+<Figure
+  src="/figures/latent-map.svg"
+  alt="A schematic latent map"
+  caption="A small SVG figure included with the template."
+/>
+
+## BibTeX
+
+<BibtexBlock>
+```bibtex
+@inproceedings{example2026,
+  title = {Chain-of-Thought Information},
+  author = {Your Name and Coauthor Name},
+  year = {2026}
+}
+```
+</BibtexBlock>
+
+Normal Markdown links such as [the publications page](/publications) render normally and do not create graph edges.

@@ -1,0 +1,23 @@
+---
+import { groupPublications } from "../../lib/publications/formatPublication";
+import type { Publication } from "../../lib/publications/types";
+import PublicationItem from "./PublicationItem.astro";
+
+type Props = {
+  publications: Publication[];
+};
+
+const { publications } = Astro.props;
+const groups = groupPublications(publications);
+---
+
+<div class="publication-list">
+  {
+    groups.map((group) => (
+      <section class="publication-year">
+        <h2>{group.label}</h2>
+        {group.publications.map((publication) => <PublicationItem publication={publication} />)}
+      </section>
+    ))
+  }
+</div>

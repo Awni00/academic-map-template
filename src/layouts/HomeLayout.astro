@@ -1,0 +1,114 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Callout from "../components/article/Callout.astro";
+import Figure from "../components/article/Figure.astro";
+import MathBlock from "../components/article/MathBlock.astro";
+import type { GraphIndex, EntryNode } from "../lib/graph/types";
+import type { Publication } from "../lib/publications/types";
+import GraphPreview from "../components/graph/GraphPreview";
+import PublicationItem from "../components/publications/PublicationItem.astro";
+import { siteConfig } from "../config/site";
+
+type NewsItem = {
+  date: string;
+  title: string;
+  url?: string;
+};
+
+type Props = {
+  graph: GraphIndex;
+  recentWriting: EntryNode[];
+  selectedPublications: Publication[];
+  news: NewsItem[];
+  Content: any;
+};
+
+const { graph, recentWriting, selectedPublications, news, Content } = Astro.props;
+const previewConfig = siteConfig.homepage.writingPreview;
+const components = { Callout, Figure, MathBlock };
+---
+
+<BaseLayout title={siteConfig.name} description={siteConfig.description}>
+  <section class="hero">
+    <div>
+      <h1>{siteConfig.name}</h1>
+      <p class="hero__meta">{siteConfig.role} · {siteConfig.affiliation}</p>
+      <p class="hero__description">{siteConfig.description}</p>
+      <div class="hero__links">
+        <a href={siteConfig.links.email}>Email</a>
+        <a href={siteConfig.links.cv}>CV</a>
+        <a href={siteConfig.links.scholar}>Scholar</a>
+        <a href={siteConfig.links.github}>GitHub</a>
+      </div>
+    </div>
+    <div class="profile-card">
+      <img src={siteConfig.profileImage} alt={`${siteConfig.name} profile`} />
+    </div>
+  </section>
+
+  <section class="section section--tight">
+    <div class="article-content">
+      <Content components={components} />
+    </div>
+  </section>
+
+  {
+    previewConfig.enabled && (
+      <section class="section">
+        <GraphPreview
+          client:load
+          graph={graph}
+          title={previewConfig.title}
+          description={previewConfig.description}
+          clickTarget={previewConfig.clickTarget}
+          filter={previewConfig.filter as any}
+          maxNodes={previewConfig.maxNodes}
+        />
+      </section>
+    )
+  }
+
+  <section class="section">
+    <div class="section__header">
+      <h2>Selected Publications</h2>
+      <a class="button" href="/publications">All publications</a>
+    </div>
+    <div class="publication-list">
+      {selectedPublications.map((publication) => <PublicationItem publication={publication} />)}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__header">
+      <h2>Recent Writing</h2>
+      <a class="button" href="/writing">Open writing map</a>
+    </div>
+    <div class="entry-list">
+      {
+        recentWriting.map((entry) => (
+          <article class="entry-row">
+            <p class="entry-meta">{entry.type} · {entry.date}</p>
+            <h3><a href={entry.url}>{entry.title}</a></h3>
+            {entry.summary && <p class="muted">{entry.summary}</p>}
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section__header">
+      <h2>News</h2>
+    </div>
+    <div class="news-list">
+      {
+        news.map((item) => (
+          <article class="news-item">
+            <p class="news-date">{item.date}</p>
+            {item.url ? <a href={item.url}>{item.title}</a> : <span>{item.title}</span>}
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

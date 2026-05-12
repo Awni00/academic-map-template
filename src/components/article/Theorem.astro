@@ -1,0 +1,13 @@
+---
+type Props = {
+  title?: string;
+  label?: string;
+};
+
+const { title = "Theorem", label } = Astro.props;
+---
+
+<section class="theorem" id={label}>
+  <p class="theorem__title">{title}</p>
+  <slot />
+</section>

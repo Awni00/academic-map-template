@@ -1,0 +1,22 @@
+---
+type Props = {
+  src?: string;
+  alt: string;
+  invertInDarkMode?: boolean;
+  lightSrc?: string;
+  darkSrc?: string;
+};
+
+const { src, alt, invertInDarkMode = false, lightSrc, darkSrc } = Astro.props;
+---
+
+{
+  lightSrc && darkSrc ? (
+    <picture>
+      <source srcset={darkSrc} media="(prefers-color-scheme: dark)" />
+      <img src={lightSrc} alt={alt} loading="lazy" />
+    </picture>
+  ) : (
+    <img class:list={{ "invert-in-dark": invertInDarkMode }} src={src} alt={alt} loading="lazy" />
+  )
+}

@@ -1,0 +1,48 @@
+---
+import { highlightedAuthorParts, publicationLinks } from "../../lib/publications/formatPublication";
+import type { Publication } from "../../lib/publications/types";
+
+type Props = {
+  publication: Publication;
+};
+
+const { publication } = Astro.props;
+const links = publicationLinks(publication);
+const authorParts = highlightedAuthorParts(publication.author);
+---
+
+<article class="publication-item">
+  {
+    publication.preview && (
+      <a href={publication.pdf ?? publication.url ?? publication.website ?? "#"} class="publication-preview">
+        <img src={publication.preview} alt="" loading="lazy" />
+      </a>
+    )
+  }
+  <div>
+    <p class="publication-meta">
+      {publication.abbr && <span>{publication.abbr} · </span>}
+      {publication.venue ?? publication.type} · {publication.year}
+    </p>
+    <h3>{publication.title}</h3>
+    <p class="publication-authors">
+      {
+        authorParts.map((part) =>
+          part.highlighted ? <strong>{part.text}</strong> : <span>{part.text}</span>
+        )
+      }
+    </p>
+    {publication.abstract && <p class="muted">{publication.abstract}</p>}
+    <div class="publication-links">
+      {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
+      {
+        publication.bibtexShow && (
+          <details class="publication-bibtex">
+            <summary>BibTeX</summary>
+            <pre><code>{publication.raw}</code></pre>
+          </details>
+        )
+      }
+    </div>
+  </div>
+</article>

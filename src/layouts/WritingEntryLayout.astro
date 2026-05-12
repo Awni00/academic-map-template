@@ -1,0 +1,133 @@
+---
+import Aside from "../components/article/Aside.astro";
+import BibtexBlock from "../components/article/BibtexBlock.astro";
+import Callout from "../components/article/Callout.astro";
+import Comparison from "../components/article/Comparison";
+import Figure from "../components/article/Figure.astro";
+import MathBlock from "../components/article/MathBlock.astro";
+import ModelViewer from "../components/article/ModelViewer.astro";
+import Picture from "../components/article/Picture.astro";
+import Proof from "../components/article/Proof.astro";
+import TableOfContents from "../components/article/TableOfContents";
+import Theorem from "../components/article/Theorem.astro";
+import TwoColumns from "../components/article/TwoColumns.astro";
+import Video from "../components/article/Video.astro";
+import YouTubeVideo from "../components/article/YouTubeVideo.astro";
+import LocalGraph from "../components/graph/LocalGraph";
+import { writingConfig } from "../config/writing";
+import { entryToRecord } from "../lib/graph/resolveLinks";
+import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
+import BaseLayout from "./BaseLayout.astro";
+
+type Props = {
+  entry: WritingEntryLike;
+  graph: GraphIndex;
+  headings: Array<{ depth: number; slug: string; text: string }>;
+  Content: any;
+};
+
+const { entry, graph, headings, Content } = Astro.props;
+const record = entryToRecord(entry);
+const node = record.node;
+const byId = new Map(graph.nodes.map((item) => [item.id, item]));
+const layout =
+  entry.data.layout?.sidebar === false
+    ? "narrow"
+    : writingConfig.entryLayout.articleLayout.byType[entry.data.type] ??
+      writingConfig.entryLayout.articleLayout.default;
+const showSidebar = entry.data.layout?.sidebar ?? writingConfig.entryLayout.sidebar.byType[entry.data.type];
+const showLocalGraph =
+  (entry.data.layout?.localGraph ?? writingConfig.entryLayout.localGraph.byType[entry.data.type]) &&
+  writingConfig.entryLayout.localGraph.enabled;
+const outgoing = graph.outgoing[node.id] ?? [];
+const backlinks = graph.backlinks[node.id] ?? [];
+const related = [...new Set([...outgoing, ...backlinks])].slice(0, 6);
+const external = Object.entries(entry.data.external ?? {}).filter(([, href]) => Boolean(href));
+const components = {
+  Aside,
+  BibtexBlock,
+  Callout,
+  Comparison,
+  Figure,
+  MathBlock,
+  ModelViewer,
+  Picture,
+  Proof,
+  Theorem,
+  TwoColumns,
+  Video,
+  YouTubeVideo
+};
+---
+
+<BaseLayout title={node.title} description={node.summary} theme={entry.data.theme}>
+  <article class="writing-shell">
+    <div class="article-grid" data-layout={layout}>
+      <main class="article-main">
+        <header class="article-header">
+          <h1>{node.title}</h1>
+          <div class="article-meta">
+            <span>{node.type}</span>
+            {node.date && <span>{node.date}</span>}
+            {node.tags.map((tag) => <span>{tag}</span>)}
+          </div>
+          {node.summary && <p class="article-summary">{node.summary}</p>}
+          {
+            external.length > 0 && (
+              <div class="article-external">
+                {external.map(([label, href]) => <a class="entry-chip" href={href as string}>{label}</a>)}
+              </div>
+            )
+          }
+        </header>
+        <div class="article-content">
+          <Content components={components} />
+        </div>
+      </main>
+      {
+        showSidebar && (
+          <aside class="article-sidebar" aria-label="Article sidebar">
+            <section class="sidebar-section">
+              <h2>On This Page</h2>
+              <TableOfContents headings={headings} />
+            </section>
+            {
+              showLocalGraph && (
+                <section class="sidebar-section">
+                  <h2>Local Graph</h2>
+                  <LocalGraph client:load graph={graph} currentId={node.id} />
+                </section>
+              )
+            }
+            <section class="sidebar-section">
+              <h2>Backlinks</h2>
+              <ul>
+                {
+                  backlinks.length
+                    ? backlinks.map((id) => {
+                        const item = byId.get(id);
+                        return item && <li><a href={item.url}>{item.title}</a></li>;
+                      })
+                    : <li>No backlinks yet.</li>
+                }
+              </ul>
+            </section>
+            <section class="sidebar-section">
+              <h2>Related</h2>
+              <ul>
+                {
+                  related.length
+                    ? related.map((id) => {
+                        const item = byId.get(id);
+                        return item && <li><a href={item.url}>{item.title}</a></li>;
+                      })
+                    : <li>No related entries yet.</li>
+                }
+              </ul>
+            </section>
+          </aside>
+        )
+      }
+    </div>
+  </article>
+</BaseLayout>

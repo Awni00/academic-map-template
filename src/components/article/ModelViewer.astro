@@ -1,0 +1,16 @@
+---
+type Props = {
+  src: string;
+  alt?: string;
+  poster?: string;
+};
+
+const { src, alt = "3D model", poster } = Astro.props;
+---
+
+<figure class="article-figure">
+  <div class="model-viewer">
+    <p><a href={src}>Open 3D model</a></p>
+    {poster && <img src={poster} alt={alt} loading="lazy" />}
+  </div>
+</figure>

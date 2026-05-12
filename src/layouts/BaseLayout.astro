@@ -1,0 +1,66 @@
+---
+import "katex/dist/katex.min.css";
+import "../styles/globals.css";
+
+import Footer from "../components/layout/Footer.astro";
+import Header from "../components/layout/Header.astro";
+import { siteConfig } from "../config/site";
+import { themeConfig } from "../config/theme";
+
+type Props = {
+  title?: string;
+  description?: string;
+  image?: string;
+  theme?: "global" | "system" | "light" | "dark";
+};
+
+const {
+  title = siteConfig.title,
+  description = siteConfig.description,
+  image = siteConfig.ogImage,
+  theme = "global"
+} = Astro.props;
+
+const pageTitle = title === siteConfig.title ? title : `${title} | ${siteConfig.name}`;
+const canonical = new URL(Astro.url.pathname, siteConfig.url).toString();
+const resolvedImage = new URL(image, siteConfig.url).toString();
+const themeScript = `
+(function () {
+  var override = ${JSON.stringify(theme)};
+  var defaultMode = ${JSON.stringify(themeConfig.defaultMode)};
+  var stored = localStorage.getItem("theme");
+  var requested = override && override !== "global" ? override : (stored || defaultMode);
+  var resolved = requested === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : requested;
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themePreference = requested;
+})();
+`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script is:inline set:html={themeScript}></script>
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={resolvedImage} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <a class="skip-link" href="#main">Skip to content</a>
+      <Header />
+      <main id="main" class="site-main">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+  </body>
+</html>

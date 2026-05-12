@@ -1,0 +1,69 @@
+---
+import { getCollection, render } from "astro:content";
+
+import GraphBrowser from "../components/graph/GraphBrowser";
+import { writingConfig } from "../config/writing";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageLayout from "../layouts/PageLayout.astro";
+import WritingEntryLayout from "../layouts/WritingEntryLayout.astro";
+import { buildGraphIndex } from "../lib/graph/buildGraph";
+import { entryToRecord } from "../lib/graph/resolveLinks";
+import {
+  pageUrlFromId,
+  stripSlashes,
+  writingEntryUrl,
+  writingRouteParam
+} from "../lib/routes/paths";
+
+export async function getStaticPaths() {
+  const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
+  const pages = await getCollection("pages", ({ data }) => data.draft !== true);
+  const writingPaths = writingEntries.map((entry) => {
+    const record = entryToRecord(entry);
+    return {
+      params: { path: stripSlashes(writingEntryUrl(record.node.slug)) },
+      props: { kind: "writing-entry", entry }
+    };
+  });
+  const pagePaths = pages
+    .filter((page) => page.id !== "home")
+    .map((entry) => ({
+      params: { path: stripSlashes(pageUrlFromId(entry.id)) },
+      props: { kind: "page", entry }
+    }));
+
+  return [
+    {
+      params: { path: writingRouteParam() },
+      props: { kind: "writing-index" }
+    },
+    ...writingPaths,
+    ...pagePaths
+  ];
+}
+
+const { kind, entry } = Astro.props as any;
+const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
+const graph = buildGraphIndex(writingEntries, { collectWarnings: false }).index;
+const rendered = entry ? await render(entry) : undefined;
+---
+
+{
+  kind === "writing-index" && (
+    <BaseLayout title={writingConfig.label} description="Browse writing as a conceptual graph.">
+      <GraphBrowser client:load graph={graph} />
+    </BaseLayout>
+  )
+}
+
+{
+  kind === "writing-entry" && entry && rendered && (
+    <WritingEntryLayout entry={entry} graph={graph} headings={rendered.headings} Content={rendered.Content} />
+  )
+}
+
+{
+  kind === "page" && entry && rendered && (
+    <PageLayout title={entry.data.title} description={entry.data.description} Content={rendered.Content} />
+  )
+}

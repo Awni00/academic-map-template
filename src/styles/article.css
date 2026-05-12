@@ -1,0 +1,264 @@
+.page-shell,
+.writing-shell {
+  width: min(100% - 2rem, var(--content-wide));
+  margin: 0 auto;
+  padding: 4rem 0 1rem;
+}
+
+.page-shell {
+  max-width: var(--content-distill);
+}
+
+.article-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
+  gap: 3rem;
+  align-items: start;
+}
+
+.article-grid[data-layout="narrow"] {
+  max-width: var(--content-narrow);
+  display: block;
+}
+
+.article-grid[data-layout="wide"] {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.article-header {
+  margin-bottom: 2rem;
+}
+
+.article-header h1,
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.article-summary,
+.page-description {
+  margin-top: 1rem;
+  color: var(--color-muted);
+  font-size: 1.17rem;
+  line-height: 1.55;
+}
+
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  margin-top: 1rem;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.article-external {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.article-content {
+  min-width: 0;
+}
+
+.article-content > * + * {
+  margin-top: 1.2rem;
+}
+
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  margin-top: 2.4rem;
+  line-height: 1.17;
+  letter-spacing: 0;
+}
+
+.article-content h2 {
+  font-size: 1.75rem;
+}
+
+.article-content h3 {
+  font-size: 1.28rem;
+}
+
+.article-content p {
+  margin-block: 1rem;
+}
+
+.article-content a:not(.heading-anchor) {
+  color: var(--color-accent);
+}
+
+.article-content blockquote {
+  margin: 1.5rem 0;
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1rem;
+  color: var(--color-muted);
+}
+
+.heading-anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.article-sidebar {
+  position: sticky;
+  top: 5.5rem;
+  display: grid;
+  gap: 1.25rem;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+
+.sidebar-section {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.8rem;
+}
+
+.sidebar-section h2 {
+  margin: 0 0 0.65rem;
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-section li + li {
+  margin-top: 0.45rem;
+}
+
+.callout,
+.theorem,
+.proof,
+.math-block,
+.aside,
+.bibtex-block {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: 1rem;
+}
+
+.callout {
+  border-left: 4px solid var(--color-accent);
+}
+
+.callout__title,
+.theorem__title,
+.math-block__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.proof::after {
+  content: "□";
+  float: right;
+  color: var(--color-muted);
+}
+
+.article-figure {
+  margin: 2rem 0;
+}
+
+.article-figure img {
+  display: block;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.article-figure figcaption {
+  margin-top: 0.55rem;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+
+[data-theme="dark"] .invert-in-dark {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.aside {
+  float: right;
+  width: 220px;
+  margin: 0.2rem -250px 1rem 1.5rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.comparison__panel {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  background: var(--color-bg);
+}
+
+.bibtex-block {
+  position: relative;
+}
+
+.bibtex-copy {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+}
+
+.unresolved-wikilink {
+  color: var(--color-danger);
+  border-bottom: 1px dashed var(--color-danger);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 980px) {
+  .article-grid,
+  .article-grid[data-layout="wide"] {
+    display: block;
+  }
+
+  .article-sidebar {
+    position: static;
+    margin-top: 2rem;
+  }
+
+  .aside {
+    float: none;
+    width: auto;
+    margin: 1rem 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .two-columns,
+  .comparison {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,51 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import Aside from "../components/article/Aside.astro";
+import BibtexBlock from "../components/article/BibtexBlock.astro";
+import Callout from "../components/article/Callout.astro";
+import Comparison from "../components/article/Comparison";
+import Figure from "../components/article/Figure.astro";
+import MathBlock from "../components/article/MathBlock.astro";
+import ModelViewer from "../components/article/ModelViewer.astro";
+import Picture from "../components/article/Picture.astro";
+import Proof from "../components/article/Proof.astro";
+import Theorem from "../components/article/Theorem.astro";
+import TwoColumns from "../components/article/TwoColumns.astro";
+import Video from "../components/article/Video.astro";
+import YouTubeVideo from "../components/article/YouTubeVideo.astro";
+
+type Props = {
+  title: string;
+  description?: string;
+  Content: any;
+};
+
+const { title, description, Content } = Astro.props;
+const components = {
+  Aside,
+  BibtexBlock,
+  Callout,
+  Comparison,
+  Figure,
+  MathBlock,
+  ModelViewer,
+  Picture,
+  Proof,
+  Theorem,
+  TwoColumns,
+  Video,
+  YouTubeVideo
+};
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="page-shell">
+    <header class="page-header">
+      <h1>{title}</h1>
+      {description && <p class="page-description">{description}</p>}
+    </header>
+    <div class="article-content">
+      <Content components={components} />
+    </div>
+  </article>
+</BaseLayout>
