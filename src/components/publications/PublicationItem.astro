@@ -4,26 +4,39 @@ import type { Publication } from "../../lib/publications/types";
 
 type Props = {
   publication: Publication;
+  compact?: boolean;
 };
 
-const { publication } = Astro.props;
+const { publication, compact = false } = Astro.props;
 const links = publicationLinks(publication);
 const authorParts = highlightedAuthorParts(publication.author);
+const thumbHref =
+  publication.pdf ?? publication.url ?? publication.website ?? undefined;
 ---
 
-<article class="publication-item">
-  {
-    publication.preview && (
-      <a href={publication.pdf ?? publication.url ?? publication.website ?? "#"} class="publication-preview">
-        <img src={publication.preview} alt="" loading="lazy" />
+<article class:list={["publication-item", compact && "publication-item--compact"]}>
+  {!compact && (
+    thumbHref ? (
+      <a href={thumbHref} class="publication-preview" aria-hidden="true">
+        {publication.preview ? (
+          <img src={publication.preview} alt="" loading="lazy" />
+        ) : (
+          <div class="publication-thumb-fallback" />
+        )}
+        {publication.abbr && <span class="publication-thumb-tag">{publication.abbr}</span>}
       </a>
+    ) : (
+      <div class="publication-preview" aria-hidden="true">
+        {publication.preview ? (
+          <img src={publication.preview} alt="" loading="lazy" />
+        ) : (
+          <div class="publication-thumb-fallback" />
+        )}
+        {publication.abbr && <span class="publication-thumb-tag">{publication.abbr}</span>}
+      </div>
     )
-  }
-  <div>
-    <p class="publication-meta">
-      {publication.abbr && <span>{publication.abbr} · </span>}
-      {publication.venue ?? publication.type} · {publication.year}
-    </p>
+  )}
+  <div class="publication-body">
     <h3>{publication.title}</h3>
     <p class="publication-authors">
       {
@@ -32,17 +45,22 @@ const authorParts = highlightedAuthorParts(publication.author);
         )
       }
     </p>
-    {publication.abstract && <p class="muted">{publication.abstract}</p>}
-    <div class="publication-links">
-      {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
-      {
-        publication.bibtexShow && (
-          <details class="publication-bibtex">
-            <summary>BibTeX</summary>
-            <pre><code>{publication.raw}</code></pre>
-          </details>
-        )
-      }
+    <div class="publication-meta">
+      <span class="publication-venue">
+        {publication.venue ? <i>{publication.venue}</i> : publication.type}, {publication.year}
+      </span>
+      <div class="publication-links">
+        {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
+        {
+          publication.bibtexShow && (
+            <details class="publication-bibtex">
+              <summary>BibTeX</summary>
+              <pre><code>{publication.raw}</code></pre>
+            </details>
+          )
+        }
+      </div>
     </div>
+    {publication.abstract && !compact && <p class="muted" style="margin-top: 8px; font-size: 13.5px; line-height: 1.5;">{publication.abstract}</p>}
   </div>
 </article>

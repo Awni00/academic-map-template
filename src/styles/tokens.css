@@ -1,39 +1,124 @@
 :root {
+  /* Type stacks (Google Fonts loaded in BaseLayout) */
+  --font-serif: "Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  --font-body: var(--font-serif);
+  --font-ui: var(--font-sans);
+
+  /* Palette — warm white, near-black, soft borders */
   --color-bg: #ffffff;
-  --color-fg: #111111;
-  --color-muted: #666666;
-  --color-border: #dddddd;
-  --color-surface: #f8f8f7;
-  --color-surface-strong: #eeeeec;
-  --color-accent: #3657d8;
-  --color-accent-soft: #eef1ff;
+  --color-bg-soft: #faf9f6;
+  --color-bg-soft-2: #f5f4ef;
+  --color-fg: #15161a;
+  --color-fg-soft: #2b2c30;
+  --color-muted: #6b6d72;
+  --color-muted-2: #8e9095;
+  --color-border: #e8e6e0;
+  --color-border-soft: #f0eee8;
+  --color-rule: #d8d6d0;
+  --color-surface: var(--color-bg-soft);
+  --color-surface-strong: var(--color-bg-soft-2);
+
+  --color-accent: #2c5cc5;
+  --color-accent-soft: #eaf0fd;
+  --color-accent-line: #c8d6f3;
   --color-danger: #b91c1c;
-  --graph-hub: #111111;
-  --graph-paper: #3657d8;
+  --color-warning: #b45309;
+  --color-success: #15803d;
+
+  /* Graph palette (mirrors --accent via fallback) */
+  --graph-hub: #15161a;
+  --graph-paper: var(--color-accent);
   --graph-post: #64748b;
-  --graph-note: #71717a;
+  --graph-note: #94a3b8;
   --graph-teaching: #15803d;
   --graph-project: #9333ea;
-  --graph-edge: #9ca3af;
-  --font-body: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --graph-edge: #b8b6b0;
+
+  /* Placeholder fill (striped profile etc.) */
+  --placeholder-a: #efece5;
+  --placeholder-b: #e6e3dc;
+
+  /* Layout widths */
   --content-narrow: 720px;
   --content-distill: 860px;
   --content-wide: 1100px;
-  --sidebar-width: 260px;
-  --radius: 8px;
-  --shadow-soft: 0 20px 60px rgb(17 17 17 / 0.08);
+  --sidebar-width: 280px;
+  --margin-width: 260px;
+
+  /* Breakpoints */
+  --bp-sm: 640px;
+  --bp-md: 820px;
+  --bp-lg: 1100px;
+  --bp-xl: 1320px;
+
+  /* Type scale (numeric, matches design) */
+  --text-xs: 11px;
+  --text-mono-sm: 10.5px;
+  --text-ui-sm: 12px;
+  --text-ui: 13.5px;
+  --text-ui-lg: 14px;
+  --text-base: 16px;
+  --text-bio: 17px;
+  --text-lede: 18px;
+  --text-h2: 18px;
+  --text-h1: 42px;
+  --text-h1-display: 72px;
+  --text-entry-h1: 48px;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 5.5rem;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 6px 24px rgb(0 0 0 / 0.06);
+  --shadow-soft: 0 20px 60px rgb(0 0 0 / 0.08);
+
+  --ease-quiet: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
 }
 
 [data-theme="dark"] {
-  --color-bg: #0b0b0c;
-  --color-fg: #f5f5f5;
-  --color-muted: #a1a1aa;
-  --color-border: #27272a;
-  --color-surface: #151517;
-  --color-surface-strong: #202024;
-  --color-accent: #8ea2ff;
-  --color-accent-soft: #1e2448;
-  --graph-edge: #52525b;
+  --color-bg: #0c0d10;
+  --color-bg-soft: #131418;
+  --color-bg-soft-2: #1a1c21;
+  --color-fg: #f1f0ec;
+  --color-fg-soft: #d8d6d0;
+  --color-muted: #9a9b9f;
+  --color-muted-2: #74757a;
+  --color-border: #2a2b30;
+  --color-border-soft: #1f2024;
+  --color-rule: #35363b;
+  --color-surface: var(--color-bg-soft);
+  --color-surface-strong: var(--color-bg-soft-2);
+
+  --color-accent: #8ea7ff;
+  --color-accent-soft: #1c2440;
+  --color-accent-line: #2e3a66;
+  --color-warning: #d6a14a;
+  --color-success: #4ade80;
+
+  --graph-hub: #f1f0ec;
+  --graph-edge: #4a4b50;
+
+  --placeholder-a: #1f2024;
+  --placeholder-b: #25262b;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 6px 24px rgb(0 0 0 / 0.4);
+  --shadow-soft: 0 20px 60px rgb(0 0 0 / 0.5);
 }

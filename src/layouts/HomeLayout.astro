@@ -26,29 +26,47 @@ type Props = {
 const { graph, recentWriting, selectedPublications, news, Content } = Astro.props;
 const previewConfig = siteConfig.homepage.writingPreview;
 const components = { Callout, Figure, MathBlock };
+const showPubs =
+  siteConfig.homepage.selectedPublications.enabled && selectedPublications.length > 0;
+const showRecent = siteConfig.homepage.recentWriting.enabled && recentWriting.length > 0;
+const showNews = siteConfig.homepage.news.enabled && news.length > 0;
+const showResearch = siteConfig.homepage.researchSummary.enabled;
 ---
 
 <BaseLayout title={siteConfig.name} description={siteConfig.description}>
   <section class="hero">
-    <div>
-      <h1>{siteConfig.name}</h1>
-      <p class="hero__meta">{siteConfig.role} · {siteConfig.affiliation}</p>
-      <p class="hero__description">{siteConfig.description}</p>
-      <div class="hero__links">
-        <a href={siteConfig.links.email}>Email</a>
-        <a href={siteConfig.links.cv}>CV</a>
-        <a href={siteConfig.links.scholar}>Scholar</a>
-        <a href={siteConfig.links.github}>GitHub</a>
+    <div class="hero__left">
+      <h1 class="h1">{siteConfig.name}</h1>
+      <div class="role">
+        {siteConfig.role}, {siteConfig.affiliation}
+      </div>
+      {
+        showResearch && (
+          <div class="bio">
+            <Content components={components} />
+          </div>
+        )
+      }
+      <div class="sociallinks">
+        {
+          [
+            { label: "Email", href: siteConfig.links.email },
+            { label: "CV", href: siteConfig.links.cv },
+            { label: "Scholar", href: siteConfig.links.scholar },
+            { label: "GitHub", href: siteConfig.links.github }
+          ].map((link, i) => (
+            <>
+              {i > 0 && <span class="sociallinks-sep">·</span>}
+              <a class="sociallinks-link" href={link.href}>{link.label}</a>
+            </>
+          ))
+        }
       </div>
     </div>
-    <div class="profile-card">
-      <img src={siteConfig.profileImage} alt={`${siteConfig.name} profile`} />
-    </div>
-  </section>
-
-  <section class="section section--tight">
-    <div class="article-content">
-      <Content components={components} />
+    <div class="hero__right">
+      <div class="profile-card">
+        <img src={siteConfig.profileImage} alt={`${siteConfig.name} profile`} />
+      </div>
     </div>
   </section>
 
@@ -58,6 +76,7 @@ const components = { Callout, Figure, MathBlock };
         <GraphPreview
           client:load
           graph={graph}
+          mode="panel"
           title={previewConfig.title}
           description={previewConfig.description}
           clickTarget={previewConfig.clickTarget}
@@ -68,47 +87,63 @@ const components = { Callout, Figure, MathBlock };
     )
   }
 
-  <section class="section">
-    <div class="section__header">
-      <h2>Selected Publications</h2>
-      <a class="button" href="/publications">All publications</a>
-    </div>
-    <div class="publication-list">
-      {selectedPublications.map((publication) => <PublicationItem publication={publication} />)}
-    </div>
-  </section>
+  {
+    (showPubs || showNews) && (
+      <section class="section">
+        <div class="cols2">
+          {showPubs && (
+            <section>
+              <h2 class="h2">Selected publications</h2>
+              <div class="publication-list">
+                {selectedPublications.map((publication) => (
+                  <PublicationItem publication={publication} />
+                ))}
+              </div>
+              <a class="cta" href="/publications">All publications →</a>
+            </section>
+          )}
+          {showNews && (
+            <aside>
+              <h2 class="h2">News</h2>
+              <dl class="news">
+                {news.map((item) => (
+                  <>
+                    <dt>{item.date}</dt>
+                    <dd>
+                      {item.url ? <a href={item.url}>{item.title}</a> : <span>{item.title}</span>}
+                    </dd>
+                  </>
+                ))}
+              </dl>
+            </aside>
+          )}
+        </div>
+      </section>
+    )
+  }
 
-  <section class="section">
-    <div class="section__header">
-      <h2>Recent Writing</h2>
-      <a class="button" href="/writing">Open writing map</a>
-    </div>
-    <div class="entry-list">
-      {
-        recentWriting.map((entry) => (
-          <article class="entry-row">
-            <p class="entry-meta">{entry.type} · {entry.date}</p>
-            <h3><a href={entry.url}>{entry.title}</a></h3>
-            {entry.summary && <p class="muted">{entry.summary}</p>}
-          </article>
-        ))
-      }
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="section__header">
-      <h2>News</h2>
-    </div>
-    <div class="news-list">
-      {
-        news.map((item) => (
-          <article class="news-item">
-            <p class="news-date">{item.date}</p>
-            {item.url ? <a href={item.url}>{item.title}</a> : <span>{item.title}</span>}
-          </article>
-        ))
-      }
-    </div>
-  </section>
+  {
+    showRecent && (
+      <section class="section">
+        <div class="sect-head">
+          <h2 class="h2">Recent writing</h2>
+          <a class="cta cta--small" href="/writing">All →</a>
+        </div>
+        <ul class="recent">
+          {recentWriting.map((entry) => (
+            <li class="recent-card">
+              <div class="recent-meta">
+                <span class={`pill pill--${entry.type}`}>{entry.type}</span>
+                <span class="recent-date">{entry.date}</span>
+              </div>
+              <a class="recent-title" href={entry.url} style="text-decoration: none; color: inherit; display: block;">
+                {entry.title}
+              </a>
+              {entry.summary && <div class="recent-summary">{entry.summary}</div>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 </BaseLayout>
