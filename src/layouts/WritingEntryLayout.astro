@@ -39,6 +39,9 @@ const showSidebar = entry.data.layout?.sidebar ?? writingConfig.entryLayout.side
 const showLocalGraph =
   (entry.data.layout?.localGraph ?? writingConfig.entryLayout.localGraph.byType[entry.data.type]) &&
   writingConfig.entryLayout.localGraph.enabled;
+// In narrow mode without a sidebar, render the nav sections in a foot strip
+// below the article body instead.
+const showFoot = layout === "narrow" && !showSidebar;
 const outgoing = graph.outgoing[node.id] ?? [];
 const backlinks = graph.backlinks[node.id] ?? [];
 const related = [...new Set([...outgoing, ...backlinks])].slice(0, 6);
@@ -62,7 +65,7 @@ const components = {
 
 <BaseLayout title={node.title} description={node.summary} theme={entry.data.theme}>
   <article class="writing-shell">
-    <div class="article-grid" data-layout={layout}>
+    <div class="article-grid" data-layout={layout} data-has-foot={showFoot ? "true" : undefined}>
       <main class="article-main">
         <header class="article-header">
           <h1>{node.title}</h1>
@@ -129,5 +132,71 @@ const components = {
         )
       }
     </div>
+    {
+      showFoot && (
+        <section class="entry-foot" aria-label="Entry navigation">
+          {headings.length > 0 && (
+            <div class="entry-foot-section">
+              <div class="entry-foot-label">On this page</div>
+              <div class="entry-foot-content">
+                <ul>
+                  {headings
+                    .filter((h) => h.depth === 2 || h.depth === 3)
+                    .map((h) => (
+                      <li>
+                        <a href={`#${h.slug}`}>{h.text}</a>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            </div>
+          )}
+          {showLocalGraph && (
+            <div class="entry-foot-section">
+              <div class="entry-foot-label">Local graph</div>
+              <div class="entry-foot-content">
+                <div class="entry-foot-graph">
+                  <LocalGraph client:load graph={graph} currentId={node.id} />
+                </div>
+              </div>
+            </div>
+          )}
+          {backlinks.length > 0 && (
+            <div class="entry-foot-section">
+              <div class="entry-foot-label">Backlinks</div>
+              <div class="entry-foot-content">
+                <ul>
+                  {backlinks.map((id) => {
+                    const item = byId.get(id);
+                    return item ? (
+                      <li>
+                        <a href={item.url}>{item.title}</a>
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
+          {related.length > 0 && (
+            <div class="entry-foot-section">
+              <div class="entry-foot-label">Related</div>
+              <div class="entry-foot-content">
+                <ul>
+                  {related.map((id) => {
+                    const item = byId.get(id);
+                    return item ? (
+                      <li>
+                        <a href={item.url}>{item.title}</a>
+                      </li>
+                    ) : null;
+                  })}
+                </ul>
+              </div>
+            </div>
+          )}
+        </section>
+      )
+    }
   </article>
 </BaseLayout>

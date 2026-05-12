@@ -1,106 +1,193 @@
-.page-shell,
-.writing-shell {
-  width: min(100% - 2rem, var(--content-wide));
-  margin: 0 auto;
-  padding: 4rem 0 1rem;
-}
+/* ── Page + writing shells ──────────────────────────────────────────── */
 
 .page-shell {
-  max-width: var(--content-distill);
+  width: min(100% - 2rem, var(--content-narrow));
+  margin: 0 auto;
+  padding: 56px 0 72px;
 }
+
+.writing-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* ── Article header ─────────────────────────────────────────────────── */
+
+.article-header {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 56px 1rem 28px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.article-header h1 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 1.08;
+  letter-spacing: -0.022em;
+  margin: 0 0 16px;
+  color: var(--color-fg);
+}
+
+.article-summary {
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--color-muted);
+  margin: 0 0 24px;
+  font-weight: 400;
+  max-width: 36em;
+}
+
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--color-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.article-external {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-muted);
+  margin-top: 18px;
+}
+
+/* ── Article grid ───────────────────────────────────────────────────── */
 
 .article-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--sidebar-width);
-  gap: 3rem;
+  grid-template-columns: minmax(0, 720px) 280px;
+  gap: 80px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 1rem 72px;
   align-items: start;
 }
 
 .article-grid[data-layout="narrow"] {
-  max-width: var(--content-narrow);
   display: block;
+  max-width: var(--content-narrow);
+  margin: 0 auto;
+  padding: 28px 1rem 64px;
+}
+
+/* When narrow, the article header is tighter and the title smaller. */
+.article-grid[data-layout="narrow"] ~ * .article-header,
+.writing-shell:has(.article-grid[data-layout="narrow"]) .article-header {
+  max-width: var(--content-narrow);
+  padding: 56px 1rem 24px;
+}
+
+.article-grid[data-layout="narrow"] .article-header h1,
+.writing-shell:has(.article-grid[data-layout="narrow"]) .article-header h1 {
+  font-size: 38px;
+  letter-spacing: -0.018em;
+}
+
+.article-grid[data-layout="narrow"] .article-header .article-summary,
+.writing-shell:has(.article-grid[data-layout="narrow"]) .article-header .article-summary {
+  font-size: 18px;
 }
 
 .article-grid[data-layout="wide"] {
   grid-template-columns: minmax(0, 1fr) 280px;
 }
 
-.article-header {
-  margin-bottom: 2rem;
+.article-main {
+  min-width: 0;
 }
 
-.article-header h1,
-.page-header h1 {
-  margin: 0;
-  font-size: clamp(2.4rem, 6vw, 4.6rem);
-  line-height: 0.98;
-  letter-spacing: 0;
-}
-
-.article-summary,
-.page-description {
-  margin-top: 1rem;
-  color: var(--color-muted);
-  font-size: 1.17rem;
-  line-height: 1.55;
-}
-
-.article-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-  margin-top: 1rem;
-  color: var(--color-muted);
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.article-external {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-}
+/* ── Prose ──────────────────────────────────────────────────────────── */
 
 .article-content {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--color-fg-soft);
   min-width: 0;
 }
 
 .article-content > * + * {
-  margin-top: 1.2rem;
+  margin-top: 0;
+}
+
+.article-content p {
+  margin: 0 0 18px;
+  text-wrap: pretty;
 }
 
 .article-content h2,
 .article-content h3,
 .article-content h4 {
-  margin-top: 2.4rem;
-  line-height: 1.17;
-  letter-spacing: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-fg);
+  letter-spacing: -0.012em;
 }
 
 .article-content h2 {
-  font-size: 1.75rem;
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 48px 0 18px;
+}
+
+.article-content h2:first-child {
+  margin-top: 0;
 }
 
 .article-content h3 {
-  font-size: 1.28rem;
+  font-size: 19px;
+  line-height: 1.3;
+  margin: 36px 0 14px;
+  letter-spacing: -0.005em;
 }
 
-.article-content p {
-  margin-block: 1rem;
+.article-content h4 {
+  font-size: 16.5px;
+  margin: 28px 0 10px;
 }
 
 .article-content a:not(.heading-anchor) {
   color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-line);
+}
+
+.article-content a:not(.heading-anchor):hover {
+  border-bottom-color: var(--color-accent);
 }
 
 .article-content blockquote {
-  margin: 1.5rem 0;
-  border-left: 3px solid var(--color-accent);
-  padding-left: 1rem;
+  margin: 24px 0;
+  border-left: 3px solid var(--color-rule);
+  padding: 4px 0 4px 18px;
   color: var(--color-muted);
+  font-style: italic;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 0 0 18px;
+  padding-left: 1.4em;
+}
+
+.article-content li {
+  margin: 6px 0;
 }
 
 .heading-anchor {
@@ -108,28 +195,33 @@
   text-decoration: none;
 }
 
+/* ── Sidebar ────────────────────────────────────────────────────────── */
+
 .article-sidebar {
   position: sticky;
-  top: 5.5rem;
+  top: 24px;
   display: grid;
-  gap: 1.25rem;
-  color: var(--color-muted);
+  gap: 28px;
   font-family: var(--font-ui);
-  font-size: 0.82rem;
+  font-size: 13px;
+  color: var(--color-muted);
+  min-width: 0;
 }
 
 .sidebar-section {
-  border-top: 1px solid var(--color-border);
-  padding-top: 0.8rem;
+  font-size: 13px;
 }
 
 .sidebar-section h2 {
-  margin: 0 0 0.65rem;
-  color: var(--color-fg);
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  text-transform: uppercase;
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
 }
 
 .sidebar-section ul {
@@ -138,81 +230,472 @@
   padding: 0;
 }
 
-.sidebar-section li + li {
-  margin-top: 0.45rem;
+.sidebar-section li {
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-fg-soft);
 }
 
-.callout,
-.theorem,
-.proof,
-.math-block,
-.aside,
-.bibtex-block {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  padding: 1rem;
+.sidebar-section li + li {
+  border-top: 1px dashed var(--color-border-soft);
 }
+
+.sidebar-section a {
+  color: var(--color-fg-soft);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.sidebar-section a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+/* TOC */
+.article-sidebar .toc,
+.article-sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.article-sidebar .toc li,
+.article-sidebar nav li {
+  padding: 0;
+  border: 0;
+}
+
+.article-sidebar .toc a,
+.article-sidebar nav a {
+  display: block;
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 3px 8px;
+  border: 0;
+  border-left: 2px solid transparent;
+  transition: color var(--dur-fast) var(--ease-quiet),
+    border-color var(--dur-fast) var(--ease-quiet);
+}
+
+.article-sidebar .toc a:hover,
+.article-sidebar nav a:hover {
+  color: var(--color-fg);
+}
+
+.article-sidebar .toc a[aria-current="true"],
+.article-sidebar nav a[aria-current="true"] {
+  color: var(--color-accent);
+  border-left-color: var(--color-accent);
+  font-weight: 500;
+}
+
+/* Local graph block in sidebar */
+.local-graph {
+  background: var(--color-bg-soft);
+  border: 0.5px solid var(--color-border);
+  border-radius: 5px;
+  height: 200px;
+  overflow: hidden;
+  padding: 8px;
+}
+
+/* ── Callout ────────────────────────────────────────────────────────── */
 
 .callout {
-  border-left: 4px solid var(--color-accent);
+  background: var(--color-bg-soft);
+  border-left: 3px solid var(--color-accent);
+  padding: 14px 18px 16px;
+  margin: 22px 0;
+  border-radius: 0 4px 4px 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-fg-soft);
 }
 
-.callout__title,
-.theorem__title,
-.math-block__title {
-  margin: 0 0 0.5rem;
+.callout__title {
+  margin: 0 0 6px;
   font-family: var(--font-ui);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
 }
 
-.proof::after {
-  content: "□";
-  float: right;
+.callout--intuition {
+  border-left-color: var(--color-accent);
+}
+
+.callout--warning {
+  border-left-color: var(--color-warning);
+}
+
+.callout--warning .callout__title {
+  color: var(--color-warning);
+}
+
+.callout--definition {
+  border-left-color: var(--color-rule);
+}
+
+.callout--definition .callout__title {
+  color: var(--color-fg);
+}
+
+.callout--note {
+  border-left-color: var(--color-muted-2);
+}
+
+.callout--note .callout__title {
   color: var(--color-muted);
 }
 
+/* ── Theorem / Definition (variants controlled by [data-theorem]) ───── */
+
+.theorem,
+.proof,
+.math-block,
+.bibtex-block {
+  margin: 28px 0;
+}
+
+.theorem-head {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.theorem-name {
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: 0.01em;
+}
+
+.theorem-title {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.theorem-body {
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--color-fg-soft);
+  font-style: italic;
+}
+
+.theorem-body .display-math,
+.theorem-body .katex-display {
+  font-style: italic;
+}
+
+/* Definition modifier — neutral label, upright body */
+.theorem--def .theorem-name { color: var(--color-fg); }
+.theorem--def .theorem-title { color: var(--color-muted); font-weight: 400; font-style: italic; }
+.theorem--def .theorem-body { font-style: normal; color: var(--color-fg); }
+.theorem--def .theorem-body .display-math,
+.theorem--def .theorem-body .katex-display { font-style: italic; }
+
+/* — Variant: rule (default) — hairlines top + bottom, small-caps mono label — */
+[data-theorem="rule"] .theorem,
+:root:not([data-theorem]) .theorem {
+  border-top: 1px solid var(--color-fg);
+  border-bottom: 1px solid var(--color-rule);
+  padding: 14px 0 16px;
+}
+
+[data-theorem="rule"] .theorem--def,
+:root:not([data-theorem]) .theorem--def {
+  border-top-color: var(--color-rule);
+}
+
+[data-theorem="rule"] .theorem-head,
+:root:not([data-theorem]) .theorem-head {
+  margin-bottom: 6px;
+}
+
+[data-theorem="rule"] .theorem-name,
+:root:not([data-theorem]) .theorem-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-fg);
+}
+
+[data-theorem="rule"] .theorem--def .theorem-name,
+:root:not([data-theorem]) .theorem--def .theorem-name {
+  color: var(--color-muted);
+}
+
+[data-theorem="rule"] .theorem-title,
+:root:not([data-theorem]) .theorem-title {
+  color: var(--color-muted);
+  font-style: italic;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+[data-theorem="rule"] .theorem-body,
+:root:not([data-theorem]) .theorem-body {
+  color: var(--color-fg);
+  font-style: italic;
+  font-size: 17px;
+}
+
+[data-theorem="rule"] .theorem--def .theorem-body,
+:root:not([data-theorem]) .theorem--def .theorem-body {
+  font-style: normal;
+}
+
+/* — Variant: slab — accent left-bar, label inline — */
+[data-theorem="slab"] .theorem {
+  border-left: 3px solid var(--color-accent);
+  padding: 4px 0 4px 20px;
+}
+
+[data-theorem="slab"] .theorem--def {
+  border-left-color: var(--color-border);
+}
+
+[data-theorem="slab"] .theorem-head {
+  margin-bottom: 4px;
+}
+
+[data-theorem="slab"] .theorem-name {
+  color: var(--color-fg);
+}
+
+[data-theorem="slab"] .theorem--def .theorem-name {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+[data-theorem="slab"] .theorem-title {
+  color: var(--color-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+[data-theorem="slab"] .theorem-body {
+  color: var(--color-fg);
+  font-style: italic;
+}
+
+[data-theorem="slab"] .theorem--def .theorem-body {
+  font-style: normal;
+}
+
+/* — Variant: tag — accent-filled flag hangs from a top hairline rule — */
+[data-theorem="tag"] .theorem {
+  border-top: 1px solid var(--color-rule);
+  padding: 0 0 4px;
+  margin-top: 36px;
+}
+
+[data-theorem="tag"] .theorem-head {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--color-accent);
+  color: #fff;
+  padding: 5px 10px 6px;
+  margin: 0 0 14px;
+  border-radius: 0 0 3px 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+[data-theorem="tag"] .theorem--def .theorem-head {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+[data-theorem="tag"] .theorem-name {
+  color: #fff;
+  font-weight: 700;
+}
+
+[data-theorem="tag"] .theorem-title {
+  color: rgb(255 255 255 / 0.78);
+  font-weight: 400;
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 10.5px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+[data-theorem="tag"] .theorem-body {
+  color: var(--color-fg);
+  font-style: italic;
+  font-size: 16.5px;
+}
+
+[data-theorem="tag"] .theorem--def .theorem-body {
+  font-style: normal;
+}
+
+/* — Variant: caps — minimal Knuth-style run-in label, no chrome — */
+[data-theorem="caps"] .theorem {
+  padding: 0;
+  border: 0;
+}
+
+[data-theorem="caps"] .theorem-head {
+  display: inline;
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+[data-theorem="caps"] .theorem-name {
+  font-family: var(--font-body);
+  font-size: 16.5px;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: 0.02em;
+  color: var(--color-fg);
+  text-transform: none;
+}
+
+[data-theorem="caps"] .theorem-title {
+  font-family: var(--font-body);
+  font-size: 16.5px;
+  font-weight: 400;
+  color: var(--color-fg);
+  font-style: normal;
+}
+
+[data-theorem="caps"] .theorem-body {
+  display: inline;
+  font-size: 16.5px;
+  color: var(--color-fg);
+  font-style: italic;
+}
+
+[data-theorem="caps"] .theorem--def .theorem-body {
+  font-style: normal;
+}
+
+[data-theorem="caps"] .theorem-head::after {
+  content: ". ";
+}
+
+[data-theorem="caps"] .theorem-body .display-math,
+[data-theorem="caps"] .theorem-body .katex-display {
+  display: block;
+  font-style: italic;
+  margin: 10px 0 0;
+}
+
+/* Proof */
+.proof {
+  font-size: 16.5px;
+  line-height: 1.6;
+  margin: 18px 0 26px;
+  color: var(--color-fg-soft);
+}
+
+.proof > p:first-child::before {
+  content: "Proof. ";
+  font-style: italic;
+  font-weight: 600;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  margin-right: 4px;
+}
+
+.proof > p:last-child::after {
+  content: " □";
+  color: var(--color-fg);
+  font-style: normal;
+}
+
+/* ── Math block ─────────────────────────────────────────────────────── */
+
+.math-block {
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 14px 18px;
+  background: var(--color-bg);
+}
+
+.math-block__title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* ── Figure ─────────────────────────────────────────────────────────── */
+
 .article-figure {
-  margin: 2rem 0;
+  margin: 32px 0;
 }
 
 .article-figure img {
   display: block;
+  width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-bg);
+  border-radius: 5px;
+  background: var(--color-bg-soft);
 }
 
 .article-figure figcaption {
-  margin-top: 0.55rem;
-  color: var(--color-muted);
+  margin-top: 10px;
   font-family: var(--font-ui);
-  font-size: 0.82rem;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-muted);
 }
 
 [data-theme="dark"] .invert-in-dark {
   filter: invert(1) hue-rotate(180deg);
 }
 
+/* ── Aside (margin notes) ───────────────────────────────────────────── */
+
 .aside {
-  float: right;
-  width: 220px;
-  margin: 0.2rem -250px 1rem 1.5rem;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  line-height: 1.55;
   color: var(--color-muted);
-  font-size: 0.9rem;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--color-accent);
+  margin: 22px 0;
 }
 
-.two-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.2rem;
+/* True Distill margin notes (only when sidebar is OFF — opt-in via
+   data-asides="margin" on the article-grid). */
+@media (min-width: 1100px) {
+  .article-grid[data-asides="margin"] .aside {
+    float: right;
+    clear: right;
+    width: 220px;
+    margin: 0.2rem -260px 1rem 1.5rem;
+  }
 }
 
+/* ── Two-columns / comparison utilities (article body) ──────────────── */
+
+.two-columns,
 .comparison {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 1.2rem;
+  margin: 22px 0;
 }
 
 .comparison__panel {
@@ -222,37 +705,160 @@
   background: var(--color-bg);
 }
 
+/* ── BibTeX block ───────────────────────────────────────────────────── */
+
 .bibtex-block {
   position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--color-fg-soft);
+  overflow-x: auto;
 }
 
 .bibtex-copy {
   position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
+  top: 8px;
+  right: 8px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-muted);
+  background: var(--color-bg-soft);
+  border: 0.5px solid var(--color-border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
 }
 
 .unresolved-wikilink {
   color: var(--color-danger);
   border-bottom: 1px dashed var(--color-danger);
   font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* ── Narrow variant foot sections ───────────────────────────────────── */
+
+.entry-foot {
+  max-width: var(--content-narrow);
+  margin: 48px auto 80px;
+  padding: 0 1rem;
+  border-top: 1px solid var(--color-rule);
+}
+
+.entry-foot-section {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 28px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+}
+
+.entry-foot-section:last-child {
+  border-bottom: 0;
+}
+
+.entry-foot-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--color-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 3px;
+}
+
+.entry-foot-content {
+  color: var(--color-fg-soft);
+  line-height: 1.6;
+  min-width: 0;
+}
+
+.entry-foot-content ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.entry-foot-content li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.entry-foot-content a {
+  color: var(--color-fg-soft);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.entry-foot-content a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.entry-foot-graph {
+  background: var(--color-bg-soft);
+  border: 0.5px solid var(--color-border);
+  border-radius: 5px;
+  padding: 8px;
+  height: 200px;
+}
+
+/* When narrow has foot sections, the body grid is single-column. */
+.article-grid[data-layout="narrow"][data-has-foot="true"] .article-main {
+  max-width: var(--content-narrow);
+  margin: 0 auto;
+}
+
+/* ── Mobile collapse ────────────────────────────────────────────────── */
+
+@media (max-width: 820px) {
+  .entry-foot-section {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 
 @media (max-width: 980px) {
   .article-grid,
-  .article-grid[data-layout="wide"] {
+  .article-grid[data-layout="wide"],
+  .article-grid[data-layout="distill"] {
     display: block;
+    padding: 32px 1rem 64px;
   }
 
   .article-sidebar {
     position: static;
-    margin-top: 2rem;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-rule);
   }
 
-  .aside {
+  .article-grid[data-layout="distill"] .aside {
     float: none;
     width: auto;
-    margin: 1rem 0;
+    margin: 22px 0;
+  }
+
+  .article-header {
+    padding: 32px 1rem 24px;
+  }
+
+  .article-header h1 {
+    font-size: 36px;
+  }
+
+  .article-summary {
+    font-size: 17px;
   }
 }
 
