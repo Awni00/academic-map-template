@@ -67,8 +67,6 @@ export type WritingBrowserState = {
   query?: string;
   types?: EntryType[];
   tags?: string[];
-  depth: 1 | 2;
-  focusMode: "dim" | "filter";
 };
 
 export type WritingSearchDocument = {

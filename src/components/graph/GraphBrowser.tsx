@@ -12,10 +12,12 @@ type GraphBrowserProps = {
 };
 
 const defaultState: WritingBrowserState = {
-  view: "map",
-  depth: 1,
-  focusMode: "dim"
+  view: "map"
 };
+
+// Focus mode + depth are config-only — see writingConfig.browser.focus.
+const FOCUS_MODE = writingConfig.browser.focus.mode;
+const FOCUS_DEPTH = writingConfig.browser.focus.depth;
 
 const VIEWS = ["map", "topics", "list"] as const;
 type View = (typeof VIEWS)[number];
@@ -39,12 +41,12 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   const filteredIds = useMemo(() => new Set(searchResults.map((doc) => doc.id)), [searchResults]);
   const focusIds = useMemo(() => {
     if (!state.focus) return undefined;
-    return neighborhoodIds(graph, state.focus, state.depth);
-  }, [graph, state.depth, state.focus]);
+    return neighborhoodIds(graph, state.focus, FOCUS_DEPTH);
+  }, [graph, state.focus]);
   const visibleGraph = useMemo(() => {
     const base =
-      state.focus && state.focusMode === "filter"
-        ? graphNeighborhood(graph, state.focus, state.depth)
+      state.focus && FOCUS_MODE === "filter"
+        ? graphNeighborhood(graph, state.focus, FOCUS_DEPTH)
         : graph;
     const nodes = base.nodes.filter((node) => filteredIds.has(node.id));
     const allowed = new Set(nodes.map((node) => node.id));
@@ -53,7 +55,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       nodes,
       edges: base.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target))
     };
-  }, [filteredIds, graph, state.depth, state.focus, state.focusMode]);
+  }, [filteredIds, graph, state.focus]);
   const selected = state.selected ? nodeById.get(state.selected) : graph.hubs[0] ?? graph.nodes[0];
   const focusNode = state.focus ? nodeById.get(state.focus) : undefined;
   const view = (state.view ?? "map") as View;
@@ -178,45 +180,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
               </div>
             </div>
 
-            <div className="graph-control">
-              <label>Focus</label>
-              <div className="graph-seg">
-                <button
-                  type="button"
-                  aria-pressed={state.focusMode === "dim"}
-                  onClick={() => patch({ focusMode: "dim" })}
-                >
-                  Dim
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={state.focusMode === "filter"}
-                  onClick={() => patch({ focusMode: "filter" })}
-                >
-                  Filter
-                </button>
-              </div>
-            </div>
-
-            <div className="graph-control">
-              <label>Depth</label>
-              <div className="graph-seg">
-                <button
-                  type="button"
-                  aria-pressed={state.depth === 1}
-                  onClick={() => patch({ depth: 1 })}
-                >
-                  1
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={state.depth === 2}
-                  onClick={() => patch({ depth: 2 })}
-                >
-                  2
-                </button>
-              </div>
-            </div>
           </aside>
 
           <div className="graph-panel graph-panel--center">
@@ -248,7 +211,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 height={620}
                 selected={state.selected}
                 highlighted={focusIds}
-                dimUnhighlighted={state.focusMode === "dim"}
+                dimUnhighlighted={FOCUS_MODE === "dim"}
                 hubLayout={graphConfig.layout.hubs}
                 labelMode={graphConfig.layout.labels}
                 labelSide={graphConfig.layout.labelSide}
@@ -494,9 +457,7 @@ function readStateFromUrl(): WritingBrowserState {
     selected: params.get("selected") || undefined,
     query: params.get("q") || undefined,
     types: splitParam(params.get("type")) as EntryType[] | undefined,
-    tags: splitParam(params.get("tag")),
-    depth: params.get("depth") === "2" ? 2 : 1,
-    focusMode: params.get("mode") === "filter" ? "filter" : "dim"
+    tags: splitParam(params.get("tag"))
   };
 }
 
@@ -509,8 +470,6 @@ function writeStateToUrl(state: WritingBrowserState) {
   if (state.query) params.set("q", state.query);
   if (state.types?.length) params.set("type", state.types.join(","));
   if (state.tags?.length) params.set("tag", state.tags.join(","));
-  if (state.depth !== defaultState.depth) params.set("depth", String(state.depth));
-  if (state.focusMode !== defaultState.focusMode) params.set("mode", state.focusMode);
   const query = params.toString();
   const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
   window.history.replaceState(null, "", nextUrl);

@@ -25,11 +25,20 @@ export const writingConfig = {
       mobile: "topics"
     },
     urlState: true,
+    /**
+     * How the writing browser reacts when a topic (hub) is focused —
+     * either via the Topics list in the left panel, or via `?focus=<id>`
+     * in the URL. Both fields are config-only; the controls are not
+     * exposed in the UI.
+     *   mode  — "dim" keeps non-neighbours visible but faded;
+     *           "filter" removes them from the canvas entirely.
+     *   depth — neighbourhood radius in edges (BFS hops) from the
+     *           focused hub. 1 = direct neighbours, 2 = neighbours of
+     *           neighbours.
+     */
     focus: {
-      defaultMode: "dim",
-      allowModeToggle: true,
-      defaultDepth: 1,
-      allowDepthToggle: true
+      mode: "dim" as "dim" | "filter",
+      depth: 1 as 1 | 2
     },
     mobile: {
       graphPlacement: "collapsed",
