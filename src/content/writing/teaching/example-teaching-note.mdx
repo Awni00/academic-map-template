@@ -1,20 +1,48 @@
 ---
-title: "Teaching Generalization with Small Models"
+title: "Bias and variance, by example"
 type: "teaching"
 date: "2026-03-14"
-summary: "A teaching note that introduces generalization using small synthetic models."
+summary: "A classroom-friendly walkthrough of the bias-variance decomposition, with a small synthetic exercise and a worked discussion."
 tags:
   - teaching
+  - bias-variance
   - generalization
 links:
   - education-teaching
   - machine-learning-theory
+  - example-paper
 draft: false
 theme: global
 ---
 
-This note is written for a classroom audience. It connects [[education-teaching]] with [[ML theory]].
+This is the in-class version of the material developed in [[example-paper|the bias-variance refresher]]. The goal is for students to *feel* the trade-off, not just write it down. It fits in a single 50-minute session.
+
+## Warm-up
+
+We start with the picture, not the formula. Ask the room:
+
+> "If I trained the same model on a hundred different training sets drawn from the same world, what would the hundred fits look like at a single test point?"
+
+Two answers cover the space: *all clustered in the same spot, but the spot is wrong* (high bias, low variance) and *all over the place, but centred on the truth* (low bias, high variance). Draw both on the board before introducing any math.
 
 ## Exercise
 
-Train a linear classifier on two synthetic datasets and compare the decision boundary.
+Hand out the worksheet built from [[example-project|bv-sim]]. Each student gets a different random seed.
+
+1. Fit polynomial regressors of degree $d \in \{1, 3, 7, 12\}$ to $n = 30$ samples from a noisy cubic.
+2. Repeat 50 times with independent training sets.
+3. At a fixed test point $x_0 = 0.7$, plot all 50 predictions for each $d$.
+4. From those points, compute $\widehat{\text{bias}^2}$ and $\widehat{\text{variance}}$.
+
+## Discussion prompts
+
+- For which $d$ is bias largest? Why is the answer obvious before computing anything?
+- For which $d$ is variance largest? Predict, then check.
+- What happens to both as $n$ grows from 30 to 300?
+- We assumed squared loss. What would change for 0-1 loss? (See [[machine-learning-theory]] for hints.)
+
+## Closing
+
+Send students out with the takeaway: *choosing a model class is choosing how to spend a fixed budget across bias, variance, and an irreducible noise floor*. The classroom exercise is the simplest setting in which that sentence becomes operational.
+
+Linked back to the [[education-teaching]] hub for navigation.

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="A 2x2 dartboard grid showing low and high bias crossed with low and high variance.">
+  <rect width="900" height="540" fill="#ffffff"/>
+  <text x="60" y="48" font-family="ui-serif, Georgia, serif" font-size="22" font-weight="600" fill="#15161a">Bias and variance, as throws at a target</text>
+  <text x="60" y="70" font-family="ui-sans-serif, system-ui" font-size="13" fill="#6b6d72">Each dot is one trained model. The bullseye is the true function.</text>
+
+  <!-- column headers -->
+  <text x="262" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">Low variance</text>
+  <text x="638" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">High variance</text>
+
+  <!-- row headers -->
+  <text x="44" y="262" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 262)">Low bias</text>
+  <text x="44" y="430" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 430)">High bias</text>
+
+  <!-- Quadrant template (will instance 4 times) -->
+  <defs>
+    <g id="target">
+      <circle cx="0" cy="0" r="76" fill="#faf9f6" stroke="#d8d6d0" stroke-width="1"/>
+      <circle cx="0" cy="0" r="52" fill="none" stroke="#d8d6d0" stroke-width="1"/>
+      <circle cx="0" cy="0" r="28" fill="none" stroke="#d8d6d0" stroke-width="1"/>
+      <circle cx="0" cy="0" r="6" fill="#2c5cc5"/>
+    </g>
+  </defs>
+
+  <!-- low bias, low variance: tight cluster on bullseye -->
+  <g transform="translate(262 262)">
+    <use href="#target"/>
+    <g fill="#15161a">
+      <circle cx="2" cy="-3" r="4"/><circle cx="-4" cy="5" r="4"/>
+      <circle cx="6" cy="2" r="4"/><circle cx="-2" cy="-6" r="4"/>
+      <circle cx="0" cy="3" r="4"/><circle cx="-5" cy="-1" r="4"/>
+    </g>
+  </g>
+
+  <!-- low bias, high variance: scattered around bullseye -->
+  <g transform="translate(638 262)">
+    <use href="#target"/>
+    <g fill="#15161a">
+      <circle cx="38" cy="-22" r="4"/><circle cx="-44" cy="18" r="4"/>
+      <circle cx="14" cy="42" r="4"/><circle cx="-22" cy="-36" r="4"/>
+      <circle cx="48" cy="22" r="4"/><circle cx="-36" cy="-8" r="4"/>
+      <circle cx="20" cy="-50" r="4"/><circle cx="-10" cy="48" r="4"/>
+    </g>
+  </g>
+
+  <!-- high bias, low variance: tight cluster off-bullseye -->
+  <g transform="translate(262 430)">
+    <use href="#target"/>
+    <g fill="#15161a">
+      <circle cx="46" cy="-30" r="4"/><circle cx="40" cy="-26" r="4"/>
+      <circle cx="50" cy="-22" r="4"/><circle cx="44" cy="-34" r="4"/>
+      <circle cx="48" cy="-28" r="4"/><circle cx="42" cy="-30" r="4"/>
+    </g>
+  </g>
+
+  <!-- high bias, high variance: scattered off-bullseye -->
+  <g transform="translate(638 430)">
+    <use href="#target"/>
+    <g fill="#15161a">
+      <circle cx="56" cy="-12" r="4"/><circle cx="22" cy="-48" r="4"/>
+      <circle cx="60" cy="-40" r="4"/><circle cx="30" cy="-20" r="4"/>
+      <circle cx="46" cy="-2" r="4"/><circle cx="68" cy="-28" r="4"/>
+      <circle cx="14" cy="-32" r="4"/>
+    </g>
+  </g>
+</svg>

@@ -1,73 +1,155 @@
 ---
-title: "Chain-of-Thought Information"
+title: "Bias and Variance: an Illustrated Refresher"
 type: "paper"
 aliases:
-  - CoT information
+  - bias-variance
+  - bias and variance
 date: "2026-05-12"
 updated: "2026-05-12"
-summary: "An explainer for a sample paper on information-theoretic views of chain-of-thought reasoning."
+summary: "A standalone explainer of the squared-loss bias–variance decomposition, the assumptions it needs, and the situations where it stops being a useful lens."
 tags:
-  - chain-of-thought
   - learning-theory
-  - information-theory
+  - bias-variance
+  - generalization
 links:
   - machine-learning-theory
   - research-papers
+  - example-note
+  - example-teaching-note
+  - example-project
 draft: false
 theme: global
 external:
-  arxiv: "https://arxiv.org/abs/2601.00000"
-  code: "https://github.com/example/cot-information"
+  arxiv: "https://arxiv.org/abs/0000.00000"
+  code: "https://github.com/example/bias-variance-demo"
+  slides: "/publications/example-slides.pdf"
 ---
 
-This explainer treats chain-of-thought as an intermediate representation that can reveal useful information about a model's computation. It belongs to [[machine-learning-theory]] and appears in the [[research-papers]] hub.
+The bias–variance decomposition is the first place most students meet the idea that *test error has structure*. This explainer is a stand-alone refresher: what the decomposition says, when it holds exactly, and where it stops being the right lens. It belongs to [[machine-learning-theory]] and sits alongside [[research-papers|other paper explainers]].
 
 <Aside>
-Margin notes become inline notes on mobile. They are useful for technical commentary without interrupting the main proof.
+Margin notes appear inline on mobile and as a quiet annotation column on desktop. They are useful for technical asides without breaking the main argument.
 </Aside>
+
+<Callout type="intuition" title="TL;DR">
+For squared loss, expected test error splits cleanly into three independent pieces: how wrong the *average* learner is (**bias²**), how much the learner *jitters* across training sets (**variance**), and the irreducible noise floor σ². Picking a model class is choosing how to spend a budget across these three.
+</Callout>
 
 ## Setup
 
-Let $X$ be an input, $Y$ be a target, and $Z$ be a chain-of-thought transcript sampled from a model.
+We fix a data-generating distribution $\mathcal{D}$ over $(X, Y) \in \mathcal{X} \times \mathbb{R}$, with conditional mean $f^\star(x) = \mathbb{E}[Y \mid X = x]$ and noise variance $\sigma^2(x) = \mathrm{Var}(Y \mid X = x)$. A *learner* is a function $\hat f$ produced from a training set $S \sim \mathcal{D}^n$; the randomness in $\hat f$ comes from $S$.
 
-<MathBlock title="Information carried by a rationale">
-The conditional information term below measures how much the rationale changes the predictive distribution.
+<Theorem kind="definition" name="Definition (point-wise risk)" label="def:risk">
+The point-wise expected squared loss at a query $x_0$ is
+$$
+R(x_0) \;=\; \mathbb{E}_{S,\, Y_0}\Big[\,(\,\hat f_S(x_0) - Y_0\,)^2 \,\Big],
+$$
+where $Y_0$ is a fresh draw from $\mathcal{D}(\,\cdot \mid X = x_0)$.
+</Theorem>
+
+<MathBlock title="The decomposition we will prove">
+With $\bar f(x_0) = \mathbb{E}_S[\hat f_S(x_0)]$,
+$$
+R(x_0) \;=\; \underbrace{(\bar f(x_0) - f^\star(x_0))^2}_{\text{bias}^2} \;+\; \underbrace{\mathbb{E}_S\!\big[(\hat f_S(x_0) - \bar f(x_0))^2\big]}_{\text{variance}} \;+\; \underbrace{\sigma^2(x_0)}_{\text{noise}}.
+$$
 </MathBlock>
 
-$$
-I(Z;Y\mid X)=\mathbb{E}\left[\log \frac{p(Y\mid X,Z)}{p(Y\mid X)}\right].
-$$
+The three terms are *additive* and *non-negative*. The first depends only on the learner-on-average; the second only on its jitter; the third on the world.
 
-<Theorem title="Toy sufficiency criterion" label="thm:sufficiency">
-If $Y\perp X\mid Z$, then the transcript $Z$ is sufficient for prediction in this toy model.
+## The decomposition
+
+<Theorem name="Theorem 1" title="Bias–variance decomposition" label="thm:bv">
+For any learning rule whose output $\hat f_S$ has finite second moment at $x_0$,
+$$
+R(x_0) \;=\; \big(\bar f(x_0) - f^\star(x_0)\big)^2 \;+\; \mathrm{Var}_S\!\big[\hat f_S(x_0)\big] \;+\; \sigma^2(x_0).
+$$
 </Theorem>
 
 <Proof>
-The conditional independence assumption gives \(p(Y\mid X,Z)=p(Y\mid Z)\). Substituting this into the risk decomposition removes the direct dependence on \(X\).
+Add and subtract $\bar f(x_0)$ and $f^\star(x_0)$ inside the square, then expand. The three cross terms vanish: $\mathbb{E}_S[\hat f_S(x_0) - \bar f(x_0)] = 0$ by definition of $\bar f$, and $Y_0 - f^\star(x_0)$ has mean zero and is independent of $\hat f_S$ (different randomness). What remains are the three squared terms.
 </Proof>
 
-<Callout type="warning" title="Interpretability caveat">
-High mutual information does not imply that a transcript is faithful to the model's internal computation.
-</Callout>
+<Aside>
+The independence step is the one most often skipped. It uses that $Y_0$ is a *fresh* draw — not one of the training labels — so it is independent of $\hat f_S$.
+</Aside>
 
-## Figure
+## Visualising the trade-off
+
+The classical picture is the U-shape of expected test error as model complexity grows: $\text{bias}^2$ falls, variance rises, and their sum has a unique minimum.
 
 <Figure
-  src="/figures/latent-map.svg"
-  alt="A schematic latent map"
-  caption="A small SVG figure included with the template."
+  src="/figures/bias-variance-curve.svg"
+  alt="Test error as a function of model complexity, decomposed into bias squared, variance, and irreducible noise."
+  caption="Test error (black) as a sum of bias² (blue, decreasing), variance (red, increasing), and an irreducible-noise floor σ² (dashed). The minimum picks out an 'optimal complexity'."
 />
+
+A more pedagogical view is the dart-board: each dot is one model trained on an independent draw of $S$, and the bullseye is $f^\star(x_0)$. Bias is *where the cloud is centred*; variance is *how big the cloud is*.
+
+<Picture
+  src="/figures/dartboard.svg"
+  alt="Dartboard grid: low/high bias crossed with low/high variance."
+  invertInDarkMode
+/>
+
+<TwoColumns>
+<div>
+
+### What pushes bias down
+
+Adding capacity to the model class — more features, deeper trees, a larger network — lets $\bar f$ track $f^\star$ more faithfully, especially in regions with curvature.
+
+</div>
+<div>
+
+### What pushes variance up
+
+The same added capacity lets the learner over-fit individual training sets. Two independent draws of $S$ disagree more, so $\mathrm{Var}_S[\hat f_S]$ grows.
+
+</div>
+</TwoColumns>
+
+<Comparison
+  leftLabel="Plain ERM"
+  rightLabel="ERM + ridge"
+  left="Empirical risk minimisation over a rich class is unbiased but high-variance: each training set drags the fit toward its own idiosyncrasies."
+  right="A small ridge penalty injects bias toward zero but slashes variance. For correctly tuned λ, the bias paid is worth less than the variance saved."
+/>
+
+## Where the lens breaks down
+
+<Callout type="warning" title="Squared loss only">
+The clean three-term split is a property of *squared loss*. For 0-1 loss the analogue exists but is not a sum of independent pieces; for log-loss it requires care with the link function.
+</Callout>
+
+<Callout type="definition" title="Effective complexity">
+What pushes variance up is *effective* complexity, not parameter count. Two networks with the same number of weights can sit on opposite sides of the dartboard once you account for implicit regularisation from the optimiser. See [[example-note]] for the related approximation/estimation/optimization split.
+</Callout>
+
+<Callout type="note" title="Sample size">
+All three terms depend on $n$ implicitly through $\bar f$ and $\mathrm{Var}_S[\hat f_S]$. As $n \to \infty$, variance falls; bias is the asymptote.
+</Callout>
+
+## Related entries
+
+- [[example-note|Decomposing test error three ways]] — a one-page note that compares the bias–variance split with the approximation/estimation/optimization split.
+- [[example-teaching-note]] — a classroom-friendly walkthrough with a small synthetic exercise.
+- [[example-project]] — the simulator used to generate the figures on this page.
+
+> "All models are wrong, but some are useful."  
+> — paraphrased, with apologies to Box.
+
+For citation context, see the BibTeX block below and the [publications page](/publications) (a normal Markdown link — it does *not* add a graph edge).
 
 ## BibTeX
 
 <BibtexBlock>
 ```bibtex
-@inproceedings{example2026,
-  title = {Chain-of-Thought Information},
+@misc{example2026biasvariance,
+  title  = {Bias and Variance: an Illustrated Refresher},
   author = {Your Name and Coauthor Name},
-  year = {2026}
+  year   = {2026},
+  note   = {Sample post in the academic-graph template},
+  url    = {https://example.com/writing/example-paper}
 }
 ```
 </BibtexBlock>
-
-Normal Markdown links such as [the publications page](/publications) render normally and do not create graph edges.

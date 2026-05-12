@@ -1,33 +1,60 @@
 ---
-title: "Graph Writing Template Project"
+title: "bv-sim — a small bias-variance simulator"
 type: "project"
+aliases:
+  - bv-sim
+  - bias-variance simulator
 date: "2026-02-28"
-summary: "A project note describing this template's graph-first writing workflow."
+summary: "A tiny reproducible simulator that draws the figures in the bias-variance refresher and lets you sweep model complexity, sample size, and noise."
 tags:
   - tools
-  - writing
+  - reproducibility
+  - bias-variance
 links:
   - research-papers
+  - example-paper
   - example-note
 draft: false
 theme: global
+external:
+  code: "https://github.com/example/bv-sim"
 ---
 
-This project note describes a static-first system for academic writing. It links to [[research-papers]] for publication-adjacent notes and [[example-note]] for the evaluation angle.
+`bv-sim` is the simulator behind the figures in [[example-paper|the bias–variance refresher]]. It exists for one reason: every claim in a learning-theory write-up should be reproducible from a few lines of code.
+
+## What it does
+
+The simulator fits polynomial-feature ridge regressors to a fixed cubic target $f^\star$ corrupted by Gaussian noise. For each setting of (degree $d$, sample size $n$, ridge strength $\lambda$, noise $\sigma$) it draws $K$ independent training sets, fits a model on each, and reports the empirical decomposition
+$$
+\hat R(x_0) \approx \widehat{\text{bias}^2}(x_0) + \widehat{\text{variance}}(x_0) + \sigma^2.
+$$
 
 <TwoColumns>
 <div>
 
-### Static Source
+### Sweepable knobs
 
-Markdown and MDX files remain the source of truth.
+- model degree $d \in \{1, \dots, 12\}$
+- sample size $n \in \{20, 50, 200, 1000\}$
+- ridge $\lambda \in \{0, 10^{-3}, \dots, 10\}$
+- noise $\sigma \in \{0, 0.1, 1\}$
+- replicates $K$ (default 200)
 
 </div>
 <div>
 
-### Graph Layer
+### What you get back
 
-Frontmatter links and wikilinks define the graph.
+- The three-term decomposition at each query $x_0$
+- A U-shape plot of $\hat R$ vs. $d$
+- A dartboard render of model fits on a single $x_0$
+- Pickled fits for downstream analysis
 
 </div>
 </TwoColumns>
+
+<Callout type="note" title="Static + reproducible">
+`bv-sim` is a single Python file with no GPU dependencies. The figures on [[example-paper]] are committed alongside the script that produced them, so a fresh clone reproduces the post bit-for-bit.
+</Callout>
+
+This project also links back to [[research-papers]] because the simulator is intentionally aligned with the explainer it accompanies — running it is part of *reading* the post.

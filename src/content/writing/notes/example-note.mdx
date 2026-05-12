@@ -1,19 +1,48 @@
 ---
-title: "A Note on Evaluation Graphs"
+title: "Decomposing test error three ways"
 type: "note"
+aliases:
+  - test-error decomposition
 date: "2026-04-20"
-summary: "A short note about using graph structure to organize evaluation questions."
+summary: "A one-page note comparing the bias–variance decomposition with the approximation / estimation / optimization split."
 tags:
-  - evaluation
+  - learning-theory
+  - generalization
   - notes
 links:
   - machine-learning-theory
+  - example-paper
 draft: false
 theme: global
 ---
 
-Evaluation notes often start as small observations. Linking them with [[machine-learning-theory]] and [[CoT information]] makes their context explicit.
+There are two decompositions of test error you keep meeting in [[machine-learning-theory]]. They look different and arise in different communities, but they are answering the same question — *where does the error come from?* — at different granularities.
 
-<Callout type="definition" title="Intentional link">
-A graph edge should mean the author wanted readers to traverse that conceptual relationship.
+## Bias–variance (statistics)
+
+For squared loss, expected test error at $x_0$ splits into
+$$
+R(x_0) = \text{bias}^2 + \text{variance} + \sigma^2.
+$$
+This is the lens in [[example-paper|the bias–variance refresher]]. It is local (per $x_0$), assumes squared loss, and is silent about *why* a particular learner has the bias and variance it does.
+
+## Approximation / estimation / optimization (learning theory)
+
+Fix a hypothesis class $\mathcal{H}$ and a loss $\ell$. Write $f^\star \in \arg\min_f \mathbb{E}\,\ell(f(X), Y)$ for the Bayes optimum, $h^\star \in \arg\min_{h \in \mathcal{H}} \mathbb{E}\,\ell(h(X), Y)$ for the best in class, and $\hat h$ for what the optimizer actually returns. Then
+$$
+\underbrace{\mathbb{E}\,\ell(\hat h, Y) - \mathbb{E}\,\ell(f^\star, Y)}_{\text{excess risk}}
+= \underbrace{\mathbb{E}\,\ell(h^\star, Y) - \mathbb{E}\,\ell(f^\star, Y)}_{\text{approximation}}
++ \underbrace{\mathbb{E}\,\ell(\hat h, Y) - \mathbb{E}\,\ell(h^\star, Y)}_{\text{estimation + optimization}}.
+$$
+The estimation/optimization term is often split again: how close $\hat h$ is to the empirical minimizer (optimization), and how close the empirical minimizer is to $h^\star$ (estimation).
+
+<Callout type="intuition" title="Why two decompositions">
+The bias–variance split asks *what does the cloud of trained models look like?* The approximation/estimation/optimization split asks *which of three pipeline stages is the bottleneck?* They are answers to different questions at different scales.
 </Callout>
+
+## When each is the right lens
+
+- **Use bias–variance** when you control the model class and want to predict what *more capacity* or *more data* will do.
+- **Use approximation/estimation/optimization** when you are diagnosing a system end-to-end and need to know whether to change the class, gather data, or tune the optimizer.
+
+This is a notes-style entry: short, opinionated, and dense with wikilinks. Normal Markdown links like [the publications page](/publications) do not change the graph.

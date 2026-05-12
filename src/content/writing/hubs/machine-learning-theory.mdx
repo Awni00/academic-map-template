@@ -5,21 +5,25 @@ aliases:
   - ML theory
   - machine learning theory
 date: "2026-05-01"
-summary: "A hub for notes about generalization, optimization, and theoretical views of learning systems."
+summary: "A hub for notes about generalization, bias-variance, and other classical lenses on learning systems."
 tags:
   - learning-theory
   - foundations
+  - generalization
 links:
   - research-papers
   - example-paper
+  - example-note
 draft: false
 theme: global
 ---
 
-Machine learning theory gives us language for asking what a system can learn, when it generalizes, and why a training procedure works.
+Machine-learning theory is the vocabulary for asking what a system can learn, when it generalizes, and why a training procedure works. This hub collects the entries that build that vocabulary one decomposition at a time.
 
-This hub connects paper explainers like [[example-paper|Chain-of-Thought Information]] with shorter notes such as [[example-note]]. It also links to [[education-teaching]] when theoretical concepts become teaching materials.
+## Starting points
 
-## Starting Points
+- [[example-paper|Bias and variance: an illustrated refresher]] — the squared-loss decomposition, derived from scratch, with figures.
+- [[example-note|Decomposing test error three ways]] — how bias–variance relates to the approximation/estimation/optimization split.
+- [[research-papers]] — paper explainers that build on the foundational ideas here.
 
-Linked entries are intentionally chosen. A normal Markdown link to [Publications](/publications) does not change the graph.
+Linked entries on this page are intentional graph edges. A normal Markdown link like [Publications](/publications) does *not* change the graph — only frontmatter `links:` and wiki-style links do.
