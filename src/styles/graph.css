@@ -411,6 +411,11 @@
   display: inline-block;
 }
 
+.graph-legend-icon {
+  display: inline-block;
+  vertical-align: -2px;
+}
+
 /* Right preview panel */
 .graph-panel--right {
   border-left: 1px solid var(--color-border);

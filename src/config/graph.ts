@@ -48,5 +48,35 @@ export const graphConfig = {
     color: "var(--graph-edge)",
     width: 1,
     opacity: 0.4
+  },
+  /**
+   * Layout + label controls for the writing-map view. The per-entry
+   * LocalGraph in the article sidebar always uses `hubs: "force"` and
+   * `labels: "none"` regardless of this section.
+   */
+  layout: {
+    /**
+     *  "force"  — fully force-directed (legacy; hubs float).
+     *  "circle" — hubs pinned evenly on a circle around the centre.
+     *  "row"    — hubs pinned along a horizontal line near the top.
+     */
+    hubs: "circle" as "circle" | "row" | "force",
+    /**
+     * Which painted labels to draw on the canvas.
+     *  "config" — honour each node type's `labelVisibility` field below
+     *             ("always" → painted, "hover" → not painted; the library's
+     *             built-in hover tooltip still shows on mouseover).
+     *  "all"    — paint every node's label regardless of type.
+     *  "none"   — paint no labels.
+     */
+    labels: "config" as "config" | "all" | "none",
+    /**
+     * Side relative to a node where its label is drawn.
+     *  "top"    — always above.
+     *  "bottom" — always below.
+     *  "auto"   — derived from the hub layout (upper hubs above, lower
+     *             hubs below for "circle"; above for "row"/"force").
+     */
+    labelSide: "auto" as "top" | "bottom" | "auto"
   }
 } as const;

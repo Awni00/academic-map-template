@@ -249,18 +249,24 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 selected={state.selected}
                 highlighted={focusIds}
                 dimUnhighlighted={state.focusMode === "dim"}
+                hubLayout={graphConfig.layout.hubs}
+                labelMode={graphConfig.layout.labels}
+                labelSide={graphConfig.layout.labelSide}
                 onSelect={(id) => patch({ selected: id })}
               />
               <div className="graph-legend" aria-hidden="true">
-                {(["hub", "paper", "note", "teaching", "project"] as const).map((type) => (
-                  <span key={type}>
-                    <span
-                      className="dot"
-                      style={{ background: graphConfig.nodeTypes[type].color as string }}
-                    />
-                    {type}
-                  </span>
-                ))}
+                {(["hub", "paper", "note", "teaching", "project"] as const).map((type) => {
+                  const cfg = graphConfig.nodeTypes[type];
+                  return (
+                    <span key={type}>
+                      <NodeIcon
+                        shape={cfg.shape as NodeShape}
+                        color={cfg.color as string}
+                      />
+                      {type}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -513,4 +519,51 @@ function writeStateToUrl(state: WritingBrowserState) {
 function splitParam(value: string | null): string[] | undefined {
   const parts = value?.split(",").map((part) => part.trim()).filter(Boolean);
   return parts?.length ? parts : undefined;
+}
+
+type NodeShape = "square" | "circle" | "diamond" | "hexagon";
+
+function NodeIcon({ shape, color }: { shape: NodeShape; color: string }) {
+  // Inline SVG so the legend mirrors the actual node glyphs drawn on the
+  // canvas (not just colored dots).
+  const props = {
+    width: 12,
+    height: 12,
+    viewBox: "-6 -6 12 12",
+    "aria-hidden": true,
+    className: "graph-legend-icon",
+    style: { color, fill: color }
+  } as const;
+  switch (shape) {
+    case "square":
+      return (
+        <svg {...props}>
+          <rect x={-4} y={-4} width={8} height={8} />
+        </svg>
+      );
+    case "diamond":
+      return (
+        <svg {...props}>
+          <polygon points="0,-5 5,0 0,5 -5,0" />
+        </svg>
+      );
+    case "hexagon": {
+      const points = Array.from({ length: 6 }, (_, i) => {
+        const angle = (Math.PI * 2 * i) / 6 - Math.PI / 2;
+        return `${Math.cos(angle) * 5},${Math.sin(angle) * 5}`;
+      }).join(" ");
+      return (
+        <svg {...props}>
+          <polygon points={points} />
+        </svg>
+      );
+    }
+    case "circle":
+    default:
+      return (
+        <svg {...props}>
+          <circle cx={0} cy={0} r={4.5} />
+        </svg>
+      );
+  }
 }

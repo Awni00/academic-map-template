@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { graphConfig } from "../../config/graph";
 import type { GraphIndex } from "../../lib/graph/types";
+
+type HubLayout = "circle" | "row" | "force";
+type LabelMode = "config" | "all" | "none";
+type LabelSide = "top" | "bottom" | "auto";
 
 type GraphCanvasProps = {
   graph: GraphIndex;
@@ -8,8 +13,26 @@ type GraphCanvasProps = {
   selected?: string;
   highlighted?: Set<string>;
   dimUnhighlighted?: boolean;
-  labelMode?: "auto" | "hubs" | "none";
+  /**
+   * Which painted labels to draw.
+   *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
+   *   "all"    — paint every node's label.
+   *   "none"   — paint none (used by the small per-entry LocalGraph).
+   */
+  labelMode?: LabelMode;
+  /**
+   * Side of the node where labels sit. "auto" derives from `hubLayout`.
+   */
+  labelSide?: LabelSide;
   onSelect?: (id: string) => void;
+  /**
+   * How hubs are positioned in the simulation.
+   *   "force"  — let the force simulation place them (default for small
+   *              neighbourhoods such as the article-page LocalGraph).
+   *   "circle" — pin hubs evenly around a circle.
+   *   "row"    — pin hubs in a horizontal row near the top.
+   */
+  hubLayout?: HubLayout;
 };
 
 type ForceGraphComponent = React.ComponentType<any>;
@@ -20,8 +43,10 @@ export default function GraphCanvas({
   selected,
   highlighted,
   dimUnhighlighted = false,
-  labelMode = "auto",
-  onSelect
+  labelMode = "config",
+  labelSide = "auto",
+  onSelect,
+  hubLayout = "force"
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<any>(null);
@@ -56,13 +81,67 @@ export default function GraphCanvas({
     return () => observer.disconnect();
   }, []);
 
-  const graphData = useMemo(
-    () => ({
-      nodes: graph.nodes.map((node) => ({ ...node })),
+  // Resolve the side a label should appear on, using the prop-or-config
+  // override when explicit, otherwise deriving from the hub layout.
+  const resolveSide = (yPos: number | null): "top" | "bottom" => {
+    if (labelSide === "top") return "top";
+    if (labelSide === "bottom") return "bottom";
+    // "auto"
+    if (hubLayout === "row" || hubLayout === "force") return "top";
+    // "circle": upper-half hubs go above, lower-half hubs go below.
+    return yPos != null && yPos > 0 ? "bottom" : "top";
+  };
+
+  const graphData = useMemo(() => {
+    const w = width ?? 800;
+    const h = height;
+    const hubs = graph.nodes.filter((node) => node.type === "hub");
+    const pinned: Record<string, { fx: number; fy: number; side: "top" | "bottom" }> = {};
+
+    if (hubLayout === "circle" && hubs.length > 0) {
+      // Pin hubs on a circle around the simulation origin. The radius is
+      // kept conservative so satellites still have room to fan outward
+      // without pushing the auto-fit's bounding box past the viewport.
+      const baseRadius = Math.min(w, h) * 0.22;
+      // For single-hub graphs, a "circle" of radius 0 just pins it at the
+      // centre, which is a sensible degenerate case.
+      const radius = hubs.length === 1 ? 0 : baseRadius;
+      for (let i = 0; i < hubs.length; i += 1) {
+        const angle = (2 * Math.PI * i) / hubs.length - Math.PI / 2;
+        const fx = Math.cos(angle) * radius;
+        const fy = Math.sin(angle) * radius;
+        pinned[hubs[i].id] = { fx, fy, side: resolveSide(fy) };
+      }
+    } else if (hubLayout === "row" && hubs.length > 0) {
+      // Spread hubs evenly along a horizontal line in the top third of
+      // the canvas, so satellites flow downward like a shallow tree.
+      const usable = w * 0.56;
+      const step = hubs.length === 1 ? 0 : usable / (hubs.length - 1);
+      const y = -h * 0.18;
+      for (let i = 0; i < hubs.length; i += 1) {
+        const x = hubs.length === 1 ? 0 : -usable / 2 + step * i;
+        pinned[hubs[i].id] = { fx: x, fy: y, side: resolveSide(y) };
+      }
+    }
+
+    return {
+      nodes: graph.nodes.map((node) => {
+        const pin = pinned[node.id];
+        if (pin) {
+          return {
+            ...node,
+            fx: pin.fx,
+            fy: pin.fy,
+            _labelSide: pin.side
+          };
+        }
+        // Unpinned nodes still get a side, derived from the same rule with
+        // no y-position context yet — defaults to "top".
+        return { ...node, _labelSide: resolveSide(null) };
+      }),
       links: graph.edges.map((edge) => ({ ...edge }))
-    }),
-    [graph]
-  );
+    };
+  }, [graph, hubLayout, height, width, labelSide]);
 
   // Tune the d3-force simulation so hubs get more personal space than the
   // small entries around them. The default many-body strength is a flat
@@ -85,6 +164,15 @@ export default function GraphCanvas({
       });
     }
     fg.d3ReheatSimulation?.();
+    // After the simulation settles, re-frame so pinned hubs + satellites
+    // all sit comfortably inside the viewport. Without this the initial
+    // auto-fit can clip nodes that the simulation flung outward early on.
+    const timer = window.setTimeout(() => {
+      // 80px padding leaves room for the longest hub label without clipping
+      // and matches the legend / canvas-bar gutters.
+      fg.zoomToFit?.(400, 80);
+    }, 600);
+    return () => window.clearTimeout(timer);
   }, [ForceGraph, graphData]);
 
   return (
@@ -149,7 +237,7 @@ function drawNode(
   ctx: CanvasRenderingContext2D,
   node: any,
   globalScale: number,
-  state: { selected: boolean; dimmed: boolean; labelMode: "auto" | "hubs" | "none" }
+  state: { selected: boolean; dimmed: boolean; labelMode: LabelMode }
 ) {
   const radius = node.type === "hub" ? 6 : node.type === "paper" ? 5 : 4;
   const color = nodeColor(node.type);
@@ -184,17 +272,37 @@ function drawNode(
     ctx.stroke();
   }
 
-  const shouldLabel = state.labelMode !== "none" && node.type === "hub";
-  if (shouldLabel) {
+  if (shouldPaintLabel(node, state.labelMode)) {
     const label = node.title;
     const fontSize = Math.min(14, Math.max(9, 11 / globalScale));
     ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
     ctx.fillStyle = cssVar("--color-fg");
-    ctx.fillText(label, node.x + radius + 5, node.y);
+    ctx.textAlign = "center";
+
+    const side: "top" | "bottom" = node._labelSide === "bottom" ? "bottom" : "top";
+    const offset = radius + 6;
+    if (side === "top") {
+      ctx.textBaseline = "bottom";
+      ctx.fillText(label, node.x, node.y - offset);
+    } else {
+      ctx.textBaseline = "top";
+      ctx.fillText(label, node.x, node.y + offset);
+    }
   }
   ctx.restore();
+}
+
+/**
+ * Decide whether a node's label should be painted, given the canvas-level
+ * `labelMode` override and the per-type `labelVisibility` from
+ * `graphConfig.nodeTypes`.
+ */
+function shouldPaintLabel(node: any, labelMode: LabelMode): boolean {
+  if (labelMode === "none") return false;
+  if (labelMode === "all") return true;
+  // "config": defer to per-type visibility. Treat unknown types as "hover".
+  const cfg = (graphConfig.nodeTypes as Record<string, { labelVisibility?: string }>)[node.type];
+  return cfg?.labelVisibility === "always";
 }
 
 function polygon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, sides: number) {
