@@ -29,7 +29,8 @@ const themeScript = `
   var override = ${JSON.stringify(theme)};
   var defaultMode = ${JSON.stringify(themeConfig.defaultMode)};
   var stored = localStorage.getItem("theme");
-  var requested = override && override !== "global" ? override : (stored || defaultMode);
+  var storedExplicit = stored === "light" || stored === "dark" ? stored : null;
+  var requested = override && override !== "global" ? override : (storedExplicit || defaultMode);
   var resolved = requested === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : requested;
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePreference = requested;

@@ -1,5 +1,5 @@
 export const themeConfig = {
-  defaultMode: "system",
+  defaultMode: "light" as "light" | "dark" | "system",
   allowToggle: true,
   typography: {
     body: "serif",
