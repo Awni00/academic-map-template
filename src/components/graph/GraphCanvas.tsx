@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { GraphIndex } from "../../lib/graph/types";
 
@@ -24,7 +24,11 @@ export default function GraphCanvas({
   onSelect
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(640);
+  // Width is `null` until we've measured the container. We deliberately do
+  // NOT pass a hardcoded fallback into react-force-graph: if we did, the
+  // dynamic-import race (cached chunk vs. ResizeObserver's first callback)
+  // could let the canvas render wider than its slot for one frame.
+  const [width, setWidth] = useState<number | null>(null);
   const [ForceGraph, setForceGraph] = useState<ForceGraphComponent | null>(null);
 
   useEffect(() => {
@@ -37,12 +41,17 @@ export default function GraphCanvas({
     };
   }, []);
 
-  useEffect(() => {
+  // Measure synchronously before the browser paints so the first render
+  // already has the correct width — avoids a flash of overshoot while the
+  // ResizeObserver is still wiring up.
+  useLayoutEffect(() => {
     if (!containerRef.current) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setWidth(Math.max(280, Math.floor(entry.contentRect.width)));
-    });
-    observer.observe(containerRef.current);
+    const node = containerRef.current;
+    const measure = () =>
+      setWidth(Math.max(80, Math.floor(node.getBoundingClientRect().width)));
+    measure();
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(node);
     return () => observer.disconnect();
   }, []);
 
@@ -55,8 +64,11 @@ export default function GraphCanvas({
   );
 
   return (
-    <div ref={containerRef} style={{ height }}>
-      {ForceGraph ? (
+    <div
+      ref={containerRef}
+      style={{ width: "100%", height, overflow: "hidden", position: "relative" }}
+    >
+      {ForceGraph && width != null ? (
         <ForceGraph
           width={width}
           height={height}

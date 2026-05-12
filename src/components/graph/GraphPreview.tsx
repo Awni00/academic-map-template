@@ -13,6 +13,12 @@ type GraphPreviewProps = {
     types?: EntryType[];
   };
   maxNodes?: number;
+  /**
+   * "panel" — full preview with header, decorative graph SVG, and topic cards.
+   * "strip" — quiet topic-card row with a small graph thumbnail; meant for the
+   * bottom of the homepage as a hand-off into /writing.
+   */
+  mode?: "panel" | "strip";
 };
 
 export default function GraphPreview({
@@ -21,7 +27,8 @@ export default function GraphPreview({
   description,
   clickTarget,
   filter = { mode: "all" },
-  maxNodes = 30
+  maxNodes = 30,
+  mode = "panel"
 }: GraphPreviewProps) {
   const previewGraph = useMemo(() => {
     const filtered =
@@ -36,6 +43,21 @@ export default function GraphPreview({
       edges: graph.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target))
     };
   }, [filter, graph, maxNodes]);
+
+  if (mode === "strip") {
+    return (
+      <section className="graph-preview graph-preview--strip">
+        <div className="topic-cards topic-cards--always">
+          {graph.hubs.map((hub) => (
+            <a className="topic-card" href={writingFocusUrl(hub.id)} key={hub.id}>
+              <strong>{hub.title}</strong>
+              {hub.summary && <p className="muted">{hub.summary}</p>}
+            </a>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="graph-preview">

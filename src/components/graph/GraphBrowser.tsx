@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { graphConfig } from "../../config/graph";
 import { writingConfig, type EntryType } from "../../config/writing";
 import { graphNeighborhood, neighborhoodIds } from "../../lib/graph/neighborhoods";
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
@@ -16,10 +17,20 @@ const defaultState: WritingBrowserState = {
   focusMode: "dim"
 };
 
+const VIEWS = ["map", "topics", "list"] as const;
+type View = (typeof VIEWS)[number];
+
+const TYPE_ORDER: EntryType[] = ["hub", "paper", "post", "note", "project", "teaching"];
+
 export default function GraphBrowser({ graph }: GraphBrowserProps) {
   const [state, setState] = useState<WritingBrowserState>(() => readStateFromUrl());
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
+  const typeCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const node of graph.nodes) out[node.type] = (out[node.type] ?? 0) + 1;
+    return out;
+  }, [graph.nodes]);
   const docs = useMemo(() => toSearchDocuments(graph.nodes), [graph.nodes]);
   const searchResults = useMemo(
     () => searchWriting(docs, { query: state.query, types: state.types, tags: state.tags }),
@@ -32,7 +43,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   }, [graph, state.depth, state.focus]);
   const visibleGraph = useMemo(() => {
     const base =
-      state.focus && state.focusMode === "filter" ? graphNeighborhood(graph, state.focus, state.depth) : graph;
+      state.focus && state.focusMode === "filter"
+        ? graphNeighborhood(graph, state.focus, state.depth)
+        : graph;
     const nodes = base.nodes.filter((node) => filteredIds.has(node.id));
     const allowed = new Set(nodes.map((node) => node.id));
     return {
@@ -42,6 +55,8 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     };
   }, [filteredIds, graph, state.depth, state.focus, state.focusMode]);
   const selected = state.selected ? nodeById.get(state.selected) : graph.hubs[0] ?? graph.nodes[0];
+  const focusNode = state.focus ? nodeById.get(state.focus) : undefined;
+  const view = (state.view ?? "map") as View;
 
   useEffect(() => {
     writeStateToUrl(state);
@@ -65,119 +80,333 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     patch({ tags: next.size ? [...next] : undefined });
   }
 
+  const filteredEntries = searchResults
+    .map((doc) => nodeById.get(doc.id))
+    .filter((node): node is EntryNode => Boolean(node));
+
+  const ViewSwitcher = (
+    <div className="graph-seg" role="tablist" aria-label="Writing view">
+      {VIEWS.map((v) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          aria-pressed={view === v}
+          onClick={() => patch({ view: v })}
+        >
+          {v}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <section className="graph-browser" aria-label="Writing graph browser">
-      <div className="graph-browser__grid">
-        <aside className="graph-panel graph-panel--left">
-          <div className="graph-control">
-            <label htmlFor="writing-search">Search</label>
-            <input
-              id="writing-search"
-              className="graph-input"
-              value={state.query ?? ""}
-              onChange={(event) => patch({ query: event.target.value || undefined })}
-              placeholder="Title, tag, type..."
-            />
-          </div>
+    <section className="graph-browser" aria-label="Writing browser">
+      {view === "map" ? (
+        <div className="graph-browser__grid">
+          <aside className="graph-panel graph-panel--left">
+            <div className="graph-control">
+              <label htmlFor="writing-search">Search</label>
+              <input
+                id="writing-search"
+                className="graph-input"
+                value={state.query ?? ""}
+                onChange={(event) => patch({ query: event.target.value || undefined })}
+                placeholder="Title, tag, type…"
+              />
+            </div>
 
-          <div className="graph-control">
-            <label>Topics</label>
-            <ul className="topic-list">
-              {graph.hubs.map((hub) => (
-                <li key={hub.id}>
+            <div className="graph-control">
+              <label>Topics</label>
+              <ul className="topic-list">
+                {graph.hubs.map((hub) => (
+                  <li key={hub.id}>
+                    <button
+                      type="button"
+                      aria-pressed={state.focus === hub.id}
+                      onClick={() =>
+                        patch({
+                          focus: state.focus === hub.id ? undefined : hub.id,
+                          selected: hub.id
+                        })
+                      }
+                    >
+                      {hub.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="graph-control">
+              <label>Types</label>
+              <div className="graph-button-row">
+                {writingConfig.entryTypes.map((type) => {
+                  const cfg = graphConfig.nodeTypes[type as keyof typeof graphConfig.nodeTypes];
+                  const count = typeCounts[type] ?? 0;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className="graph-button graph-button--type"
+                      style={{ ["--swatch" as any]: cfg?.color }}
+                      aria-pressed={(state.types ?? []).includes(type)}
+                      onClick={() => toggleType(type)}
+                    >
+                      {type}
+                      {count > 0 && <span style={{ color: "var(--color-muted-2)" }}>{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="graph-control">
+              <label>Tags</label>
+              <div className="graph-button-row">
+                {tags.slice(0, 12).map((tag) => (
                   <button
+                    key={tag}
                     type="button"
-                    aria-pressed={state.focus === hub.id}
-                    onClick={() => patch({ focus: state.focus === hub.id ? undefined : hub.id, selected: hub.id })}
+                    className="graph-button"
+                    aria-pressed={(state.tags ?? []).includes(tag)}
+                    onClick={() => toggleTag(tag)}
                   >
-                    {hub.title}
+                    {tag}
                   </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="graph-control">
-            <label>Types</label>
-            <div className="graph-button-row">
-              {writingConfig.entryTypes.map((type) => (
+            <div className="graph-control">
+              <label>Focus</label>
+              <div className="graph-seg">
                 <button
-                  key={type}
                   type="button"
-                  className="graph-button"
-                  aria-pressed={(state.types ?? []).includes(type)}
-                  onClick={() => toggleType(type)}
+                  aria-pressed={state.focusMode === "dim"}
+                  onClick={() => patch({ focusMode: "dim" })}
                 >
-                  {type}
+                  Dim
                 </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="graph-control">
-            <label>Tags</label>
-            <div className="graph-button-row">
-              {tags.slice(0, 12).map((tag) => (
                 <button
-                  key={tag}
                   type="button"
-                  className="graph-button"
-                  aria-pressed={(state.tags ?? []).includes(tag)}
-                  onClick={() => toggleTag(tag)}
+                  aria-pressed={state.focusMode === "filter"}
+                  onClick={() => patch({ focusMode: "filter" })}
                 >
-                  {tag}
+                  Filter
                 </button>
-              ))}
+              </div>
+            </div>
+
+            <div className="graph-control">
+              <label>Depth</label>
+              <div className="graph-seg">
+                <button
+                  type="button"
+                  aria-pressed={state.depth === 1}
+                  onClick={() => patch({ depth: 1 })}
+                >
+                  1
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={state.depth === 2}
+                  onClick={() => patch({ depth: 2 })}
+                >
+                  2
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          <div className="graph-panel graph-panel--center">
+            <div className="graph-canvas-bar">
+              <div className="graph-crumbs">
+                <span className="crumb">All writing</span>
+                {focusNode && (
+                  <>
+                    <span className="crumb-sep">›</span>
+                    <span className="crumb crumb--active">{focusNode.title}</span>
+                    <button
+                      type="button"
+                      aria-label="Clear focus"
+                      onClick={() => patch({ focus: undefined })}
+                    >
+                      ×
+                    </button>
+                  </>
+                )}
+                <span className="graph-view-bar__count" style={{ marginLeft: 12 }}>
+                  {visibleGraph.nodes.length} entries
+                </span>
+              </div>
+              {ViewSwitcher}
+            </div>
+            <div className="graph-canvas">
+              <GraphCanvas
+                graph={visibleGraph}
+                height={620}
+                selected={state.selected}
+                highlighted={focusIds}
+                dimUnhighlighted={state.focusMode === "dim"}
+                onSelect={(id) => patch({ selected: id })}
+              />
+              <div className="graph-legend" aria-hidden="true">
+                {(["hub", "paper", "note", "teaching", "project"] as const).map((type) => (
+                  <span key={type}>
+                    <span
+                      className="dot"
+                      style={{ background: graphConfig.nodeTypes[type].color as string }}
+                    />
+                    {type}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="graph-control">
-            <label>Focus</label>
-            <div className="graph-button-row">
-              <button
-                type="button"
-                className="graph-button"
-                aria-pressed={state.focusMode === "dim"}
-                onClick={() => patch({ focusMode: "dim" })}
-              >
-                Dim
-              </button>
-              <button
-                type="button"
-                className="graph-button"
-                aria-pressed={state.focusMode === "filter"}
-                onClick={() => patch({ focusMode: "filter" })}
-              >
-                Filter
-              </button>
-              <button
-                type="button"
-                className="graph-button"
-                aria-pressed={state.depth === 2}
-                onClick={() => patch({ depth: state.depth === 1 ? 2 : 1 })}
-              >
-                Depth {state.depth}
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        <div className="graph-panel">
-          <GraphCanvas
-            graph={visibleGraph}
-            height={660}
-            selected={state.selected}
-            highlighted={focusIds}
-            dimUnhighlighted={state.focusMode === "dim"}
-            onSelect={(id) => patch({ selected: id })}
-          />
+          <aside className="graph-panel graph-panel--right preview-pane">
+            {selected ? <Preview node={selected} graph={graph} /> : <p className="muted">Select a node.</p>}
+          </aside>
         </div>
-
-        <aside className="graph-panel graph-panel--right preview-pane">
-          {selected ? <Preview node={selected} graph={graph} /> : <p className="muted">Select a node.</p>}
-        </aside>
-      </div>
+      ) : (
+        <>
+          <div className="graph-view-bar">
+            <div className="graph-view-bar__left">
+              <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>Writing</span>
+              <span className="graph-view-bar__count">{filteredEntries.length} entries</span>
+            </div>
+            <div className="graph-view-bar__right">
+              <input
+                className="graph-input"
+                style={{ width: 240 }}
+                value={state.query ?? ""}
+                onChange={(event) => patch({ query: event.target.value || undefined })}
+                placeholder="Search…"
+              />
+              {ViewSwitcher}
+            </div>
+          </div>
+          {view === "topics" ? (
+            <TopicsView graph={graph} entries={filteredEntries} />
+          ) : (
+            <ListView entries={filteredEntries} />
+          )}
+        </>
+      )}
     </section>
+  );
+}
+
+function TopicsView({ graph, entries }: { graph: GraphIndex; entries: EntryNode[] }) {
+  const entryIds = new Set(entries.map((entry) => entry.id));
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
+  return (
+    <div className="topicspage">
+      <div className="topicspage-body">
+        {graph.hubs.map((hub) => {
+          const linkedIds = [
+            ...new Set([...(graph.backlinks[hub.id] ?? []), ...(graph.outgoing[hub.id] ?? [])])
+          ].filter((id) => id !== hub.id && entryIds.has(id));
+          const linked = linkedIds
+            .map((id) => nodeById.get(id))
+            .filter((node): node is EntryNode => Boolean(node) && node!.type !== "hub")
+            .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+          const byType: Record<string, EntryNode[]> = {};
+          for (const item of linked) {
+            (byType[item.type] = byType[item.type] ?? []).push(item);
+          }
+          return (
+            <section className="hubsec" key={hub.id}>
+              <div className="hubsec-head">
+                <div className="hubsec-icon" aria-hidden="true">
+                  <span style={{ background: graphConfig.nodeTypes.hub.color as string }} />
+                </div>
+                <div>
+                  <a className="hubsec-title" href={hub.url}>
+                    {hub.title}
+                  </a>
+                  {hub.summary && <div className="hubsec-summary">{hub.summary}</div>}
+                </div>
+                <div className="hubsec-meta">
+                  <span className="hubsec-count">{linked.length} linked</span>
+                  <a className="cta cta--small" href={hub.url}>
+                    Open hub →
+                  </a>
+                </div>
+              </div>
+              {TYPE_ORDER.filter((tp) => byType[tp]).map((tp) => (
+                <div className="hubsec-grouprow" key={tp}>
+                  <div className="hubsec-grouplabel">
+                    <span
+                      className="swatch"
+                      style={{
+                        background: graphConfig.nodeTypes[tp].color as string
+                      }}
+                    />
+                    {tp}
+                    <span className="hubsec-groupcount">{byType[tp].length}</span>
+                  </div>
+                  <ul className="hubsec-list">
+                    {byType[tp].map((entry) => (
+                      <li key={entry.id} className="hubsec-item">
+                        <a className="hubsec-itemtitle" href={entry.url}>
+                          {entry.title}
+                        </a>
+                        <div className="hubsec-itemmeta">
+                          {entry.date && <span>{entry.date}</span>}
+                        </div>
+                        {entry.summary && <div className="hubsec-itemsum">{entry.summary}</div>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ListView({ entries }: { entries: EntryNode[] }) {
+  const sorted = [...entries].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+  return (
+    <div className="listpage">
+      <div className="listpage-table">
+        <div className="listrow listrow--head">
+          <span className="lc lc-type">Type</span>
+          <span className="lc lc-title">Title</span>
+          <span className="lc lc-tags">Tags</span>
+          <span className="lc lc-date">Date ↓</span>
+        </div>
+        {sorted.map((entry) => (
+          <a key={entry.id} className="listrow" href={entry.url}>
+            <span className="lc lc-type">
+              <span
+                className="swatch"
+                style={{
+                  background: (graphConfig.nodeTypes[entry.type as keyof typeof graphConfig.nodeTypes]
+                    ?.color ?? "var(--color-muted)") as string
+                }}
+              />
+              <span className="lc-typelabel">{entry.type}</span>
+            </span>
+            <span className="lc lc-title">
+              <span className="lc-titletext">{entry.title}</span>
+              {entry.summary && <span className="lc-summary">{entry.summary}</span>}
+            </span>
+            <span className="lc lc-tags">
+              {entry.tags.slice(0, 3).map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </span>
+            <span className="lc lc-date">{entry.date ?? ""}</span>
+          </a>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -187,23 +416,64 @@ function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
   const byId = new Map(graph.nodes.map((item) => [item.id, item]));
   return (
     <>
-      <p className="entry-meta">{node.type}</p>
+      <div className="preview-header">
+        <span className={`pill pill--${node.type}`}>{node.type}</span>
+        {node.date && <span className="preview-date">{node.date}</span>}
+      </div>
       <h2>{node.title}</h2>
-      {node.summary && <p>{node.summary}</p>}
-      <div className="tag-list">{node.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-      <p>
-        <a className="button button--primary" href={node.url}>
-          Open Entry
-        </a>
-      </p>
-      <div className="sidebar-section">
-        <h2>Outgoing</h2>
-        <ul>{outgoing.map((id) => <li key={id}>{byId.get(id)?.title ?? id}</li>)}</ul>
-      </div>
-      <div className="sidebar-section">
-        <h2>Backlinks</h2>
-        <ul>{backlinks.map((id) => <li key={id}>{byId.get(id)?.title ?? id}</li>)}</ul>
-      </div>
+      {node.summary && <p className="preview-summary">{node.summary}</p>}
+      {node.tags.length > 0 && (
+        <div className="tag-list">
+          {node.tags.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </div>
+      )}
+      <a className="open-btn" href={node.url}>
+        Open entry →
+      </a>
+      {outgoing.length > 0 && (
+        <div className="sidebar-section">
+          <h2>Outgoing</h2>
+          <ul>
+            {outgoing.map((id) => {
+              const item = byId.get(id);
+              return (
+                <li key={id}>
+                  {item ? (
+                    <a href={item.url} style={{ color: "inherit", textDecoration: "none" }}>
+                      {item.title}
+                    </a>
+                  ) : (
+                    id
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      {backlinks.length > 0 && (
+        <div className="sidebar-section">
+          <h2>Backlinks</h2>
+          <ul>
+            {backlinks.map((id) => {
+              const item = byId.get(id);
+              return (
+                <li key={id}>
+                  {item ? (
+                    <a href={item.url} style={{ color: "inherit", textDecoration: "none" }}>
+                      {item.title}
+                    </a>
+                  ) : (
+                    id
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </>
   );
 }
@@ -211,8 +481,9 @@ function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
 function readStateFromUrl(): WritingBrowserState {
   if (typeof window === "undefined") return defaultState;
   const params = new URLSearchParams(window.location.search);
+  const view = params.get("view") as View | null;
   return {
-    view: (params.get("view") as WritingBrowserState["view"]) || defaultState.view,
+    view: view && VIEWS.includes(view) ? view : defaultState.view,
     focus: params.get("focus") || undefined,
     selected: params.get("selected") || undefined,
     query: params.get("q") || undefined,
