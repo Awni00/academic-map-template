@@ -3,6 +3,7 @@ import Aside from "../components/article/Aside.astro";
 import BibtexBlock from "../components/article/BibtexBlock.astro";
 import Callout from "../components/article/Callout.astro";
 import Comparison from "../components/article/Comparison";
+import EntryFooter from "../components/article/EntryFooter.astro";
 import Figure from "../components/article/Figure.astro";
 import MathBlock from "../components/article/MathBlock.astro";
 import ModelViewer from "../components/article/ModelViewer.astro";
@@ -16,6 +17,7 @@ import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraph from "../components/graph/LocalGraph";
 import { writingConfig } from "../config/writing";
 import { entryToRecord } from "../lib/graph/resolveLinks";
+import { hasSlot, resolvePlacement } from "../lib/article/placement";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
 
@@ -35,17 +37,43 @@ const layout =
     ? "narrow"
     : writingConfig.entryLayout.articleLayout.byType[entry.data.type] ??
       writingConfig.entryLayout.articleLayout.default;
-const showSidebar = entry.data.layout?.sidebar ?? writingConfig.entryLayout.sidebar.byType[entry.data.type];
-const showLocalGraph =
-  (entry.data.layout?.localGraph ?? writingConfig.entryLayout.localGraph.byType[entry.data.type]) &&
-  writingConfig.entryLayout.localGraph.enabled;
-// In narrow mode without a sidebar, render the nav sections in a foot strip
-// below the article body instead.
-const showFoot = layout === "narrow" && !showSidebar;
+const placement = resolvePlacement(entry);
 const outgoing = graph.outgoing[node.id] ?? [];
-const backlinks = graph.backlinks[node.id] ?? [];
-const related = [...new Set([...outgoing, ...backlinks])].slice(0, 6);
+const backlinkIds = graph.backlinks[node.id] ?? [];
+const relatedIds = [...new Set([...outgoing, ...backlinkIds])].slice(0, 6);
+const toLinkedItem = (id: string) => {
+  const item = byId.get(id);
+  return item ? { id, title: item.title, url: item.url } : null;
+};
+const backlinks = backlinkIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const external = Object.entries(entry.data.external ?? {}).filter(([, href]) => Boolean(href));
+
+// What goes where, derived once from the resolved placement.
+const tocInSidebar = placement.toc.where === "sidebar";
+const backlinksInSidebar = placement.backlinks.where === "sidebar";
+const relatedInSidebar = placement.related.where === "sidebar";
+const localGraphInHeader = placement.localGraph.where === "header";
+const localGraphInFooter = placement.localGraph.where === "footer";
+const backlinksInFooter = placement.backlinks.where === "footer";
+const relatedInFooter = placement.related.where === "footer";
+
+const sidebarHasContent =
+  hasSlot(placement, "sidebar") &&
+  ((tocInSidebar && headings.length > 0) ||
+    (backlinksInSidebar && backlinks.length > 0) ||
+    (relatedInSidebar && related.length > 0));
+
+// Legacy: the narrow layout used to render a foot strip carrying every
+// section. Preserve that behaviour by force-foot when the resolved
+// placement has nothing in the sidebar AND we're in the narrow variant.
+const isNarrowFallback = layout === "narrow" && !sidebarHasContent;
+const renderFooter =
+  localGraphInFooter ||
+  backlinksInFooter ||
+  relatedInFooter ||
+  (isNarrowFallback && headings.length > 0);
+
 const components = {
   Aside,
   BibtexBlock,
@@ -65,7 +93,13 @@ const components = {
 
 <BaseLayout title={node.title} description={node.summary} theme={entry.data.theme}>
   <article class="writing-shell">
-    <div class="article-grid" data-layout={layout} data-has-foot={showFoot ? "true" : undefined}>
+    <div
+      class="article-grid"
+      data-layout={layout}
+      data-has-sidebar={sidebarHasContent ? "true" : "false"}
+      data-toc-style={tocInSidebar ? placement.toc.style : undefined}
+      data-has-foot={renderFooter ? "true" : undefined}
+    >
       <main class="article-main">
         <header class="article-header">
           <h1>{node.title}</h1>
@@ -82,121 +116,59 @@ const components = {
               </div>
             )
           }
+          {
+            localGraphInHeader && (
+              <div class="article-header__graph">
+                <LocalGraph client:load graph={graph} currentId={node.id} />
+              </div>
+            )
+          }
         </header>
         <div class="article-content">
           <Content components={components} />
         </div>
       </main>
       {
-        showSidebar && (
+        sidebarHasContent && (
           <aside class="article-sidebar" aria-label="Article sidebar">
-            <section class="sidebar-section">
-              <h2>On This Page</h2>
-              <TableOfContents headings={headings} />
-            </section>
-            {
-              showLocalGraph && (
-                <section class="sidebar-section">
-                  <h2>Local Graph</h2>
-                  <LocalGraph client:load graph={graph} currentId={node.id} />
-                </section>
-              )
-            }
-            <section class="sidebar-section">
-              <h2>Backlinks</h2>
-              <ul>
-                {
-                  backlinks.length
-                    ? backlinks.map((id) => {
-                        const item = byId.get(id);
-                        return item && <li><a href={item.url}>{item.title}</a></li>;
-                      })
-                    : <li>No backlinks yet.</li>
-                }
-              </ul>
-            </section>
-            <section class="sidebar-section">
-              <h2>Related</h2>
-              <ul>
-                {
-                  related.length
-                    ? related.map((id) => {
-                        const item = byId.get(id);
-                        return item && <li><a href={item.url}>{item.title}</a></li>;
-                      })
-                    : <li>No related entries yet.</li>
-                }
-              </ul>
-            </section>
+            {tocInSidebar && headings.length > 0 && (
+              <section class="sidebar-section sidebar-section--toc" data-toc-style={placement.toc.style}>
+                <h2>On This Page</h2>
+                <TableOfContents client:load headings={headings} variant={placement.toc.style} />
+              </section>
+            )}
+            {backlinksInSidebar && backlinks.length > 0 && (
+              <section class="sidebar-section">
+                <h2>Backlinks</h2>
+                <ul>
+                  {backlinks.map((item) => (
+                    <li><a href={item.url}>{item.title}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {relatedInSidebar && related.length > 0 && (
+              <section class="sidebar-section">
+                <h2>Related</h2>
+                <ul>
+                  {related.map((item) => (
+                    <li><a href={item.url}>{item.title}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </aside>
         )
       }
     </div>
-    {
-      showFoot && (
-        <section class="entry-foot" aria-label="Entry navigation">
-          {headings.length > 0 && (
-            <div class="entry-foot-section">
-              <div class="entry-foot-label">On this page</div>
-              <div class="entry-foot-content">
-                <ul>
-                  {headings
-                    .filter((h) => h.depth === 2 || h.depth === 3)
-                    .map((h) => (
-                      <li>
-                        <a href={`#${h.slug}`}>{h.text}</a>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </div>
-          )}
-          {showLocalGraph && (
-            <div class="entry-foot-section">
-              <div class="entry-foot-label">Local graph</div>
-              <div class="entry-foot-content">
-                <div class="entry-foot-graph">
-                  <LocalGraph client:load graph={graph} currentId={node.id} />
-                </div>
-              </div>
-            </div>
-          )}
-          {backlinks.length > 0 && (
-            <div class="entry-foot-section">
-              <div class="entry-foot-label">Backlinks</div>
-              <div class="entry-foot-content">
-                <ul>
-                  {backlinks.map((id) => {
-                    const item = byId.get(id);
-                    return item ? (
-                      <li>
-                        <a href={item.url}>{item.title}</a>
-                      </li>
-                    ) : null;
-                  })}
-                </ul>
-              </div>
-            </div>
-          )}
-          {related.length > 0 && (
-            <div class="entry-foot-section">
-              <div class="entry-foot-label">Related</div>
-              <div class="entry-foot-content">
-                <ul>
-                  {related.map((id) => {
-                    const item = byId.get(id);
-                    return item ? (
-                      <li>
-                        <a href={item.url}>{item.title}</a>
-                      </li>
-                    ) : null;
-                  })}
-                </ul>
-              </div>
-            </div>
-          )}
-        </section>
-      )
-    }
+    <EntryFooter
+      graph={graph}
+      currentId={node.id}
+      headings={headings}
+      tocInFoot={isNarrowFallback}
+      showLocalGraph={localGraphInFooter}
+      backlinks={backlinksInFooter ? backlinks : []}
+      related={relatedInFooter ? related : []}
+    />
   </article>
 </BaseLayout>

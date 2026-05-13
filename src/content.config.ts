@@ -44,9 +44,31 @@ const writing = defineCollection({
     external: externalLinks,
     layout: z
       .object({
+        // Legacy boolean flags (kept for backwards compatibility).
         sidebar: z.boolean().optional(),
         localGraph: z.boolean().optional(),
-        toc: z.boolean().optional()
+        toc: z.boolean().optional(),
+        // Structured placement overrides — partial; fields you omit fall
+        // through to the type-level or global default.
+        placement: z
+          .object({
+            toc: z
+              .object({
+                where: z.enum(["sidebar", "none"]).optional(),
+                style: z.enum(["strip", "text"]).optional()
+              })
+              .optional(),
+            localGraph: z
+              .object({ where: z.enum(["header", "footer", "none"]).optional() })
+              .optional(),
+            backlinks: z
+              .object({ where: z.enum(["footer", "sidebar", "none"]).optional() })
+              .optional(),
+            related: z
+              .object({ where: z.enum(["footer", "sidebar", "none"]).optional() })
+              .optional()
+          })
+          .optional()
       })
       .optional()
   })

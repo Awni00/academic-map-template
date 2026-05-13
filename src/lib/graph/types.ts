@@ -99,6 +99,12 @@ export type WritingEntryLike = {
       sidebar?: boolean;
       localGraph?: boolean;
       toc?: boolean;
+      placement?: {
+        toc?: { where?: "sidebar" | "none"; style?: "strip" | "text" };
+        localGraph?: { where?: "header" | "footer" | "none" };
+        backlinks?: { where?: "footer" | "sidebar" | "none" };
+        related?: { where?: "footer" | "sidebar" | "none" };
+      };
     };
   };
 };

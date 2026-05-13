@@ -1,0 +1,94 @@
+---
+import LocalGraph from "../graph/LocalGraph";
+import type { GraphIndex } from "../../lib/graph/types";
+
+type Heading = { depth: number; slug: string; text: string };
+type LinkedItem = { id: string; title: string; url: string };
+
+type Props = {
+  graph: GraphIndex;
+  currentId: string;
+  /** TOC headings; rendered only if `tocInFoot` is true. */
+  headings?: Heading[];
+  tocInFoot?: boolean;
+  showLocalGraph?: boolean;
+  backlinks?: LinkedItem[];
+  related?: LinkedItem[];
+};
+
+const {
+  graph,
+  currentId,
+  headings = [],
+  tocInFoot = false,
+  showLocalGraph = false,
+  backlinks = [],
+  related = []
+} = Astro.props;
+
+const tocHeadings = tocInFoot ? headings.filter((h) => h.depth === 2 || h.depth === 3) : [];
+const hasAny =
+  (tocInFoot && tocHeadings.length > 0) ||
+  showLocalGraph ||
+  backlinks.length > 0 ||
+  related.length > 0;
+---
+
+{
+  hasAny && (
+    <section class="entry-foot" aria-label="Entry navigation">
+      {tocInFoot && tocHeadings.length > 0 && (
+        <div class="entry-foot-section">
+          <div class="entry-foot-label">On this page</div>
+          <div class="entry-foot-content">
+            <ul>
+              {tocHeadings.map((h) => (
+                <li>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      {showLocalGraph && (
+        <div class="entry-foot-section">
+          <div class="entry-foot-label">Local graph</div>
+          <div class="entry-foot-content">
+            <div class="entry-foot-graph">
+              <LocalGraph client:load graph={graph} currentId={currentId} />
+            </div>
+          </div>
+        </div>
+      )}
+      {backlinks.length > 0 && (
+        <div class="entry-foot-section">
+          <div class="entry-foot-label">Backlinks</div>
+          <div class="entry-foot-content">
+            <ul>
+              {backlinks.map((item) => (
+                <li>
+                  <a href={item.url}>{item.title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      {related.length > 0 && (
+        <div class="entry-foot-section">
+          <div class="entry-foot-label">Related</div>
+          <div class="entry-foot-content">
+            <ul>
+              {related.map((item) => (
+                <li>
+                  <a href={item.url}>{item.title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
