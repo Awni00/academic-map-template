@@ -168,12 +168,15 @@ export default function GraphCanvas({
     // all sit comfortably inside the viewport. Without this the initial
     // auto-fit can clip nodes that the simulation flung outward early on.
     const timer = window.setTimeout(() => {
-      // 80px padding leaves room for the longest hub label without clipping
-      // and matches the legend / canvas-bar gutters.
-      fg.zoomToFit?.(400, 80);
+      // Scale padding to the canvas size so the small per-entry LocalGraph
+      // (~190px tall) doesn't end up with most of its height eaten by
+      // gutters, while the large main map (~620px) still leaves room for
+      // hub labels at its edges.
+      const padding = Math.max(12, Math.min(80, Math.round(height * 0.08)));
+      fg.zoomToFit?.(400, padding);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, [ForceGraph, graphData]);
+  }, [ForceGraph, graphData, height]);
 
   return (
     <div
