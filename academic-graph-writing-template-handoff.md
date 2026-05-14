@@ -1155,7 +1155,7 @@ definition
 ### 15.2 `Theorem`
 
 ```mdx
-<Theorem title="Generalization bound" label="thm:generalization">
+<Theorem label="Theorem" title="Generalization bound" id="thm:generalization">
 Let \(\mathcal{F}\) be ...
 </Theorem>
 ```

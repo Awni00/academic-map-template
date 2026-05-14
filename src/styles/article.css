@@ -489,7 +489,7 @@
   color: var(--color-muted);
 }
 
-/* ── Theorem / Definition (variants controlled by [data-theorem]) ───── */
+/* ── Theorem boxes ──────────────────────────────────────────────────── */
 
 .theorem,
 .proof,
@@ -498,239 +498,42 @@
   margin: 28px 0;
 }
 
+.theorem {
+  border-left: 3px solid var(--color-border);
+  padding: 4px 0 4px 20px;
+}
+
 .theorem-head {
   font-family: var(--font-ui);
   font-size: 13px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.theorem-name {
+.theorem-label {
   font-weight: 700;
-  color: var(--color-accent);
-  letter-spacing: 0.01em;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .theorem-title {
-  color: var(--color-accent);
-  font-weight: 500;
+  color: var(--color-muted);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .theorem-body {
   font-size: 16.5px;
   line-height: 1.6;
-  color: var(--color-fg-soft);
-  font-style: italic;
+  color: var(--color-fg);
+  font-style: normal;
 }
 
 .theorem-body .display-math,
 .theorem-body .katex-display {
   font-style: italic;
-}
-
-/* Definition modifier — neutral label, upright body */
-.theorem--def .theorem-name { color: var(--color-fg); }
-.theorem--def .theorem-title { color: var(--color-muted); font-weight: 400; font-style: italic; }
-.theorem--def .theorem-body { font-style: normal; color: var(--color-fg); }
-.theorem--def .theorem-body .display-math,
-.theorem--def .theorem-body .katex-display { font-style: italic; }
-
-/* — Variant: rule (default) — hairlines top + bottom, small-caps mono label — */
-[data-theorem="rule"] .theorem,
-:root:not([data-theorem]) .theorem {
-  border-top: 1px solid var(--color-fg);
-  border-bottom: 1px solid var(--color-rule);
-  padding: 14px 0 16px;
-}
-
-[data-theorem="rule"] .theorem--def,
-:root:not([data-theorem]) .theorem--def {
-  border-top-color: var(--color-rule);
-}
-
-[data-theorem="rule"] .theorem-head,
-:root:not([data-theorem]) .theorem-head {
-  margin-bottom: 6px;
-}
-
-[data-theorem="rule"] .theorem-name,
-:root:not([data-theorem]) .theorem-name {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--color-fg);
-}
-
-[data-theorem="rule"] .theorem--def .theorem-name,
-:root:not([data-theorem]) .theorem--def .theorem-name {
-  color: var(--color-muted);
-}
-
-[data-theorem="rule"] .theorem-title,
-:root:not([data-theorem]) .theorem-title {
-  color: var(--color-muted);
-  font-style: italic;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 400;
-}
-
-[data-theorem="rule"] .theorem-body,
-:root:not([data-theorem]) .theorem-body {
-  color: var(--color-fg);
-  font-style: italic;
-  font-size: 17px;
-}
-
-[data-theorem="rule"] .theorem--def .theorem-body,
-:root:not([data-theorem]) .theorem--def .theorem-body {
-  font-style: normal;
-}
-
-/* — Variant: slab — accent left-bar, label inline — */
-[data-theorem="slab"] .theorem {
-  border-left: 3px solid var(--color-accent);
-  padding: 4px 0 4px 20px;
-}
-
-[data-theorem="slab"] .theorem--def {
-  border-left-color: var(--color-border);
-}
-
-[data-theorem="slab"] .theorem-head {
-  margin-bottom: 4px;
-}
-
-[data-theorem="slab"] .theorem-name {
-  color: var(--color-fg);
-}
-
-[data-theorem="slab"] .theorem--def .theorem-name {
-  color: var(--color-muted);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-[data-theorem="slab"] .theorem-title {
-  color: var(--color-muted);
-  font-weight: 400;
-  font-style: italic;
-}
-
-[data-theorem="slab"] .theorem-body {
-  color: var(--color-fg);
-  font-style: italic;
-}
-
-[data-theorem="slab"] .theorem--def .theorem-body {
-  font-style: normal;
-}
-
-/* — Variant: tag — accent-filled flag hangs from a top hairline rule — */
-[data-theorem="tag"] .theorem {
-  border-top: 1px solid var(--color-rule);
-  padding: 0 0 4px;
-  margin-top: 36px;
-}
-
-[data-theorem="tag"] .theorem-head {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  background: var(--color-accent);
-  color: #fff;
-  padding: 5px 10px 6px;
-  margin: 0 0 14px;
-  border-radius: 0 0 3px 3px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-[data-theorem="tag"] .theorem--def .theorem-head {
-  background: var(--color-fg);
-  color: var(--color-bg);
-}
-
-[data-theorem="tag"] .theorem-name {
-  color: #fff;
-  font-weight: 700;
-}
-
-[data-theorem="tag"] .theorem-title {
-  color: rgb(255 255 255 / 0.78);
-  font-weight: 400;
-  font-family: var(--font-mono);
-  font-style: normal;
-  font-size: 10.5px;
-  text-transform: none;
-  letter-spacing: 0.02em;
-}
-
-[data-theorem="tag"] .theorem-body {
-  color: var(--color-fg);
-  font-style: italic;
-  font-size: 16.5px;
-}
-
-[data-theorem="tag"] .theorem--def .theorem-body {
-  font-style: normal;
-}
-
-/* — Variant: caps — minimal Knuth-style run-in label, no chrome — */
-[data-theorem="caps"] .theorem {
-  padding: 0;
-  border: 0;
-}
-
-[data-theorem="caps"] .theorem-head {
-  display: inline;
-  margin: 0;
-  font-family: var(--font-body);
-}
-
-[data-theorem="caps"] .theorem-name {
-  font-family: var(--font-body);
-  font-size: 16.5px;
-  font-weight: 700;
-  font-variant: small-caps;
-  letter-spacing: 0.02em;
-  color: var(--color-fg);
-  text-transform: none;
-}
-
-[data-theorem="caps"] .theorem-title {
-  font-family: var(--font-body);
-  font-size: 16.5px;
-  font-weight: 400;
-  color: var(--color-fg);
-  font-style: normal;
-}
-
-[data-theorem="caps"] .theorem-body {
-  display: inline;
-  font-size: 16.5px;
-  color: var(--color-fg);
-  font-style: italic;
-}
-
-[data-theorem="caps"] .theorem--def .theorem-body {
-  font-style: normal;
-}
-
-[data-theorem="caps"] .theorem-head::after {
-  content: ". ";
-}
-
-[data-theorem="caps"] .theorem-body .display-math,
-[data-theorem="caps"] .theorem-body .katex-display {
-  display: block;
-  font-style: italic;
-  margin: 10px 0 0;
 }
 
 /* Proof */

@@ -39,7 +39,7 @@ For squared loss, expected test error splits cleanly into three independent piec
 
 We fix a data-generating distribution $\mathcal{D}$ over $(X, Y) \in \mathcal{X} \times \mathbb{R}$, with conditional mean $f^\star(x) = \mathbb{E}[Y \mid X = x]$ and noise variance $\sigma^2(x) = \mathrm{Var}(Y \mid X = x)$. A *learner* is a function $\hat f$ produced from a training set $S \sim \mathcal{D}^n$; the randomness in $\hat f$ comes from $S$.
 
-<Theorem kind="definition" name="Definition (point-wise risk)" label="def:risk">
+<Theorem label="Definition" title="point-wise risk" id="def:risk">
 The point-wise expected squared loss at a query $x_0$ is
 $$
 R(x_0) \;=\; \mathbb{E}_{S,\, Y_0}\Big[\,(\,\hat f_S(x_0) - Y_0\,)^2 \,\Big],
@@ -58,7 +58,7 @@ The three terms are *additive* and *non-negative*. The first depends only on the
 
 ## The decomposition
 
-<Theorem name="Theorem 1" title="Bias–variance decomposition" label="thm:bv">
+<Theorem label="Theorem 1" title="Bias–variance decomposition" id="thm:bv">
 For any learning rule whose output $\hat f_S$ has finite second moment at $x_0$,
 $$
 R(x_0) \;=\; \big(\bar f(x_0) - f^\star(x_0)\big)^2 \;+\; \mathrm{Var}_S\!\big[\hat f_S(x_0)\big] \;+\; \sigma^2(x_0).

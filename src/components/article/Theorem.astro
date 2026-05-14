@@ -1,23 +1,20 @@
 ---
 type Props = {
-  /** Display name, e.g. "Theorem 1" or "Definition". Defaults to "Theorem". */
-  name?: string;
-  /** Optional descriptive title shown in parentheses next to the name. */
+  /** Visible environment label, e.g. "Theorem 1" or "Definition". Defaults to "Theorem". */
+  label?: string;
+  /** Optional descriptive title shown in parentheses next to the label. */
   title?: string;
   /** Anchor id for in-document links. */
-  label?: string;
-  /** Switches to "definition" presentation (neutral label, upright body). */
-  kind?: "theorem" | "definition";
+  id?: string;
 };
 
-const { name, title, label, kind = "theorem" } = Astro.props;
-const displayName = name ?? (kind === "definition" ? "Definition" : "Theorem");
-const classes = ["theorem", kind === "definition" && "theorem--def"].filter(Boolean).join(" ");
+const { label, title, id } = Astro.props;
+const displayLabel = label ?? "Theorem";
 ---
 
-<section class={classes} id={label}>
+<section class="theorem" id={id}>
   <div class="theorem-head">
-    <span class="theorem-name">{displayName}</span>
+    <span class="theorem-label">{displayLabel}</span>
     {title && <span class="theorem-title">({title})</span>}
   </div>
   <div class="theorem-body">

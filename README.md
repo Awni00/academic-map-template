@@ -221,7 +221,7 @@ Example:
 The graph should represent intentional conceptual links, not every hyperlink.
 </Callout>
 
-<Theorem title="Generalization bound" label="thm:generalization">
+<Theorem label="Theorem" title="Generalization bound" id="thm:generalization">
 Let $f$ be a predictor.
 </Theorem>
 ```
