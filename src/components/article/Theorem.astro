@@ -6,13 +6,22 @@ type Props = {
   title?: string;
   /** Anchor id for in-document links. */
   id?: string;
+  /** Accent color for the label, title, and left border. Accepts token names or any CSS color. */
+  accent?: string;
 };
 
-const { label, title, id } = Astro.props;
+const { label, title, id, accent } = Astro.props;
 const displayLabel = label ?? "Theorem";
+const accentTokens: Record<string, string> = {
+  accent: "var(--color-accent)",
+  fg: "var(--color-fg)",
+  muted: "var(--color-muted)"
+};
+const resolvedAccent = accent ? (accentTokens[accent] ?? accent) : undefined;
+const accentStyle = resolvedAccent ? `--theorem-accent: ${resolvedAccent};` : undefined;
 ---
 
-<section class="theorem" id={id}>
+<section class="theorem" id={id} style={accentStyle}>
   <div class="theorem-head">
     <span class="theorem-label">{displayLabel}</span>
     {title && <span class="theorem-title">({title})</span>}

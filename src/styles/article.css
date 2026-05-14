@@ -499,7 +499,8 @@
 }
 
 .theorem {
-  border-left: 3px solid var(--color-border);
+  --theorem-accent: var(--color-muted);
+  border-left: 3px solid var(--theorem-accent);
   padding: 4px 0 4px 20px;
 }
 
@@ -511,7 +512,7 @@
 
 .theorem-label {
   font-weight: 700;
-  color: var(--color-muted);
+  color: var(--theorem-accent);
   font-family: var(--font-mono);
   font-size: 11px;
   text-transform: uppercase;
@@ -519,7 +520,7 @@
 }
 
 .theorem-title {
-  color: var(--color-muted);
+  color: var(--theorem-accent);
   font-weight: 400;
   font-style: italic;
 }
