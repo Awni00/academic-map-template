@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 type ComparisonProps = {
   leftLabel?: string;
   rightLabel?: string;
@@ -13,7 +11,6 @@ export default function Comparison({
   left,
   right
 }: ComparisonProps) {
-  const [showRight, setShowRight] = useState(true);
   return (
     <div className="comparison">
       <div className="comparison__panel">
@@ -22,10 +19,7 @@ export default function Comparison({
       </div>
       <div className="comparison__panel">
         <strong>{rightLabel}</strong>
-        <p>{showRight ? right : "Hidden"}</p>
-        <button type="button" className="button" onClick={() => setShowRight((value) => !value)}>
-          Toggle
-        </button>
+        <p>{right}</p>
       </div>
     </div>
   );
