@@ -8,6 +8,8 @@
 }
 
 html {
+  --site-header-height: 56px;
+  --sticky-header-clearance: 12px;
   color-scheme: light dark;
   background: var(--color-bg);
   color: var(--color-fg);
@@ -112,10 +114,10 @@ pre {
   max-width: var(--content-wide);
   margin-inline: auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 22px 0 18px;
+  padding: 14px 0 12px;
 }
 
 .site-brand {
@@ -1024,7 +1026,7 @@ pre {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-    padding: 14px 0;
+    padding: 10px 0;
   }
 
   .site-header__inner {

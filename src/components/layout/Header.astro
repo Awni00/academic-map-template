@@ -27,3 +27,25 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
     </nav>
   </div>
 </header>
+
+<script is:inline>
+  (() => {
+    const root = document.documentElement;
+    const header = document.querySelector(".site-header");
+    if (!header) return;
+
+    const updateHeaderHeight = () => {
+      root.style.setProperty("--site-header-height", `${header.getBoundingClientRect().height}px`);
+    };
+
+    updateHeaderHeight();
+
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(updateHeaderHeight);
+      observer.observe(header);
+      return;
+    }
+
+    window.addEventListener("resize", updateHeaderHeight, { passive: true });
+  })();
+</script>

@@ -407,10 +407,7 @@
 }
 
 .article-grid .article-sidebar {
-  /* Tighter top alignment so the strip's first dot lines up with the
-     first heading in the article body. The body's first heading sits a
-     little below the header's bottom border; this offset matches. */
-  top: 64px;
+  top: calc(var(--site-header-height, 56px) + var(--sticky-header-clearance, 12px));
   gap: 16px;
 }
 
