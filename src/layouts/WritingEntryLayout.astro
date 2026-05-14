@@ -15,9 +15,13 @@ import TwoColumns from "../components/article/TwoColumns.astro";
 import Video from "../components/article/Video.astro";
 import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraph from "../components/graph/LocalGraph";
-import { writingConfig } from "../config/writing";
 import { entryToRecord } from "../lib/graph/resolveLinks";
-import { hasSlot, resolvePlacement } from "../lib/article/placement";
+import {
+  effectiveAsides,
+  resolveArticleWidth,
+  resolveAsides,
+  resolvePlacement
+} from "../lib/article/placement";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
 
@@ -32,12 +36,12 @@ const { entry, graph, headings, Content } = Astro.props;
 const record = entryToRecord(entry);
 const node = record.node;
 const byId = new Map(graph.nodes.map((item) => [item.id, item]));
-const layout =
-  entry.data.layout?.sidebar === false
-    ? "narrow"
-    : writingConfig.entryLayout.articleLayout.byType[entry.data.type] ??
-      writingConfig.entryLayout.articleLayout.default;
+
+const articleWidth = resolveArticleWidth(entry);
 const placement = resolvePlacement(entry);
+const asidesRequested = resolveAsides(entry);
+const asidesEffective = effectiveAsides(asidesRequested, articleWidth, placement.toc.where);
+
 const outgoing = graph.outgoing[node.id] ?? [];
 const backlinkIds = graph.backlinks[node.id] ?? [];
 const relatedIds = [...new Set([...outgoing, ...backlinkIds])].slice(0, 6);
@@ -49,30 +53,27 @@ const backlinks = backlinkIds.map(toLinkedItem).filter(Boolean) as Array<{ id: s
 const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const external = Object.entries(entry.data.external ?? {}).filter(([, href]) => Boolean(href));
 
-// What goes where, derived once from the resolved placement.
-const tocInSidebar = placement.toc.where === "sidebar";
-const backlinksInSidebar = placement.backlinks.where === "sidebar";
-const relatedInSidebar = placement.related.where === "sidebar";
+// Slot derivation. The TOC lives in either the left or right grid
+// column; backlinks/related can also live there if explicitly placed.
+const tocSide: "left" | "right" | "none" =
+  placement.toc.where === "none" ? "none" : placement.toc.where;
+const backlinksSide = placement.backlinks.where;
+const relatedSide = placement.related.where;
 const localGraphInHeader = placement.localGraph.where === "header";
 const localGraphInFooter = placement.localGraph.where === "footer";
-const backlinksInFooter = placement.backlinks.where === "footer";
-const relatedInFooter = placement.related.where === "footer";
+const backlinksInFooter = backlinksSide === "footer";
+const relatedInFooter = relatedSide === "footer";
 
-const sidebarHasContent =
-  hasSlot(placement, "sidebar") &&
-  ((tocInSidebar && headings.length > 0) ||
-    (backlinksInSidebar && backlinks.length > 0) ||
-    (relatedInSidebar && related.length > 0));
+const sideHasContent = (side: "left" | "right"): boolean =>
+  (tocSide === side && headings.length > 0) ||
+  (backlinksSide === side && backlinks.length > 0) ||
+  (relatedSide === side && related.length > 0);
 
-// Legacy: the narrow layout used to render a foot strip carrying every
-// section. Preserve that behaviour by force-foot when the resolved
-// placement has nothing in the sidebar AND we're in the narrow variant.
-const isNarrowFallback = layout === "narrow" && !sidebarHasContent;
+const renderLeft = sideHasContent("left");
+const renderRight = sideHasContent("right");
+
 const renderFooter =
-  localGraphInFooter ||
-  backlinksInFooter ||
-  relatedInFooter ||
-  (isNarrowFallback && headings.length > 0);
+  localGraphInFooter || backlinksInFooter || relatedInFooter;
 
 const components = {
   Aside,
@@ -89,55 +90,61 @@ const components = {
   Video,
   YouTubeVideo
 };
+
+const renderSide = (side: "left" | "right") => ({
+  toc: tocSide === side && headings.length > 0,
+  backlinks: backlinksSide === side && backlinks.length > 0,
+  related: relatedSide === side && related.length > 0
+});
+const left = renderSide("left");
+const right = renderSide("right");
 ---
 
 <BaseLayout title={node.title} description={node.summary} theme={entry.data.theme}>
   <article class="writing-shell">
     <div
       class="article-grid"
-      data-layout={layout}
-      data-has-sidebar={sidebarHasContent ? "true" : "false"}
-      data-toc-style={tocInSidebar ? placement.toc.style : undefined}
+      data-width={articleWidth}
+      data-toc={tocSide}
+      data-asides={asidesEffective}
+      data-has-left={renderLeft ? "true" : "false"}
+      data-has-right={renderRight ? "true" : "false"}
       data-has-foot={renderFooter ? "true" : undefined}
     >
-      <main class="article-main">
-        <header class="article-header">
-          <h1>{node.title}</h1>
-          <div class="article-meta">
-            <span>{node.type}</span>
-            {node.date && <span>{node.date}</span>}
-            {node.tags.map((tag) => <span>{tag}</span>)}
-          </div>
-          {node.summary && <p class="article-summary">{node.summary}</p>}
-          {
-            external.length > 0 && (
-              <div class="article-external">
-                {external.map(([label, href]) => <a class="entry-chip" href={href as string}>{label}</a>)}
-              </div>
-            )
-          }
-          {
-            localGraphInHeader && (
-              <div class="article-header__graph">
-                <LocalGraph client:load graph={graph} currentId={node.id} />
-              </div>
-            )
-          }
-        </header>
-        <div class="article-content">
-          <Content components={components} />
+      <header class="article-header">
+        <h1>{node.title}</h1>
+        <div class="article-meta">
+          <span>{node.type}</span>
+          {node.date && <span>{node.date}</span>}
+          {node.tags.map((tag) => <span>{tag}</span>)}
         </div>
-      </main>
+        {node.summary && <p class="article-summary">{node.summary}</p>}
+        {
+          external.length > 0 && (
+            <div class="article-external">
+              {external.map(([label, href]) => <a class="entry-chip" href={href as string}>{label}</a>)}
+            </div>
+          )
+        }
+        {
+          localGraphInHeader && (
+            <div class="article-header__graph">
+              <LocalGraph client:load graph={graph} currentId={node.id} />
+            </div>
+          )
+        }
+      </header>
+
       {
-        sidebarHasContent && (
-          <aside class="article-sidebar" aria-label="Article sidebar">
-            {tocInSidebar && headings.length > 0 && (
-              <section class="sidebar-section sidebar-section--toc" data-toc-style={placement.toc.style}>
+        renderLeft && (
+          <aside class="article-sidebar article-sidebar--left" aria-label="Article sidebar (left)">
+            {left.toc && (
+              <section class="sidebar-section sidebar-section--toc">
                 <h2>On This Page</h2>
-                <TableOfContents client:load headings={headings} variant={placement.toc.style} />
+                <TableOfContents client:load headings={headings} />
               </section>
             )}
-            {backlinksInSidebar && backlinks.length > 0 && (
+            {left.backlinks && (
               <section class="sidebar-section">
                 <h2>Backlinks</h2>
                 <ul>
@@ -147,7 +154,46 @@ const components = {
                 </ul>
               </section>
             )}
-            {relatedInSidebar && related.length > 0 && (
+            {left.related && (
+              <section class="sidebar-section">
+                <h2>Related</h2>
+                <ul>
+                  {related.map((item) => (
+                    <li><a href={item.url}>{item.title}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </aside>
+        )
+      }
+
+      <main class="article-main">
+        <div class="article-content" data-asides={asidesEffective}>
+          <Content components={components} />
+        </div>
+      </main>
+
+      {
+        renderRight && (
+          <aside class="article-sidebar article-sidebar--right" aria-label="Article sidebar (right)">
+            {right.toc && (
+              <section class="sidebar-section sidebar-section--toc">
+                <h2>On This Page</h2>
+                <TableOfContents client:load headings={headings} />
+              </section>
+            )}
+            {right.backlinks && (
+              <section class="sidebar-section">
+                <h2>Backlinks</h2>
+                <ul>
+                  {backlinks.map((item) => (
+                    <li><a href={item.url}>{item.title}</a></li>
+                  ))}
+                </ul>
+              </section>
+            )}
+            {right.related && (
               <section class="sidebar-section">
                 <h2>Related</h2>
                 <ul>
@@ -165,7 +211,7 @@ const components = {
       graph={graph}
       currentId={node.id}
       headings={headings}
-      tocInFoot={isNarrowFallback}
+      tocInFoot={false}
       showLocalGraph={localGraphInFooter}
       backlinks={backlinksInFooter ? backlinks : []}
       related={relatedInFooter ? related : []}

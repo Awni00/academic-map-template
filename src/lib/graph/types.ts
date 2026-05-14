@@ -2,7 +2,7 @@ import type { EntryType } from "../../config/writing";
 
 export type { EntryType };
 
-export type ArticleLayout = "narrow" | "distill" | "wide";
+export type ArticleWidth = "reading" | "flex";
 
 export type EntryNode = {
   id: string;
@@ -96,14 +96,13 @@ export type WritingEntryLike = {
     theme?: "global" | "system" | "light" | "dark";
     external?: Record<string, string | undefined>;
     layout?: {
-      sidebar?: boolean;
-      localGraph?: boolean;
-      toc?: boolean;
+      width?: "reading" | "flex";
+      asides?: "margin" | "inline";
       placement?: {
-        toc?: { where?: "sidebar" | "none"; style?: "strip" | "text" };
+        toc?: { where?: "left" | "right" | "sidebar" | "none" };
         localGraph?: { where?: "header" | "footer" | "none" };
-        backlinks?: { where?: "footer" | "sidebar" | "none" };
-        related?: { where?: "footer" | "sidebar" | "none" };
+        backlinks?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
+        related?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
       };
     };
   };

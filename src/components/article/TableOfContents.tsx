@@ -8,55 +8,40 @@ type Heading = {
 
 type Props = {
   headings: Heading[];
-  /** "text" — classic ordered list. "strip" — vertical Distill rail. */
-  variant?: "text" | "strip";
 };
 
-export default function TableOfContents({ headings, variant = "text" }: Props) {
+/**
+ * Distill-style progress strip TOC. Renders one row per h2/h3 with a small
+ * leading dot and the heading text. The active row is highlighted via the
+ * left-border slab + accent text colour applied by `.article-sidebar .toc
+ * a[aria-current="true"]`. The dot stays neutral (deliberately not blue —
+ * see article.css notes) so it doesn't read as a highlighted first
+ * character of the heading.
+ */
+export default function TableOfContents({ headings }: Props) {
   const items = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
   const activeId = useScrollSpy(items.map((h) => h.slug));
 
   if (items.length === 0) return <p className="muted">No headings yet.</p>;
 
-  if (variant === "strip") {
-    return (
-      <ul className="toc toc--strip" aria-label="Table of contents">
-        {items.map((heading) => (
-          <li
-            key={heading.slug}
-            data-depth={heading.depth}
-            data-active={activeId === heading.slug ? "true" : undefined}
-          >
-            <a
-              href={`#${heading.slug}`}
-              aria-current={activeId === heading.slug ? "true" : undefined}
-            >
-              <span className="toc-dot" aria-hidden="true" />
-              <span className="toc-tip">{heading.text}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  // "text" variant
   return (
-    <ol className="toc toc--text">
+    <ul className="toc toc--strip" aria-label="Table of contents">
       {items.map((heading) => (
         <li
           key={heading.slug}
-          style={{ paddingLeft: `${Math.max(0, heading.depth - 2) * 0.75}rem` }}
+          data-depth={heading.depth}
+          data-active={activeId === heading.slug ? "true" : undefined}
         >
           <a
             href={`#${heading.slug}`}
             aria-current={activeId === heading.slug ? "true" : undefined}
           >
-            {heading.text}
+            <span className="toc-dot" aria-hidden="true" />
+            <span className="toc-tip">{heading.text}</span>
           </a>
         </li>
       ))}
-    </ol>
+    </ul>
   );
 }
 

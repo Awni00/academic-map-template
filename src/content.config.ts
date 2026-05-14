@@ -44,28 +44,27 @@ const writing = defineCollection({
     external: externalLinks,
     layout: z
       .object({
-        // Legacy boolean flags (kept for backwards compatibility).
-        sidebar: z.boolean().optional(),
-        localGraph: z.boolean().optional(),
-        toc: z.boolean().optional(),
+        // Override the article body width for this entry.
+        width: z.enum(["reading", "flex"]).optional(),
+        // Override aside placement: "margin" floats <Aside> blocks into
+        // the right gutter; "inline" renders them as left-bordered blocks.
+        asides: z.enum(["margin", "inline"]).optional(),
         // Structured placement overrides — partial; fields you omit fall
-        // through to the type-level or global default.
+        // through to the type-level or global default. Legacy "sidebar"
+        // value is accepted and silently mapped to "right".
         placement: z
           .object({
             toc: z
-              .object({
-                where: z.enum(["sidebar", "none"]).optional(),
-                style: z.enum(["strip", "text"]).optional()
-              })
+              .object({ where: z.enum(["left", "right", "sidebar", "none"]).optional() })
               .optional(),
             localGraph: z
               .object({ where: z.enum(["header", "footer", "none"]).optional() })
               .optional(),
             backlinks: z
-              .object({ where: z.enum(["footer", "sidebar", "none"]).optional() })
+              .object({ where: z.enum(["left", "right", "footer", "sidebar", "none"]).optional() })
               .optional(),
             related: z
-              .object({ where: z.enum(["footer", "sidebar", "none"]).optional() })
+              .object({ where: z.enum(["left", "right", "footer", "sidebar", "none"]).optional() })
               .optional()
           })
           .optional()

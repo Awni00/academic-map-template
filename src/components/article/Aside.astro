@@ -1,3 +1,25 @@
-<aside class="aside">
+---
+/**
+ * Margin-note / sidenote component.
+ *
+ * The article's resolved aside placement (`margin` vs `inline`) is
+ * decided once in `WritingEntryLayout` from the cascade
+ *   default → byType → frontmatter
+ * and applied to `.article-content[data-asides=…]`. Asides inherit that
+ * setting unless they pass an explicit `placement` prop:
+ *
+ *   - `placement="inline"` — opt this one aside out of the gutter even
+ *     when the article uses margin notes (useful for long asides that
+ *     don't fit the 240px gutter).
+ *   - `placement="margin"` — has no effect when the article default is
+ *     inline; there's no gutter to render into. The prop is an opt-OUT
+ *     only.
+ */
+type Props = {
+  placement?: "margin" | "inline";
+};
+const { placement } = Astro.props;
+---
+<aside class="aside" data-aside-placement={placement}>
   <slot />
 </aside>
