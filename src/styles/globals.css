@@ -965,6 +965,16 @@ pre {
   border-color: var(--color-accent-line);
 }
 
+.entry-chip__icon {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+.entry-chip:hover .entry-chip__icon {
+  color: var(--color-accent);
+}
+
 .button--primary {
   border-color: var(--color-fg);
   background: var(--color-fg);

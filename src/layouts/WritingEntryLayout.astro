@@ -15,7 +15,16 @@ import TwoColumns from "../components/article/TwoColumns.astro";
 import Video from "../components/article/Video.astro";
 import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraph from "../components/graph/LocalGraph";
-import { Tag } from "@lucide/astro";
+import {
+  Code2,
+  FileText,
+  Globe,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Play,
+  Presentation,
+  Tag
+} from "@lucide/astro";
 import { entryToRecord } from "../lib/graph/resolveLinks";
 import {
   effectiveAsides,
@@ -56,7 +65,22 @@ const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
 const hasByline = authors.length > 0;
 
-const external = Object.entries(entry.data.external ?? {}).filter(([, href]) => Boolean(href));
+const chipMeta: Record<string, { label: string; icon: any }> = {
+  arxiv: { label: "arXiv", icon: FileText },
+  paper: { label: "Paper", icon: FileText },
+  doi: { label: "DOI", icon: LinkIcon },
+  code: { label: "Code", icon: Code2 },
+  slides: { label: "Slides", icon: Presentation },
+  poster: { label: "Poster", icon: ImageIcon },
+  website: { label: "Website", icon: Globe },
+  video: { label: "Video", icon: Play }
+};
+const external = Object.entries(entry.data.external ?? {})
+  .filter(([, href]) => Boolean(href))
+  .map(([key, href]) => {
+    const meta = chipMeta[key] ?? { label: key, icon: LinkIcon };
+    return { key, href: href as string, label: meta.label, Icon: meta.icon };
+  });
 
 const formatPublished = (iso: string | undefined) => {
   if (!iso) return undefined;
@@ -151,7 +175,12 @@ const right = renderSide("right");
         {
           external.length > 0 && (
             <div class="article-external">
-              {external.map(([label, href]) => <a class="entry-chip" href={href as string}>{label}</a>)}
+              {external.map(({ href, label, Icon }) => (
+                <a class="entry-chip" href={href}>
+                  <Icon class="entry-chip__icon" size={14} aria-hidden="true" />
+                  <span>{label}</span>
+                </a>
+              ))}
             </div>
           )
         }
