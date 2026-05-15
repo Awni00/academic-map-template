@@ -74,7 +74,7 @@ const dialogId = `bib-${publication.id}`;
             <button type="button" class="bibtex-dialog__close" data-bib-close aria-label="Close">×</button>
           </div>
         </div>
-        <pre class="bibtex-dialog__code"><code>{publication.raw}</code></pre>
+        <pre class="bibtex-dialog__code"><code>{publication.bibtex}</code></pre>
       </dialog>
     )}
   </div>
@@ -135,4 +135,3 @@ const dialogId = `bib-${publication.id}`;
   }
   wireBibtex();
 </script>
-

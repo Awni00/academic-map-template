@@ -22,6 +22,7 @@ export type Publication = {
   preview?: string;
   selected: boolean;
   bibtexShow: boolean;
+  bibtex: string;
   raw: string;
   fields: Record<string, string>;
 };

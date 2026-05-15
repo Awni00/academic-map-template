@@ -10,6 +10,37 @@ type RawEntry = {
   raw: string;
 };
 
+const BIBTEX_FIELD_ORDER = [
+  "author",
+  "editor",
+  "title",
+  "booktitle",
+  "journal",
+  "publisher",
+  "school",
+  "institution",
+  "organization",
+  "year",
+  "month",
+  "volume",
+  "number",
+  "series",
+  "pages",
+  "chapter",
+  "edition",
+  "type",
+  "address",
+  "doi",
+  "url",
+  "isbn",
+  "issn",
+  "howpublished",
+  "note",
+  "eprint",
+  "archiveprefix",
+  "primaryclass"
+] as const;
+
 export async function loadPublications(source = publicationsConfig.source): Promise<Publication[]> {
   const bibtex = await fs.readFile(source, "utf8");
   return parseBibtex(bibtex);
@@ -83,6 +114,7 @@ function normalizePublication(entry: RawEntry): Publication {
     preview: resolvePreview(fields.preview),
     selected: boolField(fields.selected),
     bibtexShow: boolField(fields[publicationsConfig.bibtex.showButtonField]),
+    bibtex: formatBibtex(entry, fields),
     raw: entry.raw,
     fields
   };
@@ -169,6 +201,19 @@ function cleanValue(value: string): string {
 
 function boolField(value: string | undefined): boolean {
   return ["true", "yes", "1"].includes((value ?? "").trim().toLowerCase());
+}
+
+function formatBibtex(entry: RawEntry, fields: Record<string, string>): string {
+  const lines = BIBTEX_FIELD_ORDER.flatMap((field) => {
+    const value = fields[field];
+    return value ? [`  ${field} = {${value}}`] : [];
+  });
+
+  if (lines.length === 0) return `@${entry.type}{${entry.key}}`;
+
+  return `@${entry.type}{${entry.key},\n${lines
+    .map((line, index) => `${line}${index === lines.length - 1 ? "" : ","}`)
+    .join("\n")}\n}`;
 }
 
 function resolvePreview(value: string | undefined): string | undefined {
