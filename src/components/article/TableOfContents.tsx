@@ -48,8 +48,8 @@ export default function TableOfContents({ headings }: Props) {
 /**
  * Track which heading is currently the "current" reading position by
  * observing all matching elements with IntersectionObserver. The active
- * id is the topmost heading whose top has crossed a sticky threshold
- * (~30% from the viewport top).
+ * id is the topmost heading whose top has crossed the readable boundary
+ * below the sticky site header.
  */
 function useScrollSpy(slugs: string[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -61,13 +61,25 @@ function useScrollSpy(slugs: string[]): string | null {
       .filter((el): el is HTMLElement => Boolean(el));
     if (elements.length === 0) return;
 
+    const root = document.documentElement;
+    const parsePx = (value: string, fallback: number) => {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
+    const readingSpaceTop = () => {
+      const styles = window.getComputedStyle(root);
+      const header = parsePx(styles.getPropertyValue("--site-header-height"), 56);
+      const clearance = parsePx(styles.getPropertyValue("--sticky-header-clearance"), 12);
+      return header + clearance;
+    };
+
     // Recompute the active heading from current positions. The active id
-    // is the *latest* heading whose top is at or above the 30%-of-viewport
-    // line (i.e., the heading we've most recently scrolled past). This
-    // beats transition-tracking because it's stateless and self-correcting
-    // when the observer's batched updates skip a state.
+    // is the *latest* heading whose top is at or above the readable top
+    // boundary below the sticky site header. This beats transition-tracking
+    // because it's stateless and self-correcting when the observer's
+    // batched updates skip a state.
     const recompute = () => {
-      const threshold = window.innerHeight * 0.3;
+      const threshold = readingSpaceTop();
       let lastActive: string | null = null;
       for (const el of elements) {
         if (el.getBoundingClientRect().top <= threshold) lastActive = el.id;

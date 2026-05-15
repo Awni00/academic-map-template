@@ -10,11 +10,13 @@
 html {
   --site-header-height: 56px;
   --sticky-header-clearance: 12px;
+  --reading-space-top: calc(var(--site-header-height, 56px) + var(--sticky-header-clearance, 12px));
   color-scheme: light dark;
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-body);
   scroll-behavior: smooth;
+  scroll-padding-top: var(--reading-space-top);
 }
 
 body {

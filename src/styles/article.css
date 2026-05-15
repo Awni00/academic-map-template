@@ -221,6 +221,12 @@
   text-decoration: none;
 }
 
+@supports not (scroll-padding-top: 1px) {
+  .article-content :where([id]) {
+    scroll-margin-top: var(--reading-space-top);
+  }
+}
+
 /* ── Sidebar ────────────────────────────────────────────────────────── */
 
 .article-sidebar {
@@ -407,7 +413,7 @@
 }
 
 .article-grid .article-sidebar {
-  top: calc(var(--site-header-height, 56px) + var(--sticky-header-clearance, 12px));
+  top: var(--reading-space-top);
   gap: 16px;
 }
 
