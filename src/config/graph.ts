@@ -47,7 +47,29 @@ export const graphConfig = {
   links: {
     color: "var(--graph-edge)",
     width: 1,
-    opacity: 0.4
+    opacity: 0.4,
+    /**
+     * When true, edges are drawn with an arrowhead at the target end.
+     * Edges are already stored as directed (source → target) in the graph
+     * index; this only controls rendering.
+     */
+    directed: true,
+    arrow: {
+      /** Arrowhead length in canvas units. */
+      length: 4,
+      /** Arrowhead half-width (controls how wide the triangle is). */
+      width: 2,
+      /**
+       *  1.0 — tip at the target node boundary (default).
+       *  0.5 — tip at edge midpoint (useful for dense graphs).
+       */
+      relPos: 1.0,
+      /**
+       * `"edge"` reuses the line color; any CSS value (including
+       * `var(--…)`) overrides it.
+       */
+      color: "edge" as "edge" | string
+    }
   },
   /**
    * Layout + label controls for the writing-map view. The per-entry

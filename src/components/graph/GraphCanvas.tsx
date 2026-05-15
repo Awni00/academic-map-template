@@ -212,6 +212,34 @@ export default function GraphCanvas({
             ctx.moveTo(source.x, source.y);
             ctx.lineTo(target.x, target.y);
             ctx.stroke();
+            if (graphConfig.links.directed) {
+              const dx = target.x - source.x;
+              const dy = target.y - source.y;
+              const len = Math.hypot(dx, dy);
+              if (len > 0) {
+                const ux = dx / len;
+                const uy = dy / len;
+                const radius = nodePaintedRadius(target);
+                const { length: aLen, width: aWidth, relPos, color: aColor } = graphConfig.links.arrow;
+                const boundaryDist = len - radius;
+                if (boundaryDist > 0) {
+                  const tipDistFromSource = boundaryDist * relPos;
+                  const tipX = source.x + ux * tipDistFromSource;
+                  const tipY = source.y + uy * tipDistFromSource;
+                  const baseX = tipX - ux * aLen;
+                  const baseY = tipY - uy * aLen;
+                  const px = -uy;
+                  const py = ux;
+                  ctx.beginPath();
+                  ctx.moveTo(tipX, tipY);
+                  ctx.lineTo(baseX + px * aWidth, baseY + py * aWidth);
+                  ctx.lineTo(baseX - px * aWidth, baseY - py * aWidth);
+                  ctx.closePath();
+                  ctx.fillStyle = aColor === "edge" ? cssVar("--graph-edge") : aColor;
+                  ctx.fill();
+                }
+              }
+            }
             ctx.restore();
           }}
           nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
@@ -330,6 +358,12 @@ function nodeColor(type: string): string {
     project: "--graph-project"
   };
   return cssVar(map[type] ?? "--graph-note");
+}
+
+// Mirrors the painted radius used inside `drawNode` so arrowhead tips land
+// at the visible node edge instead of its d3 collision radius.
+function nodePaintedRadius(node: any): number {
+  return node?.type === "hub" ? 6 : node?.type === "paper" ? 5 : 4;
 }
 
 function cssVar(name: string): string {
