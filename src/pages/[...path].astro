@@ -21,7 +21,7 @@ export async function getStaticPaths() {
   const writingPaths = writingEntries.map((entry) => {
     const record = entryToRecord(entry);
     return {
-      params: { path: stripSlashes(writingEntryUrl(record.node.slug)) },
+      params: { path: stripSlashes(writingEntryUrl(record.node.path)) },
       props: { kind: "writing-entry", entry }
     };
   });

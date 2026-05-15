@@ -4,16 +4,7 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
 import { writingConfig, type EntryType } from "../src/config/writing";
-import { normalizeSlug } from "../src/lib/graph/resolveLinks";
-
-const typeDirs: Record<EntryType, string> = {
-  hub: "hubs",
-  paper: "papers",
-  post: "posts",
-  note: "notes",
-  teaching: "teaching",
-  project: "projects"
-};
+import { canonicalizeWritingPath } from "../src/lib/graph/resolveLinks";
 
 const args = parseArgs(process.argv.slice(2));
 const type = (args.type as EntryType | undefined) ?? (await promptType());
@@ -23,12 +14,14 @@ if (!writingConfig.entryTypes.includes(type)) {
   throw new Error(`Invalid type "${type}". Expected one of ${writingConfig.entryTypes.join(", ")}.`);
 }
 
-const slug = normalizeSlug(args.slug ?? title);
-const filePath = path.join("src/content/writing", typeDirs[type], `${slug}.mdx`);
-await assertNoDuplicateSlug(slug);
-await fs.mkdir(path.dirname(filePath), { recursive: true });
-await fs.writeFile(filePath, frontmatter(title, type), "utf8");
-console.log(`Created ${filePath}`);
+const entryPath = canonicalizeWritingPath(args.path ?? args.slug ?? title);
+if (!entryPath) throw new Error("Entry path must not be empty.");
+const filePath = path.join("src/content/writing", type === "hub" ? entryPath : `${entryPath}.mdx`);
+const finalPath = type === "hub" ? path.join(filePath, "index.mdx") : filePath;
+await assertNoDuplicatePath(entryPath);
+await fs.mkdir(path.dirname(finalPath), { recursive: true });
+await fs.writeFile(finalPath, frontmatter(title, type), "utf8");
+console.log(`Created ${finalPath}`);
 
 function parseArgs(values: string[]): Record<string, string> {
   const parsed: Record<string, string> = {};
@@ -56,11 +49,11 @@ async function promptTitle(): Promise<string> {
   return answer.trim();
 }
 
-async function assertNoDuplicateSlug(slug: string): Promise<void> {
+async function assertNoDuplicatePath(entryPath: string): Promise<void> {
   const files = await listFiles("src/content/writing");
   for (const file of files.filter((value) => /\.(md|mdx)$/.test(value))) {
-    const fileSlug = normalizeSlug(path.basename(file, path.extname(file)));
-    if (fileSlug === slug) throw new Error(`An entry with slug "${slug}" already exists at ${file}.`);
+    const existingPath = canonicalizeWritingPath(path.relative("src/content/writing", file));
+    if (existingPath === entryPath) throw new Error(`An entry with path "${entryPath}" already exists at ${file}.`);
   }
 }
 

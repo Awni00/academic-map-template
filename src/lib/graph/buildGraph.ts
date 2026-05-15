@@ -1,5 +1,12 @@
 import { writingConfig } from "../../config/writing";
-import { dedupeSorted, createEntryResolver, entryToRecord, extractWikilinks } from "./resolveLinks";
+import {
+  aliasKey,
+  canonicalizeWritingPath,
+  dedupeSorted,
+  createEntryResolver,
+  entryToRecord,
+  extractWikilinks
+} from "./resolveLinks";
 import type { EntryRecord, GraphBuildResult, GraphEdge, GraphWarning, WritingEntryLike } from "./types";
 
 export function buildEntryRecords<TEntry extends WritingEntryLike>(
@@ -11,19 +18,19 @@ export function buildEntryRecords<TEntry extends WritingEntryLike>(
     .map((entry) => entryToRecord(entry, options.route));
 }
 
-export function detectDuplicateSlugs(records: EntryRecord[]): GraphWarning[] {
-  const bySlug = new Map<string, EntryRecord[]>();
+export function detectDuplicatePaths(records: EntryRecord[]): GraphWarning[] {
+  const byPath = new Map<string, EntryRecord[]>();
   for (const record of records) {
-    const group = bySlug.get(record.node.slug) ?? [];
+    const group = byPath.get(record.node.path) ?? [];
     group.push(record);
-    bySlug.set(record.node.slug, group);
+    byPath.set(record.node.path, group);
   }
-  return [...bySlug.entries()]
+  return [...byPath.entries()]
     .filter(([, group]) => group.length > 1)
-    .map(([slug, group]) => ({
-      type: "duplicate-slug",
-      entry: slug,
-      message: `Duplicate writing slug "${slug}" from ${group.map((record) => record.entry.id).join(", ")}.`
+    .map(([entryPath, group]) => ({
+      type: "duplicate-path",
+      entry: entryPath,
+      message: `Duplicate writing path "${entryPath}" from ${group.map((record) => record.entry.id).join(", ")}.`
     }));
 }
 
@@ -32,7 +39,11 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
   options: { includeDrafts?: boolean; route?: string; collectWarnings?: boolean } = {}
 ): GraphBuildResult {
   const records = buildEntryRecords(entries, options);
-  const warnings: GraphWarning[] = detectDuplicateSlugs(records);
+  const warnings: GraphWarning[] = [
+    ...detectDuplicatePaths(records),
+    ...detectInvalidPaths(records),
+    ...detectAliasIssues(records)
+  ];
   const resolve = createEntryResolver(records);
   const edges: GraphEdge[] = [];
   const edgeKeys = new Set<string>();
@@ -47,8 +58,17 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
     }
 
     for (const link of record.entry.data.links ?? []) {
-      const resolved = resolve(link);
+      const resolved = resolve(link, record.node.path);
       if (!resolved.target) {
+        if (resolved.reason === "ambiguous") {
+          warnings.push({
+            type: "ambiguous-reference",
+            entry: record.node.id,
+            target: link,
+            message: `Ambiguous frontmatter link "${link}" in "${record.node.title}".`
+          });
+          continue;
+        }
         warnings.push({
           type: "unresolved-frontmatter-link",
           entry: record.node.id,
@@ -61,8 +81,17 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
     }
 
     for (const wikilink of extractWikilinks(record.body)) {
-      const resolved = resolve(wikilink.target);
+      const resolved = resolve(wikilink.target, record.node.path);
       if (!resolved.target) {
+        if (resolved.reason === "ambiguous") {
+          warnings.push({
+            type: "ambiguous-reference",
+            entry: record.node.id,
+            target: wikilink.target,
+            message: `Ambiguous wikilink "${wikilink.target}" in "${record.node.title}".`
+          });
+          continue;
+        }
         warnings.push({
           type: "unresolved-wikilink",
           entry: record.node.id,
@@ -113,7 +142,16 @@ export function graphWarningSeverity(warning: GraphWarning): "warn" | "error" | 
   if (warning.type === "unresolved-frontmatter-link") {
     return writingConfig.validation.links.unresolvedFrontmatterLinks;
   }
-  if (warning.type === "duplicate-slug") return "error";
+  if (
+    warning.type === "duplicate-path" ||
+    warning.type === "duplicate-alias" ||
+    warning.type === "alias-path-collision" ||
+    warning.type === "reserved-path" ||
+    warning.type === "root-writing-index" ||
+    warning.type === "ambiguous-reference"
+  ) {
+    return "error";
+  }
   return "warn";
 }
 
@@ -123,4 +161,89 @@ function addEdge(keys: Set<string>, edges: GraphEdge[], source: string, target: 
   if (keys.has(key)) return;
   keys.add(key);
   edges.push({ source, target });
+}
+
+function detectInvalidPaths(records: EntryRecord[]): GraphWarning[] {
+  const warnings: GraphWarning[] = [];
+  const reserved = reservedWritingPaths();
+  for (const record of records) {
+    if (!record.node.path) {
+      warnings.push({
+        type: "root-writing-index",
+        entry: record.entry.id,
+        message: `Root writing entry "${record.entry.id}" is not allowed because ${writingConfig.route} is the writing browser.`
+      });
+    }
+    if (reserved.has(record.node.path)) {
+      warnings.push({
+        type: "reserved-path",
+        entry: record.node.path,
+        message: `Writing entry path "${record.node.path}" conflicts with a reserved writing route.`
+      });
+    }
+  }
+  return warnings;
+}
+
+function detectAliasIssues(records: EntryRecord[]): GraphWarning[] {
+  const warnings: GraphWarning[] = [];
+  const pathOwners = new Map(records.map((record) => [record.node.path, record]));
+  const aliasOwners = new Map<string, EntryRecord[]>();
+
+  for (const record of records) {
+    const seenInEntry = new Set<string>();
+    for (const alias of record.aliases) {
+      const key = aliasKey(alias);
+      if (!key) continue;
+
+      const aliasAsPath = canonicalizeWritingPath(alias);
+      const pathOwner = pathOwners.get(aliasAsPath);
+      if (pathOwner && pathOwner.node.path !== record.node.path) {
+        warnings.push({
+          type: "alias-path-collision",
+          entry: record.node.path,
+          target: alias,
+          message: `Alias "${alias}" on "${record.node.title}" collides with writing path "${pathOwner.node.path}".`
+        });
+      }
+
+      if (seenInEntry.has(key)) {
+        warnings.push({
+          type: "duplicate-alias",
+          entry: record.node.path,
+          target: alias,
+          message: `Duplicate alias "${alias}" in "${record.node.title}".`
+        });
+      }
+      seenInEntry.add(key);
+
+      const owners = aliasOwners.get(key) ?? [];
+      owners.push(record);
+      aliasOwners.set(key, owners);
+    }
+  }
+
+  for (const [key, owners] of aliasOwners) {
+    const uniqueOwners = [...new Map(owners.map((owner) => [owner.node.path, owner])).values()];
+    if (uniqueOwners.length <= 1) continue;
+    warnings.push({
+      type: "duplicate-alias",
+      target: key,
+      message: `Duplicate alias "${key}" across ${uniqueOwners.map((owner) => owner.node.path).join(", ")}.`
+    });
+  }
+
+  return warnings;
+}
+
+function reservedWritingPaths(): Set<string> {
+  const route = stripSlashes(writingConfig.route);
+  const rssRoute = stripSlashes(writingConfig.rss.route);
+  const reserved = new Set<string>();
+  if (rssRoute.startsWith(`${route}/`)) reserved.add(rssRoute.slice(route.length + 1));
+  return reserved;
+}
+
+function stripSlashes(value: string): string {
+  return value.replace(/^\/+|\/+$/g, "");
 }

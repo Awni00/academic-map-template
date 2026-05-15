@@ -2,8 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 
-import { normalizeKey, normalizeSlug } from "../graph/resolveLinks";
+import {
+  canonicalizeWritingPath,
+  createEntryResolver,
+  entryToRecord
+} from "../graph/resolveLinks";
 import { writingEntryUrl } from "../routes/paths";
+import type { ResolvedReference, WritingEntryLike } from "../graph/types";
 
 type RemarkWikilinksOptions = {
   contentDir: string;
@@ -19,58 +24,46 @@ type Node = {
   data?: Record<string, unknown>;
 };
 
-type FileResolver = (target: string) => string | undefined;
-
-const resolverCache = new Map<string, FileResolver>();
+type FileResolver = (target: string, sourcePath?: string) => ResolvedReference;
+type VFileLike = {
+  path?: string;
+  history?: string[];
+};
 
 export function remarkWikilinks(options: RemarkWikilinksOptions) {
-  const cacheKey = `${options.contentDir}:${options.writingRoute}`;
-  const resolve = resolverCache.get(cacheKey) ?? createFileResolver(options);
-  resolverCache.set(cacheKey, resolve);
-
-  return function transform(tree: Node) {
-    replaceWikilinkText(tree, resolve, options.writingRoute);
+  return function transform(tree: Node, file: VFileLike) {
+    const resolve = createFileResolver(options);
+    const sourcePath = sourcePathFromFile(file, options.contentDir);
+    replaceWikilinkText(tree, resolve, options.writingRoute, sourcePath);
   };
 }
 
 function createFileResolver(options: RemarkWikilinksOptions): FileResolver {
   const root = path.resolve(process.cwd(), options.contentDir);
-  const bySlug = new Map<string, string>();
-  const byExactAlias = new Map<string, string>();
-  const byNormalizedTitle = new Map<string, string>();
-  const byNormalizedAlias = new Map<string, string>();
+  if (!fs.existsSync(root)) return (input) => ({ input, reason: "unresolved" });
 
-  if (!fs.existsSync(root)) return () => undefined;
-
-  for (const file of listMdxFiles(root)) {
+  const entries: WritingEntryLike[] = listMdxFiles(root).map((file) => {
     const source = fs.readFileSync(file, "utf8");
     const parsed = matter(source);
-    const relative = path.relative(root, file);
-    const fileBase = path.basename(relative, path.extname(relative));
-    const slug = normalizeSlug(String(parsed.data.slug ?? fileBase));
-    bySlug.set(slug, slug);
-    bySlug.set(relative.replace(/\.[^.]+$/, ""), slug);
-    if (typeof parsed.data.title === "string") byNormalizedTitle.set(normalizeKey(parsed.data.title), slug);
-    if (Array.isArray(parsed.data.aliases)) {
-      for (const alias of parsed.data.aliases) {
-        if (typeof alias !== "string") continue;
-        byExactAlias.set(alias, slug);
-        byNormalizedAlias.set(normalizeKey(alias), slug);
+    return {
+      id: path.relative(root, file).replace(/\.[^.]+$/, ""),
+      body: parsed.content,
+      data: {
+        title: parsed.data.title,
+        type: parsed.data.type,
+        aliases: parsed.data.aliases ?? [],
+        date: parsed.data.date,
+        updated: parsed.data.updated,
+        summary: parsed.data.summary,
+        tags: parsed.data.tags ?? [],
+        links: parsed.data.links ?? [],
+        draft: parsed.data.draft ?? false
       }
-    }
-  }
+    } as WritingEntryLike;
+  });
+  const resolve = createEntryResolver(entries.map((entry) => entryToRecord(entry, options.writingRoute)));
 
-  return (target) => {
-    const clean = target.trim();
-    const normalized = normalizeKey(clean);
-    return (
-      bySlug.get(clean) ??
-      byExactAlias.get(clean) ??
-      bySlug.get(normalized) ??
-      byNormalizedTitle.get(normalized) ??
-      byNormalizedAlias.get(normalized)
-    );
-  };
+  return (target, sourcePath) => resolve(target, sourcePath);
 }
 
 function listMdxFiles(root: string): string[] {
@@ -83,23 +76,23 @@ function listMdxFiles(root: string): string[] {
   return files;
 }
 
-function replaceWikilinkText(node: Node, resolve: FileResolver, writingRoute: string): void {
+function replaceWikilinkText(node: Node, resolve: FileResolver, writingRoute: string, sourcePath?: string): void {
   if (!node.children) return;
   if (["link", "linkReference", "code", "inlineCode", "html"].includes(node.type)) return;
 
   const nextChildren: Node[] = [];
   for (const child of node.children) {
     if (child.type === "text" && typeof child.value === "string") {
-      nextChildren.push(...splitWikilinkText(child.value, resolve, writingRoute));
+      nextChildren.push(...splitWikilinkText(child.value, resolve, writingRoute, sourcePath));
     } else {
-      replaceWikilinkText(child, resolve, writingRoute);
+      replaceWikilinkText(child, resolve, writingRoute, sourcePath);
       nextChildren.push(child);
     }
   }
   node.children = nextChildren;
 }
 
-function splitWikilinkText(value: string, resolve: FileResolver, writingRoute: string): Node[] {
+function splitWikilinkText(value: string, resolve: FileResolver, writingRoute: string, sourcePath?: string): Node[] {
   const nodes: Node[] = [];
   const pattern = /\[\[([^\]\n]+)\]\]/g;
   let cursor = 0;
@@ -110,11 +103,11 @@ function splitWikilinkText(value: string, resolve: FileResolver, writingRoute: s
     const [targetPart, labelPart] = match[1].split("|");
     const target = targetPart.trim();
     const label = (labelPart ?? targetPart).trim();
-    const resolvedSlug = resolve(target);
-    if (resolvedSlug) {
+    const resolved = resolve(target, sourcePath);
+    if (resolved.target) {
       nodes.push({
         type: "link",
-        url: writingEntryUrl(resolvedSlug, writingRoute),
+        url: writingEntryUrl(resolved.target.path, writingRoute),
         title: null,
         children: [{ type: "text", value: label }]
       });
@@ -129,6 +122,15 @@ function splitWikilinkText(value: string, resolve: FileResolver, writingRoute: s
 
   if (cursor < value.length) nodes.push({ type: "text", value: value.slice(cursor) });
   return nodes;
+}
+
+function sourcePathFromFile(file: VFileLike | undefined, contentDir: string): string | undefined {
+  const filePath = file?.path ?? file?.history?.[0];
+  if (!filePath) return undefined;
+  const root = path.resolve(process.cwd(), contentDir);
+  const absolute = path.resolve(filePath);
+  if (!absolute.startsWith(`${root}${path.sep}`)) return undefined;
+  return canonicalizeWritingPath(path.relative(root, absolute));
 }
 
 function escapeHtml(value: string): string {

@@ -12,15 +12,15 @@ tags:
   - bias-variance
 links:
   - research-papers
-  - example-paper
-  - example-note
+  - ./bias-variance-refresher
+  - ./test-error-decomposition
 draft: false
 theme: global
 external:
   code: "https://github.com/example/bv-sim"
 ---
 
-`bv-sim` is the simulator behind the figures in [[example-paper|the bias–variance refresher]]. It exists for one reason: every claim in a learning-theory write-up should be reproducible from a few lines of code.
+`bv-sim` is the simulator behind the figures in [[./bias-variance-refresher|the bias–variance refresher]]. It exists for one reason: every claim in a learning-theory write-up should be reproducible from a few lines of code.
 
 ## What it does
 
@@ -54,7 +54,7 @@ $$
 </TwoColumns>
 
 <Callout type="note" title="Static + reproducible">
-`bv-sim` is a single Python file with no GPU dependencies. The figures on [[example-paper]] are committed alongside the script that produced them, so a fresh clone reproduces the post bit-for-bit.
+`bv-sim` is a single Python file with no GPU dependencies. The figures on [[./bias-variance-refresher]] are committed alongside the script that produced them, so a fresh clone reproduces the post bit-for-bit.
 </Callout>
 
 This project also links back to [[research-papers]] because the simulator is intentionally aligned with the explainer it accompanies — running it is part of *reading* the post.

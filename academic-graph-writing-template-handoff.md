@@ -119,7 +119,7 @@ Required routes:
 ```txt
 /                  academic homepage
 /writing           graph-centered writing browser
-/writing/[slug]    individual writing entries
+/writing/[path]    individual writing entries
 /publications      generated publications page from publications.bib
 ```
 
@@ -172,18 +172,16 @@ Recommended structure:
 │  │
 │  ├─ content/
 │  │  ├─ writing/
-│  │  │  ├─ hubs/
-│  │  │  │  ├─ research-papers.mdx
-│  │  │  │  ├─ machine-learning-theory.mdx
-│  │  │  │  └─ education-teaching.mdx
-│  │  │  ├─ papers/
-│  │  │  │  └─ example-paper.mdx
-│  │  │  ├─ notes/
-│  │  │  │  └─ example-note.mdx
-│  │  │  ├─ teaching/
-│  │  │  │  └─ example-teaching-note.mdx
-│  │  │  └─ projects/
-│  │  │     └─ example-project.mdx
+│  │  │  ├─ machine-learning-theory/
+│  │  │  │  ├─ index.mdx
+│  │  │  │  ├─ bias-variance-refresher.mdx
+│  │  │  │  ├─ test-error-decomposition.mdx
+│  │  │  │  └─ bv-sim.mdx
+│  │  │  ├─ education-teaching/
+│  │  │  │  ├─ index.mdx
+│  │  │  │  └─ bias-variance-by-example.mdx
+│  │  │  └─ research-papers/
+│  │  │     └─ index.mdx
 │  │  │
 │  │  └─ pages/
 │  │     ├─ home.mdx
@@ -250,7 +248,7 @@ Recommended structure:
 │  │  ├─ publications.astro
 │  │  ├─ writing/
 │  │  │  ├─ index.astro
-│  │  │  └─ [...slug].astro
+│  │  │  └─ [...path].astro
 │  │  ├─ writing-rss.xml.ts
 │  │  └─ [...page].astro
 │  │
@@ -538,7 +536,6 @@ type: "hub" | "paper" | "post" | "note" | "teaching" | "project"
 Optional frontmatter:
 
 ```ts
-slug?: string;
 aliases?: string[];
 date?: string;
 updated?: string;
@@ -593,25 +590,32 @@ Body text with semantic graph links like [[machine-learning-theory]].
 
 ---
 
-## 8. Slugs and Subdirectories
+## 8. Writing Paths and Subdirectories
 
-Subdirectories are supported for author organization but do not define graph structure.
+Writing entry URLs mirror the content-relative path under `src/content/writing`.
+Use topic-first directories, and use `index.mdx` for hubs that own child entries.
 
-Use flattened slugs by default:
-
-```txt
-src/content/writing/papers/cot-info.mdx → /writing/cot-info
-src/content/writing/hubs/ml-theory.mdx → /writing/ml-theory
-```
-
-Slug resolution:
+Examples:
 
 ```txt
-1. explicit frontmatter slug
-2. flattened filename slug
+src/content/writing/machine-learning-theory/index.mdx
+  → /writing/machine-learning-theory
+
+src/content/writing/machine-learning-theory/bias-variance-refresher.mdx
+  → /writing/machine-learning-theory/bias-variance-refresher
 ```
 
-Duplicate flattened slugs must fail validation.
+Path derivation:
+
+```txt
+1. remove .md/.mdx extension
+2. normalize each path segment
+3. collapse trailing /index
+4. reject root src/content/writing/index.mdx because /writing is the browser
+```
+
+Duplicate canonical paths must fail validation, including collisions such as
+`foo.mdx` and `foo/index.mdx`.
 
 Aliases:
 
@@ -624,12 +628,14 @@ aliases:
 Link resolution order:
 
 ```txt
-1. exact slug/id
-2. exact alias
-3. normalized title
-4. normalized alias
-5. unresolved warning/error according to config
+1. canonical content path
+2. relative path from the current entry folder for ./ and ../
+3. unique explicit alias
+4. unresolved warning/error according to config
 ```
+
+Bare one-segment links do not search all basenames or titles. They resolve only
+as top-level paths or unique aliases.
 
 Normalization:
 
@@ -651,14 +657,14 @@ frontmatter links
 [[wikilinks]]
 ```
 
-Normal Markdown links render normally but do not contribute graph edges, even if they point to `/writing/[slug]`.
+Normal Markdown links render normally but do not contribute graph edges, even if they point to a writing URL.
 
 ### 9.1 Frontmatter links
 
 ```yaml
 links:
-  - ml-theory
-  - cot-info
+  - machine-learning-theory
+  - machine-learning-theory/bias-variance-refresher
 ```
 
 Behavior:
@@ -674,14 +680,15 @@ Supported syntax:
 
 ```md
 [[ml-theory]]
-[[Machine Learning Theory]]
-[[ml-theory|machine learning theory]]
+[[machine-learning-theory/bias-variance-refresher]]
+[[machine-learning-theory/bias-variance-refresher|the bias-variance refresher]]
+[[./test-error-decomposition]]
 ```
 
 Resolved behavior:
 
 ```txt
-renders as internal link to /writing/[slug]
+renders as internal link to the canonical writing URL
 adds graph edge current-entry → target
 ```
 
@@ -753,6 +760,7 @@ type EntryType = "hub" | "paper" | "post" | "note" | "teaching" | "project";
 
 type EntryNode = {
   id: string;
+  path: string;
   slug: string;
   title: string;
   type: EntryType;
@@ -943,7 +951,7 @@ Mobile topic cards should be generated from `type: hub` entries and link to:
 
 ### 11.3 `LocalGraph`
 
-Used on `/writing/[slug]` pages.
+Used on `/writing/[path]` pages.
 
 Default:
 
@@ -1047,7 +1055,7 @@ No tag pages should be generated. Tags filter `/writing` only.
 Route:
 
 ```txt
-/writing/[slug]
+/writing/[path]
 ```
 
 Default desktop layout:
@@ -1388,7 +1396,7 @@ BibTeX example:
   pdf          = {/publications/example-paper.pdf},
   arxiv        = {2601.00000},
   code         = {https://github.com/...},
-  blog         = {/writing/example-paper},
+  blog         = {/writing/machine-learning-theory/bias-variance-refresher},
   slides       = {/publications/example-slides.pdf}
 }
 ```
@@ -1652,7 +1660,7 @@ Include:
 ```txt
 /
 /writing
-/writing/[slug]
+/writing/[path]
 /publications
 /custom MDX pages
 ```
@@ -1668,7 +1676,10 @@ Validation should catch common template errors clearly.
 Hard errors:
 
 ```txt
-duplicate flattened slugs
+duplicate canonical writing paths
+duplicate aliases
+aliases that collide with another entry path
+reserved writing paths such as rss.xml
 missing title
 missing type
 invalid type
@@ -1747,17 +1758,13 @@ theme: global
 ---
 ```
 
-The script must check for duplicate flattened slugs before writing.
+The script must check for duplicate canonical paths before writing. Hubs are created as `path/index.mdx`; other entries are created as `path.mdx`.
 
-Recommended type-to-directory mapping:
+Recommended content layout:
 
 ```txt
-hub      → hubs/
-paper    → papers/
-post     → posts/
-note     → notes/
-teaching → teaching/
-project  → projects/
+topic/index.mdx
+topic/entry.mdx
 ```
 
 ---
@@ -1897,9 +1904,9 @@ Deliver:
 ```txt
 writing content collection
 custom pages collection
-/writing/[slug]
+/writing/[path]
 /custom pages route
-flattened slug resolution
+path-aware writing resolution
 basic WritingEntryLayout
 ```
 
@@ -1914,7 +1921,7 @@ unresolved red [[foo]] rendering
 graph extraction from frontmatter links + wikilinks only
 GraphIndex builder
 backlinks/outgoing/neighborhood utilities
-validation for duplicate slugs and unresolved links
+validation for duplicate paths, duplicate aliases, and unresolved links
 ```
 
 ### Milestone 4 — Graph UI
@@ -2039,7 +2046,7 @@ npm run dev works
 npm run build works
 / renders
 /writing renders
-/writing/[slug] renders
+/writing/[path] renders
 /publications renders
 custom MDX pages render
 RSS builds
@@ -2059,12 +2066,13 @@ backlinks derive only from graph edges
 local graph appears according to config
 ```
 
-### Slugs
+### Writing paths
 
 ```txt
-subdirectories are supported
-flattened slugs work
-duplicate flattened slugs fail validation
+subdirectories define canonical routes
+index.mdx hubs collapse to their folder path
+duplicate canonical paths fail validation
+relative wikilinks resolve from the current entry folder
 aliases resolve wikilinks
 ```
 
@@ -2073,7 +2081,7 @@ aliases resolve wikilinks
 ```txt
 GraphBrowser uses left topics, center graph, right preview on desktop
 node click updates preview pane
-Open Entry button navigates to /writing/[slug]
+Open Entry button navigates to /writing/[path]
 hub click focuses graph
 focus mode dim works
 filter mode toggle works

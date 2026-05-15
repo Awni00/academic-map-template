@@ -6,6 +6,7 @@ export type ArticleWidth = "reading" | "flex";
 
 export type EntryNode = {
   id: string;
+  path: string;
   slug: string;
   title: string;
   type: EntryType;
@@ -39,14 +40,20 @@ export type WikilinkMatch = {
 export type ResolvedReference = {
   input: string;
   target?: EntryNode;
-  reason?: "unresolved";
+  reason?: "unresolved" | "ambiguous";
+  candidates?: EntryNode[];
 };
 
 export type GraphWarning = {
   type:
-    | "duplicate-slug"
+    | "duplicate-path"
+    | "duplicate-alias"
+    | "alias-path-collision"
+    | "reserved-path"
+    | "root-writing-index"
     | "unresolved-wikilink"
     | "unresolved-frontmatter-link"
+    | "ambiguous-reference"
     | "missing-summary"
     | "empty-graph"
     | "preview-too-large";
@@ -81,6 +88,7 @@ export type WritingSearchDocument = {
 
 export type WritingEntryLike = {
   id: string;
+  filePath?: string;
   body?: string;
   data: {
     title: string;
@@ -92,6 +100,15 @@ export type WritingEntryLike = {
     summary?: string;
     tags?: string[];
     links?: string[];
+    authors?: Array<
+      | string
+      | {
+          name: string;
+          affiliation?: string;
+          url?: string;
+          note?: string;
+        }
+    >;
     draft?: boolean;
     theme?: "global" | "system" | "light" | "dark";
     external?: Record<string, string | undefined>;
@@ -113,4 +130,5 @@ export type EntryRecord<TEntry extends WritingEntryLike = WritingEntryLike> = {
   node: EntryNode;
   aliases: string[];
   body: string;
+  sourceDir: string;
 };

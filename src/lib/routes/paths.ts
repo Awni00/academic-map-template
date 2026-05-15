@@ -25,12 +25,12 @@ export function writingRouteParam(route = writingConfig.route): string {
   return stripSlashes(route);
 }
 
-export function writingEntryUrl(slug: string, route: string = writingConfig.route): string {
-  return joinUrl(route, slug);
+export function writingEntryUrl(entryPath: string, route: string = writingConfig.route): string {
+  return joinUrl(route, entryPath);
 }
 
-export function writingFocusUrl(slug: string, route: string = writingConfig.route): string {
-  return `${normalizeRoute(route)}?focus=${encodeURIComponent(slug)}`;
+export function writingFocusUrl(entryPath: string, route: string = writingConfig.route): string {
+  return `${normalizeRoute(route)}?focus=${encodeURIComponent(entryPath)}`;
 }
 
 export function rssRoute(): string {

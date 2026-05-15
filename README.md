@@ -27,7 +27,7 @@ Open the local URL printed by Astro. The main routes are:
 
 - `/`
 - `/writing`
-- `/writing/example-paper`
+- `/writing/machine-learning-theory/bias-variance-refresher`
 - `/publications`
 - `/research`
 - `/teaching`
@@ -45,7 +45,7 @@ Useful scripts:
 
 ```bash
 npm run new:entry
-npm run new:entry -- --type paper --title "Chain-of-Thought Information"
+npm run new:entry -- --type paper --title "Chain-of-Thought Information" --path machine-learning-theory/chain-of-thought-information
 npm run test
 npm run test:e2e
 npm run lint
@@ -123,7 +123,6 @@ type: "paper" # hub | paper | post | note | teaching | project
 Common optional fields:
 
 ```yaml
-slug: custom-slug
 aliases:
   - Alternative Name
 date: "2026-05-12"
@@ -131,7 +130,7 @@ summary: "Short description."
 tags:
   - learning-theory
 links:
-  - machine-learning-theory
+  - machine-learning-theory/bias-variance-refresher
 draft: false
 external:
   arxiv: "https://arxiv.org/abs/..."
@@ -141,13 +140,17 @@ layout:
   localGraph: true
 ```
 
-Subdirectories are for author organization only. Slugs are flattened by default:
+Writing routes mirror the content-relative path. Use topic-first directories and `index.mdx` for hubs that own child entries:
 
 ```txt
-src/content/writing/papers/example-paper.mdx -> /writing/example-paper
+src/content/writing/machine-learning-theory/index.mdx
+  -> /writing/machine-learning-theory
+
+src/content/writing/machine-learning-theory/bias-variance-refresher.mdx
+  -> /writing/machine-learning-theory/bias-variance-refresher
 ```
 
-Duplicate flattened slugs fail validation.
+The root `src/content/writing/index.mdx` is reserved because `/writing` is the graph browser. Changing a writing URL means moving or renaming the file or folder; frontmatter `slug` is not used for routing.
 
 ## Graph Semantics
 
@@ -167,17 +170,20 @@ This creates an edge to [[machine-learning-theory]].
 Supported wikilinks:
 
 ```md
-[[ml-theory]]
-[[Machine Learning Theory]]
-[[ml-theory|machine learning theory]]
+[[machine-learning-theory]]
+[[machine-learning-theory/bias-variance-refresher]]
+[[machine-learning-theory/bias-variance-refresher|the bias-variance refresher]]
+[[./test-error-decomposition]]
+[[ML theory]]
 ```
 
 Resolution order:
 
-1. Exact slug/id.
-2. Exact alias.
-3. Normalized title.
-4. Normalized alias.
+1. Canonical content path from `src/content/writing`.
+2. Relative path from the current entry's folder for `./` and `../`.
+3. Unique explicit alias.
+
+Bare one-segment links do not search every basename. `[[quantum-mechanics]]` only resolves if `/writing/quantum-mechanics` exists or if `quantum-mechanics` is a unique alias. Use `[[learning/quantum-mechanics]]` for nested entries.
 
 Unresolved wikilinks render as red `[[foo]]` and warn or fail according to `writingConfig.validation.links`.
 
@@ -280,7 +286,7 @@ Example:
   pdf          = {/publications/example-paper.pdf},
   arxiv        = {2601.00000},
   code         = {https://github.com/...},
-  blog         = {/writing/example-paper}
+  blog         = {/writing/machine-learning-theory/bias-variance-refresher}
 }
 ```
 
@@ -347,7 +353,9 @@ Validation catches:
 - Missing title or type.
 - Invalid type.
 - Invalid date format.
-- Duplicate flattened slugs.
+- Duplicate canonical writing paths, including `foo.mdx` vs `foo/index.mdx`.
+- Duplicate aliases and aliases that collide with another entry path.
+- Reserved writing paths such as `rss.xml`.
 - Unresolved wikilinks and frontmatter links.
 - BibTeX parse failures.
 - Missing selected publications when the homepage selected-publications section is enabled.
@@ -406,7 +414,7 @@ or install Node `>=20.19.5`.
 
 ### Unresolved Wikilinks
 
-Check spelling, slug, title, and aliases. Use `aliases` for natural names:
+Check spelling, canonical path, relative path, and aliases. Use full paths for nested entries and `aliases` for short natural names:
 
 ```yaml
 aliases:
