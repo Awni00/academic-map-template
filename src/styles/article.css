@@ -221,9 +221,14 @@
  */
 .article-grid {
   display: grid;
+  /* Body track is always wide enough to host both the 760px reading
+     column and a 240px right-aside column (with a 32px gap between).
+     Inline-aside entries leave the right 272px empty so all reading
+     entries occupy the same horizontal real estate. Margin-aside
+     entries use the full track via the sub-grid in .article-content. */
   grid-template-columns:
     [left-start] var(--col-left, 0) [left-end body-start]
-    minmax(0, var(--col-body, 760px)) [body-end right-start]
+    minmax(0, var(--col-body, 1032px)) [body-end right-start]
     var(--col-right, 0) [right-end];
   column-gap: var(--col-gap, 32px);
   row-gap: 0;
@@ -244,7 +249,6 @@
    the sub-grid (760 body + 32 gap + 240 asides = 1032) fits. */
 .article-grid[data-has-left="true"]   { --col-left: 200px; }
 .article-grid[data-has-right="true"]  { --col-right: 200px; }
-.article-grid[data-asides="margin"]   { --col-body: 1032px; }
 
 /* Flex-width entries fill all available room (up to the grid maximum). */
 .article-grid[data-width="flex"]      { --col-body: 1fr; }
@@ -264,6 +268,15 @@
   line-height: 1.7;
   color: var(--color-fg-soft);
   min-width: 0;
+  /* Cap prose at the reading column even when the body track is wider
+     (to reserve the right aside gutter). For data-asides="margin" the
+     rule below promotes .article-content to a 760+240 sub-grid that
+     expands back to the full body track. */
+  max-width: 760px;
+}
+
+.article-content[data-asides="margin"] {
+  max-width: none;
 }
 
 .article-content > * + * {
@@ -925,10 +938,11 @@
 @media (max-width: 1224px) {
   /* Asides collapse to inline — body track shrinks back to its normal
      reading width and the article-content sub-grid drops. */
-  .article-grid[data-asides="margin"] { --col-body: 760px; }
+  .article-grid { --col-body: 760px; }
 
   .article-content[data-asides="margin"] {
     display: block;
+    max-width: 760px;
   }
   .article-content[data-asides="margin"] .aside:not([data-aside-placement="inline"]) {
     /* Restore inline aside style when the gutter is unavailable. */
