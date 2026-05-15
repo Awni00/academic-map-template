@@ -15,6 +15,7 @@ import TwoColumns from "../components/article/TwoColumns.astro";
 import Video from "../components/article/Video.astro";
 import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraph from "../components/graph/LocalGraph";
+import { Tag } from "@lucide/astro";
 import { entryToRecord } from "../lib/graph/resolveLinks";
 import {
   effectiveAsides,
@@ -51,7 +52,20 @@ const toLinkedItem = (id: string) => {
 };
 const backlinks = backlinkIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const authorsRaw = entry.data.authors ?? [];
+const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
+const hasByline = authors.length > 0;
+
 const external = Object.entries(entry.data.external ?? {}).filter(([, href]) => Boolean(href));
+
+const formatPublished = (iso: string | undefined) => {
+  if (!iso) return undefined;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[m - 1]} ${d}, ${y}`;
+};
+const publishedLabel = formatPublished(node.date);
 
 // Slot derivation. The TOC lives in either the left or right grid
 // column; backlinks/related can also live there if explicitly placed.
@@ -111,18 +125,66 @@ const right = renderSide("right");
       data-has-right={renderRight ? "true" : "false"}
       data-has-foot={renderFooter ? "true" : undefined}
     >
-      <header class="article-header">
+      <header class="article-header" data-byline={hasByline ? "true" : undefined}>
         <h1>{node.title}</h1>
-        <div class="article-meta">
-          <span>{node.type}</span>
-          {node.date && <span>{node.date}</span>}
-          {node.tags.map((tag) => <span>{tag}</span>)}
-        </div>
+        {!hasByline && (
+          <div class="article-meta">
+            <span>{node.type}</span>
+            {node.date && <span>{node.date}</span>}
+          </div>
+        )}
         {node.summary && <p class="article-summary">{node.summary}</p>}
+        {node.tags.length > 0 && (
+          <div class="article-tags">
+            <Tag class="article-tags__icon" size={14} aria-hidden="true" />
+            <span class="article-tags__label">Tags:</span>
+            <span class="article-tags__list">
+              {node.tags.map((tag, i) => (
+                <>
+                  {i > 0 && <span class="article-tags__sep">·</span>}
+                  <span class="article-tags__tag">{tag}</span>
+                </>
+              ))}
+            </span>
+          </div>
+        )}
         {
           external.length > 0 && (
             <div class="article-external">
               {external.map(([label, href]) => <a class="entry-chip" href={href as string}>{label}</a>)}
+            </div>
+          )
+        }
+        {
+          hasByline && (
+            <div class="article-byline">
+              <div class="article-byline__col">
+                <div class="article-byline__label">Authors</div>
+                <ul class="article-byline__list">
+                  {authors.map((a) => (
+                    <li>
+                      {a.url ? <a href={a.url}>{a.name}</a> : <span>{a.name}</span>}
+                      {a.note && <sup class="article-byline__note">{a.note}</sup>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {authors.some((a) => a.affiliation) && (
+                <div class="article-byline__col">
+                  <div class="article-byline__label">Affiliations</div>
+                  <ul class="article-byline__list">
+                    {authors.map((a) => (
+                      <li>{a.affiliation ?? " "}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {publishedLabel && (
+                <div class="article-byline__col">
+                  <div class="article-byline__label">Published</div>
+                  <div class="article-byline__value">{publishedLabel}</div>
+                </div>
+              )}
             </div>
           )
         }

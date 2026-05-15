@@ -24,8 +24,17 @@
      visually aligns with where the prose starts. */
   max-width: 760px;
   padding: 56px 0 28px;
-  margin: 0;
+  margin: 0 0 28px;
   border-bottom: 1px solid var(--color-border-soft);
+}
+
+.article-header[data-byline] {
+  /* Symmetric margins around both dividers: the byline's border-top sits
+     28px from the content above and below it; the header's border-bottom
+     sits 28px from the byline content above it. The larger margin-bottom
+     pushes the article body down so the header feels distinct. */
+  padding-bottom: 28px;
+  margin-bottom: 44px;
 }
 
 .article-header h1 {
@@ -71,6 +80,115 @@
   font-size: 13px;
   color: var(--color-muted);
   margin-top: 18px;
+}
+
+/* ── Article byline (Distill-style structured header) ──────────────── */
+
+.article-byline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 28px;
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid var(--color-border-soft);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-fg-soft);
+}
+
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 22px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.article-tags__icon {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+}
+
+.article-tags__label {
+  font-weight: 500;
+  color: var(--color-muted);
+  margin-right: 2px;
+}
+
+.article-tags__list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.article-tags__tag {
+  color: var(--color-fg-soft);
+}
+
+.article-tags__sep {
+  color: var(--color-border);
+}
+
+.article-byline__label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 6px;
+}
+
+.article-byline__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.article-byline__list li {
+  color: var(--color-fg);
+  font-weight: 500;
+}
+
+.article-byline__value {
+  color: var(--color-fg);
+}
+
+.article-byline__col a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.article-byline__col a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.article-byline__note {
+  font-size: 0.7em;
+  color: var(--color-muted);
+  margin-left: 2px;
+}
+
+.article-meta--foot {
+  margin-top: 18px;
+  margin-bottom: 0;
+}
+
+@media (max-width: 680px) {
+  .article-byline {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 /* LocalGraph rendered in the article header as a contextual landmark
@@ -233,6 +351,13 @@
   position: sticky;
   top: 24px;
   display: grid;
+  /* Single full-width column. minmax(0, 1fr) is the canonical fix for
+     "grid auto column expands to content's max-content"; the 0 min lets
+     descendants with white-space: nowrap (e.g. the TOC strip's labels)
+     respect their parent's bounds and ellipsize instead of overflowing
+     into the body column. Without this, a long heading stretches the
+     auto column wider than the sidebar's own grid track. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   font-family: var(--font-ui);
   font-size: 13px;
@@ -342,6 +467,11 @@
   border: 0;
 }
 
+/* Match (and beat) `.article-sidebar .toc a` (specificity 0,2,1) so the
+   strip's `display: flex` actually applies — the generic rule above
+   wants display: block and would otherwise cancel the flex layout the
+   tip-ellipsis depends on. */
+.article-sidebar .toc--strip a,
 .toc--strip a {
   position: relative;
   display: flex;
@@ -350,9 +480,14 @@
   min-height: 18px;
   padding: 2px 0 2px 2px;
   border: 0;
+  border-left: 0;
   text-decoration: none;
   color: var(--color-muted);
   cursor: pointer;
+  /* Even with flex + min-width: 0 on the tip, give the link itself a
+     bound so any future inline content can't overflow it either. */
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .toc--strip a:hover,
@@ -825,29 +960,12 @@
     border-top: 1px solid var(--color-rule);
   }
 
-  /* Strip TOC doesn't make sense in a stacked-on-mobile context — it
-     becomes a row of dots with no useful affordance. Fall back to a
-     wrapped row of label-plus-dot pairs. */
-  .toc--strip {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px 14px;
+  .sidebar-section--toc {
+    display: none;
   }
-  .toc--strip a {
-    height: auto;
-  }
-  .sidebar-section--toc h2 {
-    /* Restore the visible label on mobile since the strip no longer
-       speaks for itself. */
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0 0 8px;
-    padding-bottom: 6px;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
-    border-bottom: 1px solid var(--color-border);
+
+  .article-sidebar:not(:has(.sidebar-section:not(.sidebar-section--toc))) {
+    display: none;
   }
 
   .aside {

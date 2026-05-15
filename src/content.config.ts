@@ -38,6 +38,19 @@ const writing = defineCollection({
     summary: z.string().optional(),
     tags: z.array(z.string()).default([]),
     links: z.array(z.string()).default([]),
+    authors: z
+      .array(
+        z.union([
+          z.string(),
+          z.object({
+            name: z.string(),
+            affiliation: z.string().optional(),
+            url: z.string().url().optional(),
+            note: z.string().optional()
+          })
+        ])
+      )
+      .default([]),
     featured: z.boolean().default(false),
     draft: z.boolean().default(false),
     theme: z.enum(["global", "system", "light", "dark"]).default("global"),
