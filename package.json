@@ -23,6 +23,7 @@
     "@astrojs/mdx": "^4.2.6",
     "@astrojs/react": "^4.2.1",
     "@astrojs/sitemap": "^3.3.0",
+    "@lucide/astro": "^1.16.0",
     "@tailwindcss/vite": "^4.1.5",
     "astro": "^5.7.10",
     "gray-matter": "^4.0.3",

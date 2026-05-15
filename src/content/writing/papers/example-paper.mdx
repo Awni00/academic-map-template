@@ -31,7 +31,7 @@ The bias–variance decomposition is the first place most students meet the idea
 Margin notes appear inline on mobile and as a quiet annotation column on desktop. They are useful for technical asides without breaking the main argument.
 </Aside>
 
-<Callout type="intuition" title="TL;DR">
+<Callout type="tip" title="TL;DR">
 For squared loss, expected test error splits cleanly into three independent pieces: how wrong the *average* learner is (**bias²**), how much the learner *jitters* across training sets (**variance**), and the irreducible noise floor σ². Picking a model class is choosing how to spend a budget across these three.
 </Callout>
 
@@ -121,11 +121,11 @@ The same added capacity lets the learner over-fit individual training sets. Two 
 The clean three-term split is a property of *squared loss*. For 0-1 loss the analogue exists but is not a sum of independent pieces; for log-loss it requires care with the link function.
 </Callout>
 
-<Callout type="definition" title="Effective complexity">
+<Callout type="info" title="Effective complexity">
 What pushes variance up is *effective* complexity, not parameter count. Two networks with the same number of weights can sit on opposite sides of the dartboard once you account for implicit regularisation from the optimiser. See [[example-note]] for the related approximation/estimation/optimization split.
 </Callout>
 
-<Callout type="note" title="Sample size">
+<Callout title="Sample size">
 All three terms depend on $n$ implicitly through $\bar f$ and $\mathrm{Var}_S[\hat f_S]$. As $n \to \infty$, variance falls; bias is the asymptote.
 </Callout>
 

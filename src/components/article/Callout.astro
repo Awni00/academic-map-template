@@ -1,13 +1,80 @@
 ---
+import {
+  Bug,
+  Check,
+  CircleCheck,
+  CircleQuestionMark,
+  ClipboardList,
+  Flame,
+  Info,
+  List,
+  Pencil,
+  Quote,
+  TriangleAlert,
+  X,
+  Zap
+} from "@lucide/astro";
+
+type CalloutType =
+  | "note"
+  | "abstract"
+  | "info"
+  | "todo"
+  | "tip"
+  | "success"
+  | "question"
+  | "warning"
+  | "failure"
+  | "danger"
+  | "bug"
+  | "example"
+  | "quote";
+
 type Props = {
-  type?: "note" | "intuition" | "warning" | "example" | "definition";
+  type?: CalloutType | string;
   title?: string;
+  accent?: string;
 };
 
-const { type = "note", title } = Astro.props;
+const calloutTypes = {
+  note: { accent: "rgb(8, 109, 221)", Icon: Pencil },
+  abstract: { accent: "rgb(83, 223, 221)", Icon: ClipboardList },
+  info: { accent: "rgb(8, 109, 221)", Icon: Info },
+  todo: { accent: "rgb(8, 109, 221)", Icon: CircleCheck },
+  tip: { accent: "rgb(83, 223, 221)", Icon: Flame },
+  success: { accent: "rgb(68, 207, 110)", Icon: Check },
+  question: { accent: "rgb(233, 151, 63)", Icon: CircleQuestionMark },
+  warning: { accent: "rgb(233, 151, 63)", Icon: TriangleAlert },
+  failure: { accent: "rgb(251, 70, 76)", Icon: X },
+  danger: { accent: "rgb(251, 70, 76)", Icon: Zap },
+  bug: { accent: "rgb(251, 70, 76)", Icon: Bug },
+  example: { accent: "rgb(120, 82, 238)", Icon: List },
+  quote: { accent: "rgb(158, 158, 158)", Icon: Quote }
+} satisfies Record<CalloutType, { accent: string; Icon: typeof Info }>;
+
+const accentTokens: Record<string, string> = {
+  accent: "var(--color-accent)",
+  fg: "var(--color-fg)",
+  muted: "var(--color-muted)"
+};
+
+const { type, title, accent } = Astro.props;
+const normalizedType = type && type in calloutTypes ? (type as CalloutType) : undefined;
+const config = normalizedType ? calloutTypes[normalizedType] : undefined;
+const resolvedAccent = accent ? (accentTokens[accent] ?? accent) : config?.accent;
+const accentStyle = resolvedAccent ? `--callout-accent: ${resolvedAccent};` : undefined;
+const Icon = config?.Icon;
+const className = normalizedType ? `callout callout--${normalizedType}` : "callout";
 ---
 
-<aside class={`callout callout--${type}`}>
-  {title && <p class="callout__title">{title}</p>}
+<aside class={className} style={accentStyle}>
+  {
+    title && (
+      <p class="callout__title">
+        {Icon && <Icon class="callout__icon" size={16} stroke-width={2.25} aria-hidden="true" />}
+        <span>{title}</span>
+      </p>
+    )
+  }
   <slot />
 </aside>

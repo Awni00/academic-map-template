@@ -1137,20 +1137,38 @@ ModelViewer
 ### 15.1 `Callout`
 
 ```mdx
-<Callout type="intuition" title="Main idea">
+<Callout type="tip" title="Main idea">
 The graph should represent intentional conceptual links, not every hyperlink.
+</Callout>
+
+<Callout title="Neutral note">
+Omit `type` for a neutral callout with no icon.
+</Callout>
+
+<Callout type="warning" title="Careful" accent="accent">
+Set `accent` to override the default color for a callout type.
 </Callout>
 ```
 
-Supported callout types:
+`type` is optional. Omitted or unsupported types render with the neutral slab style and no icon. Supported callout types mirror Obsidian's main categories without aliases:
 
 ```txt
 note
-intuition
+abstract
+info
+todo
+tip
+success
+question
 warning
+failure
+danger
+bug
 example
-definition
+quote
 ```
+
+The optional `accent` prop accepts `accent`, `fg`, `muted`, or any CSS color. When omitted, typed callouts use their default Obsidian-style color.
 
 ### 15.2 `Theorem`
 

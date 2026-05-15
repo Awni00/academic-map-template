@@ -217,14 +217,24 @@ MDX entries can use the built-in technical writing components:
 Example:
 
 ```mdx
-<Callout type="intuition" title="Main idea">
+<Callout type="tip" title="Main idea">
 The graph should represent intentional conceptual links, not every hyperlink.
+</Callout>
+
+<Callout title="Neutral note">
+Omit `type` for a neutral callout with no icon.
+</Callout>
+
+<Callout type="warning" title="Careful" accent="accent">
+Set `accent` to override the default color for a callout type.
 </Callout>
 
 <Theorem label="Theorem" title="Generalization bound" id="thm:generalization">
 Let $f$ be a predictor.
 </Theorem>
 ```
+
+`Callout` supports the main Obsidian-style types `note`, `abstract`, `info`, `todo`, `tip`, `success`, `question`, `warning`, `failure`, `danger`, `bug`, `example`, and `quote`. Unsupported or omitted types render with the neutral slab style and no icon. The optional `accent` prop accepts `accent`, `fg`, `muted`, or any CSS color.
 
 Math uses KaTeX via `remark-math` and `rehype-katex`. Macros live in `src/lib/math/macros.ts`.
 

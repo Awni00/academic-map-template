@@ -444,52 +444,37 @@
 /* ── Callout ────────────────────────────────────────────────────────── */
 
 .callout {
-  background: var(--color-bg-soft);
-  border-left: 3px solid var(--color-accent);
-  padding: 14px 18px 16px;
-  margin: 22px 0;
-  border-radius: 0 4px 4px 0;
-  font-size: 16px;
+  --callout-accent: var(--color-muted);
+  border-left: 3px solid var(--callout-accent);
+  padding: 4px 0 4px 20px;
+  margin: 28px 0;
+  font-size: 16.5px;
   line-height: 1.6;
-  color: var(--color-fg-soft);
-}
-
-.callout__title {
-  margin: 0 0 6px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-}
-
-.callout--intuition {
-  border-left-color: var(--color-accent);
-}
-
-.callout--warning {
-  border-left-color: var(--color-warning);
-}
-
-.callout--warning .callout__title {
-  color: var(--color-warning);
-}
-
-.callout--definition {
-  border-left-color: var(--color-rule);
-}
-
-.callout--definition .callout__title {
   color: var(--color-fg);
 }
 
-.callout--note {
-  border-left-color: var(--color-muted-2);
+.callout__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 4px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--callout-accent);
 }
 
-.callout--note .callout__title {
-  color: var(--color-muted);
+.callout__icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: var(--callout-accent);
+}
+
+.callout > :last-child {
+  margin-bottom: 0;
 }
 
 /* ── Theorem boxes ──────────────────────────────────────────────────── */
