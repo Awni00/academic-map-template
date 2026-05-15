@@ -30,10 +30,12 @@ export const siteConfig = {
       desktopMode: "static-graph",
       mobileMode: "topic-cards",
       filter: {
-        mode: "types",
-        types: ["hub"]
+        mode: "neighborhood",
+        roots: "hubs",
+        depth: 1,
+        perRoot: 3
       },
-      maxNodes: 30,
+      maxNodes: 22,
       clickTarget: "/writing",
       title: "Explore Writing",
       description:

@@ -1,23 +1,21 @@
 import { useMemo } from "react";
 
-import type { EntryType, GraphIndex } from "../../lib/graph/types";
+import type { EntryType, GraphIndex, EntryNode } from "../../lib/graph/types";
 import { writingFocusUrl } from "../../lib/routes/paths";
+import GraphCanvas from "./GraphCanvas";
+
+type FilterConfig =
+  | { mode: "all" }
+  | { mode: "types"; types?: EntryType[] }
+  | { mode: "neighborhood"; roots?: "hubs" | EntryType[]; depth?: number; perRoot?: number };
 
 type GraphPreviewProps = {
   graph: GraphIndex;
   title: string;
   description: string;
   clickTarget: string;
-  filter?: {
-    mode: "all" | "types";
-    types?: EntryType[];
-  };
+  filter?: FilterConfig;
   maxNodes?: number;
-  /**
-   * "panel" — full preview with header, decorative graph SVG, and topic cards.
-   * "strip" — quiet topic-card row with a small graph thumbnail; meant for the
-   * bottom of the homepage as a hand-off into /writing.
-   */
   mode?: "panel" | "strip";
 };
 
@@ -27,22 +25,13 @@ export default function GraphPreview({
   description,
   clickTarget,
   filter = { mode: "all" },
-  maxNodes = 30,
+  maxNodes = 24,
   mode = "panel"
 }: GraphPreviewProps) {
-  const previewGraph = useMemo(() => {
-    const filtered =
-      filter.mode === "types" && filter.types?.length
-        ? graph.nodes.filter((node) => filter.types?.includes(node.type))
-        : graph.nodes;
-    const nodes = filtered.slice(0, maxNodes);
-    const allowed = new Set(nodes.map((node) => node.id));
-    return {
-      ...graph,
-      nodes,
-      edges: graph.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target))
-    };
-  }, [filter, graph, maxNodes]);
+  const previewGraph = useMemo(
+    () => buildPreviewGraph(graph, filter, maxNodes),
+    [graph, filter, maxNodes]
+  );
 
   if (mode === "strip") {
     return (
@@ -68,12 +57,17 @@ export default function GraphPreview({
             {description}
           </p>
         </div>
-        <a className="button button--primary" href={clickTarget}>
-          Open map
+        <a className="cta" href={clickTarget}>
+          Open full map →
         </a>
       </div>
-      <div className="graph-preview__body" aria-hidden="true">
-        <StaticPreview graph={previewGraph} />
+      <div className="graph-preview__body">
+        <GraphCanvas
+          graph={previewGraph}
+          height={280}
+          hubLayout="circle"
+          labelMode="config"
+        />
       </div>
       <div className="topic-cards">
         {graph.hubs.map((hub) => (
@@ -87,44 +81,78 @@ export default function GraphPreview({
   );
 }
 
-function StaticPreview({ graph }: { graph: GraphIndex }) {
-  const positions = graph.nodes.map((node, index) => {
-    const layout = [
-      { x: 38, y: 50 },
-      { x: 35, y: 28 },
-      { x: 35, y: 72 },
-      { x: 62, y: 38 },
-      { x: 62, y: 62 }
-    ];
-    return { ...node, ...(layout[index % layout.length] ?? layout[0]) };
+/* ── filtering ────────────────────────────────────────────────────────── */
+
+function buildPreviewGraph(
+  graph: GraphIndex,
+  filter: FilterConfig,
+  maxNodes: number
+): GraphIndex {
+  let nodes: EntryNode[];
+
+  if (filter.mode === "types" && filter.types?.length) {
+    const allowedTypes = new Set(filter.types);
+    nodes = graph.nodes.filter((node) => allowedTypes.has(node.type));
+  } else if (filter.mode === "neighborhood") {
+    nodes = neighborhoodNodes(graph, filter);
+  } else {
+    nodes = graph.nodes.slice();
+  }
+
+  nodes = nodes.slice(0, maxNodes);
+  const allowed = new Set(nodes.map((node) => node.id));
+  const edges = graph.edges.filter((e) => allowed.has(e.source) && allowed.has(e.target));
+  return { ...graph, nodes, edges };
+}
+
+function neighborhoodNodes(
+  graph: GraphIndex,
+  filter: { roots?: "hubs" | EntryType[]; depth?: number; perRoot?: number }
+): EntryNode[] {
+  const depth = filter.depth ?? 1;
+  const perRoot = filter.perRoot ?? 3;
+
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+  const roots: EntryNode[] =
+    filter.roots === "hubs" || filter.roots === undefined
+      ? graph.hubs
+      : graph.nodes.filter((n) => (filter.roots as EntryType[]).includes(n.type));
+
+  const adj = new Map<string, string[]>();
+  for (const edge of graph.edges) {
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
+    adj.get(edge.source)!.push(edge.target);
+    adj.get(edge.target)!.push(edge.source);
+  }
+
+  const picked = new Map<string, EntryNode>();
+  for (const root of roots) picked.set(root.id, root);
+
+  let frontier = roots.map((r) => r.id);
+  for (let d = 0; d < depth; d++) {
+    const next: string[] = [];
+    for (const rootId of frontier) {
+      const neighbors = (adj.get(rootId) ?? [])
+        .filter((id) => !picked.has(id))
+        .sort()
+        .slice(0, perRoot);
+      for (const nbId of neighbors) {
+        const node = nodeById.get(nbId);
+        if (node) {
+          picked.set(nbId, node);
+          next.push(nbId);
+        }
+      }
+    }
+    frontier = next;
+  }
+
+  const hubIds = new Set(graph.hubs.map((h) => h.id));
+  return Array.from(picked.values()).sort((a, b) => {
+    const ah = hubIds.has(a.id) ? 0 : 1;
+    const bh = hubIds.has(b.id) ? 0 : 1;
+    if (ah !== bh) return ah - bh;
+    return a.id.localeCompare(b.id);
   });
-  const byId = new Map(positions.map((node) => [node.id, node]));
-  return (
-    <svg viewBox="0 0 100 100" role="img" aria-label="Writing graph preview">
-      {graph.edges.map((edge) => {
-        const source = byId.get(edge.source);
-        const target = byId.get(edge.target);
-        if (!source || !target) return null;
-        return (
-          <line
-            key={`${edge.source}-${edge.target}`}
-            x1={source.x}
-            y1={source.y}
-            x2={target.x}
-            y2={target.y}
-            stroke="var(--graph-edge)"
-            strokeWidth="0.7"
-          />
-        );
-      })}
-      {positions.map((node) => (
-        <g key={node.id}>
-          <rect x={node.x - 3.2} y={node.y - 3.2} width="6.4" height="6.4" fill="var(--graph-hub)" />
-          <text x={node.x + 5.2} y={node.y + 1.5} fontSize="4" fill="var(--color-fg)">
-            {node.title}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
 }

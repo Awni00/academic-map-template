@@ -7,16 +7,21 @@
 
 .graph-preview__header {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px;
   margin-bottom: 18px;
-  max-width: 60ch;
 }
 
 .graph-preview__header > div {
   flex: 1;
   min-width: 0;
+  max-width: 60ch;
+}
+
+.graph-preview__header .cta {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .graph-preview__header strong {
@@ -57,9 +62,7 @@
   opacity: 0.5;
 }
 
-.graph-preview__body svg {
-  position: relative;
-  display: block;
+.graph-preview__body > div {
   width: 100%;
   height: 100%;
 }

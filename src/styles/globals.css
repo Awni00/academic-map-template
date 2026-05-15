@@ -403,25 +403,30 @@ pre {
   max-width: var(--content-wide);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 200px;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  column-gap: 48px;
   align-items: start;
   padding: 36px 0 48px;
 }
 
 .hero__left {
   min-width: 0;
+  max-width: 70ch;
+}
+
+.hero__left .bio {
+  max-width: none;
 }
 
 .hero__right {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 12px;
+  justify-content: flex-start;
+  padding-top: 6px;
 }
 
 .profile-card {
-  width: 160px;
-  height: 160px;
+  width: 168px;
+  height: 168px;
   border-radius: var(--radius-pill);
   border: 0.5px solid var(--color-border);
   background: var(--color-bg-soft);
@@ -1067,7 +1072,8 @@ pre {
 
   .hero {
     grid-template-columns: 1fr;
-    gap: 24px;
+    column-gap: 0;
+    row-gap: 24px;
     padding: 24px 0 32px;
   }
 
