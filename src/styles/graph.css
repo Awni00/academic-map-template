@@ -1,11 +1,16 @@
-/* ── Graph preview (homepage panel + strip) ─────────────────────────── */
+/* ── Writing preview ("Explore Writing" widget) ──────────────────────── */
+/* Homepage widget rendered by src/components/graph/WritingPreview.tsx.
+ * Always renders both subtrees (.writing-preview__graph and
+ * .writing-preview__cards); the desktop/mobile modifier classes below
+ * decide which one is visible at each viewport. Mobile breakpoint is
+ * 680px. See README → "Homepage: Explore Writing widget". */
 
-.graph-preview {
+.writing-preview {
   padding: 28px 0 8px;
   margin-bottom: 16px;
 }
 
-.graph-preview__header {
+.writing-preview__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -13,18 +18,18 @@
   margin-bottom: 18px;
 }
 
-.graph-preview__header > div {
+.writing-preview__header > div {
   flex: 1;
   min-width: 0;
   max-width: 60ch;
 }
 
-.graph-preview__header .cta {
+.writing-preview__header .cta {
   flex-shrink: 0;
   white-space: nowrap;
 }
 
-.graph-preview__header strong {
+.writing-preview__header strong {
   display: block;
   font-family: var(--font-body);
   font-weight: 600;
@@ -35,7 +40,7 @@
   margin-bottom: 4px;
 }
 
-.graph-preview__header .muted {
+.writing-preview__header .muted {
   font-family: var(--font-body);
   font-size: 14.5px;
   line-height: 1.5;
@@ -43,9 +48,10 @@
   margin: 0;
 }
 
-.graph-preview__body {
+/* Graph view slot. Height is driven by GraphCanvas's `height` prop
+ * (configured via siteConfig.homepage.writingPreview.previewHeight). */
+.writing-preview__graph {
   position: relative;
-  height: 280px;
   border: 1px solid var(--color-border-soft);
   border-radius: 6px;
   background: var(--color-bg-soft);
@@ -53,7 +59,7 @@
   padding: 18px;
 }
 
-.graph-preview__body::before {
+.writing-preview__graph::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -62,34 +68,31 @@
   opacity: 0.5;
 }
 
-.graph-preview__body > div {
+.writing-preview__graph > div {
   width: 100%;
   height: 100%;
 }
 
-.graph-preview--strip {
-  padding: 12px 0 24px;
-  margin-bottom: 0;
-}
-
-.graph-preview--strip .graph-preview__header {
-  margin-bottom: 12px;
-}
-
-.graph-preview--strip .graph-preview__body {
-  height: 240px;
-  padding: 10px 18px;
-}
-
-.topic-cards {
-  display: none;
+/* Topic-cards view slot. Grid is the *layout*; the desktop/mobile
+ * modifier rules decide whether this slot is `display: grid` or
+ * `display: none` at each viewport. */
+.writing-preview__cards {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
-  margin-top: 14px;
 }
 
-.topic-cards--always {
-  display: grid;
+/* View toggle, desktop (>680px) — keyed off `desktopMode`. */
+.writing-preview--desktop-graph        > .writing-preview__graph { display: block; }
+.writing-preview--desktop-graph        > .writing-preview__cards { display: none;  }
+.writing-preview--desktop-topic-cards  > .writing-preview__graph { display: none;  }
+.writing-preview--desktop-topic-cards  > .writing-preview__cards { display: grid;  }
+
+/* View toggle, mobile (≤680px) — keyed off `mobileMode`. */
+@media (max-width: 680px) {
+  .writing-preview--mobile-graph       > .writing-preview__graph { display: block; }
+  .writing-preview--mobile-graph       > .writing-preview__cards { display: none;  }
+  .writing-preview--mobile-topic-cards > .writing-preview__graph { display: none;  }
+  .writing-preview--mobile-topic-cards > .writing-preview__cards { display: grid;  }
 }
 
 .topic-card {
@@ -935,14 +938,3 @@
   }
 }
 
-@media (max-width: 680px) {
-  .graph-preview__body {
-    display: none;
-  }
-
-  .topic-cards {
-    display: grid;
-    padding: 0;
-    margin-top: 12px;
-  }
-}

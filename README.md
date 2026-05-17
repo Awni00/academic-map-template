@@ -117,7 +117,7 @@ Required frontmatter:
 
 ```yaml
 title: "Entry Title"
-type: "paper" # hub | paper | post | note | teaching | project
+type: "paper" # hub | sub-hub | paper | post | note | teaching | project
 ```
 
 Common optional fields:
@@ -191,12 +191,15 @@ Unresolved wikilinks render as red `[[foo]]` and warn or fail according to `writ
 
 Hubs are normal writing entries with `type: "hub"`. They appear as larger square graph nodes and are used as topic entry points in the writing browser and homepage topic cards.
 
+Sub-hubs use `type: "sub-hub"`. They are path-aware folder entries like hubs, but render as smaller grey square nodes and do not appear as top-level topic entry points.
+
 ### Graph Styles
 
 Edit `src/config/graph.ts` for node labels, shapes, sizes, and colors. CSS variables are defined in `src/styles/tokens.css`, for example:
 
 ```css
 --graph-hub: #111111;
+--graph-sub-hub: #7a808a;
 --graph-paper: #3657d8;
 --graph-teaching: #15803d;
 ```
@@ -311,12 +314,62 @@ Default homepage order:
 
 1. Hero.
 2. Research summary.
-3. Writing graph preview.
+3. "Explore Writing" widget (see below).
 4. Selected publications.
 5. Recent writing.
 6. News.
 
 News lives in `src/data/news.yaml`.
+
+### Homepage: Explore Writing widget
+
+The "Explore Writing" widget that sits below the hero is configured under
+`siteConfig.homepage.writingPreview`. It is implemented by
+[`src/components/graph/WritingPreview.tsx`](src/components/graph/WritingPreview.tsx)
+and acts as a hand-off into the full writing map at `clickTarget`
+(typically `/writing`).
+
+The widget has two view modes, picked per-viewport:
+
+- `"graph"` — interactive force-directed preview rendered via
+  `react-force-graph-2d`. Click-and-drag a node, scroll-zoom, pan.
+- `"topic-cards"` — a quiet grid of links to the writing hubs. No canvas,
+  no JS work; friendlier on narrow viewports.
+
+`desktopMode` controls the view at widths >680px; `mobileMode` controls
+the view at ≤680px. The defaults are `desktopMode: "graph"` and
+`mobileMode: "topic-cards"`. Set both to the same value to disable the
+responsive swap.
+
+The graph view shows a filtered subset of the full writing graph. Three
+filter strategies:
+
+```ts
+// Every node:
+filter: { mode: "all" }
+
+// Only nodes of these types:
+filter: { mode: "types", types: ["paper", "post"] }
+
+// BFS outward from a root set:
+filter: {
+  mode: "neighborhood",
+  roots: "hubs",      // or an array of EntryTypes
+  depth: 2,           // levels of BFS; `null` = unbounded
+  perRoot: 3          // neighbors per node per level; `null` = all
+}
+```
+
+Other fields:
+
+- `maxNodes` — hard cap applied after `filter`. `null` means no cap.
+- `previewHeight` — pixel height of the graph canvas slot (defaults to
+  360 in this template).
+- `clickTarget` — where the "Open full map →" CTA links to.
+- `title`, `description` — header text above the widget.
+
+The topic-cards view ignores `filter`, `maxNodes`, and `previewHeight`;
+it always renders one card per hub (`graph.hubs`).
 
 ## RSS, Sitemap, And SEO
 
@@ -331,7 +384,7 @@ Default RSS inclusion:
 - `draft !== true`
 - `date` exists
 - type is `paper`, `post`, `note`, `teaching`, or `project`
-- hubs are excluded
+- hubs and sub-hubs are excluded
 
 Astro sitemap integration writes sitemap output during `npm run build`.
 

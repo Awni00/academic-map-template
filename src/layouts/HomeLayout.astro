@@ -5,7 +5,7 @@ import Figure from "../components/article/Figure.astro";
 import MathBlock from "../components/article/MathBlock.astro";
 import type { GraphIndex, EntryNode } from "../lib/graph/types";
 import type { Publication } from "../lib/publications/types";
-import GraphPreview from "../components/graph/GraphPreview";
+import WritingPreview from "../components/graph/WritingPreview";
 import PublicationItem from "../components/publications/PublicationItem.astro";
 import { siteConfig } from "../config/site";
 
@@ -73,15 +73,17 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
   {
     previewConfig.enabled && (
       <section class="section">
-        <GraphPreview
+        <WritingPreview
           client:load
           graph={graph}
-          mode="panel"
           title={previewConfig.title}
           description={previewConfig.description}
           clickTarget={previewConfig.clickTarget}
           filter={previewConfig.filter as any}
           maxNodes={previewConfig.maxNodes}
+          previewHeight={previewConfig.previewHeight}
+          desktopMode={previewConfig.desktopMode}
+          mobileMode={previewConfig.mobileMode}
         />
       </section>
     )
