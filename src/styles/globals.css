@@ -533,7 +533,7 @@ pre {
 .publication-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
 }
 
 .publication-item {
@@ -784,6 +784,10 @@ pre {
 
 .publication-year {
   margin-bottom: 28px;
+}
+
+.publication-year .publication-item + .publication-item {
+  margin-top: 28px;
 }
 
 .publication-year h2 {
