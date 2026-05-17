@@ -21,7 +21,14 @@ export default function LocalGraph({ graph, currentId, depth = 1, maxNodes = 20 
   const highlighted = useMemo(() => new Set([currentId]), [currentId]);
   return (
     <div className="local-graph">
-      <GraphCanvas graph={localGraph} height={190} selected={currentId} highlighted={highlighted} labelMode="none" />
+      <GraphCanvas
+        graph={localGraph}
+        height={190}
+        selected={currentId}
+        highlighted={highlighted}
+        selectedStyle="soft-glow"
+        labelMode="none"
+      />
     </div>
   );
 }

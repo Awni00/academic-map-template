@@ -6,6 +6,7 @@ import type { GraphIndex } from "../../lib/graph/types";
 type HubLayout = "circle" | "row" | "force";
 type LabelMode = "config" | "all" | "none";
 type LabelSide = "top" | "bottom" | "auto";
+type SelectedStyle = "outline" | "soft-glow";
 
 type GraphCanvasProps = {
   graph: GraphIndex;
@@ -13,6 +14,7 @@ type GraphCanvasProps = {
   selected?: string;
   highlighted?: Set<string>;
   dimUnhighlighted?: boolean;
+  selectedStyle?: SelectedStyle;
   /**
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
@@ -43,6 +45,7 @@ export default function GraphCanvas({
   selected,
   highlighted,
   dimUnhighlighted = false,
+  selectedStyle = "outline",
   labelMode = "config",
   labelSide = "auto",
   onSelect,
@@ -252,7 +255,8 @@ export default function GraphCanvas({
             drawNode(ctx, node, globalScale, {
               selected: selected === node.id,
               dimmed: dimUnhighlighted && highlighted ? !highlighted.has(node.id) : false,
-              labelMode
+              labelMode,
+              selectedStyle
             });
           }}
           onNodeClick={(node: any) => onSelect?.(node.id)}
@@ -268,15 +272,21 @@ function drawNode(
   ctx: CanvasRenderingContext2D,
   node: any,
   globalScale: number,
-  state: { selected: boolean; dimmed: boolean; labelMode: LabelMode }
+  state: { selected: boolean; dimmed: boolean; labelMode: LabelMode; selectedStyle: SelectedStyle }
 ) {
   const radius = node.type === "hub" ? 6 : node.type === "paper" ? 5 : 4;
   const color = nodeColor(node.type);
   ctx.save();
   ctx.globalAlpha = state.dimmed ? 0.18 : 1;
+
+  if (state.selected && state.selectedStyle === "soft-glow") {
+    drawSelectedGlow(ctx, node, radius, color, state.dimmed);
+  }
+
   ctx.fillStyle = color;
-  ctx.strokeStyle = state.selected ? cssVar("--color-fg") : cssVar("--color-bg");
-  ctx.lineWidth = state.selected ? 2.5 : 1;
+  ctx.strokeStyle =
+    state.selected && state.selectedStyle === "outline" ? cssVar("--color-fg") : cssVar("--color-bg");
+  ctx.lineWidth = state.selected && state.selectedStyle === "outline" ? 2.5 : 1;
 
   if (node.type === "hub" || node.type === "sub-hub") {
     ctx.beginPath();
@@ -320,6 +330,23 @@ function drawNode(
       ctx.fillText(label, node.x, node.y + offset);
     }
   }
+  ctx.restore();
+}
+
+function drawSelectedGlow(
+  ctx: CanvasRenderingContext2D,
+  node: any,
+  radius: number,
+  color: string,
+  dimmed: boolean
+) {
+  const glowRadius = radius + 4;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha = dimmed ? 0.05 : 0.18;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, glowRadius, 0, 2 * Math.PI);
+  ctx.fill();
   ctx.restore();
 }
 
