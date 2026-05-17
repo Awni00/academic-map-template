@@ -30,6 +30,7 @@
 
   /* Graph palette (mirrors --accent via fallback) */
   --graph-hub: #15161a;
+  --graph-sub-hub: #7a808a;
   --graph-paper: var(--color-accent);
   --graph-post: #64748b;
   --graph-note: #94a3b8;
@@ -113,6 +114,7 @@
   --color-success: #4ade80;
 
   --graph-hub: #f1f0ec;
+  --graph-sub-hub: #a1a1aa;
   --graph-edge: #4a4b50;
 
   --placeholder-a: #1f2024;

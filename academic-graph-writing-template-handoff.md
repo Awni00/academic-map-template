@@ -347,7 +347,7 @@ export const writingConfig = {
   route: "/writing",
   label: "Writing",
 
-  entryTypes: ["hub", "paper", "post", "note", "teaching", "project"],
+  entryTypes: ["hub", "sub-hub", "paper", "post", "note", "teaching", "project"],
 
   browser: {
     defaultView: {
@@ -372,6 +372,7 @@ export const writingConfig = {
       default: "distill",
       byType: {
         hub: "wide",
+        "sub-hub": "wide",
         paper: "distill",
         post: "distill",
         note: "narrow",
@@ -384,6 +385,7 @@ export const writingConfig = {
       default: true,
       byType: {
         hub: true,
+        "sub-hub": true,
         paper: true,
         post: true,
         note: true,
@@ -400,6 +402,7 @@ export const writingConfig = {
       mobile: "collapsed",
       byType: {
         hub: true,
+        "sub-hub": true,
         paper: true,
         post: true,
         note: true,
@@ -436,6 +439,13 @@ export const graphConfig = {
       size: 18,
       color: "var(--graph-hub)",
       labelVisibility: "always"
+    },
+    "sub-hub": {
+      label: "Sub-hub",
+      shape: "square",
+      size: 10,
+      color: "var(--graph-sub-hub)",
+      labelVisibility: "hover"
     },
     paper: {
       label: "Paper",
@@ -530,7 +540,7 @@ Required frontmatter:
 
 ```ts
 title: string
-type: "hub" | "paper" | "post" | "note" | "teaching" | "project"
+type: "hub" | "sub-hub" | "paper" | "post" | "note" | "teaching" | "project"
 ```
 
 Optional frontmatter:
@@ -756,7 +766,7 @@ derive backlinks, outgoing links, neighborhoods, hubs, search docs
 Core types:
 
 ```ts
-type EntryType = "hub" | "paper" | "post" | "note" | "teaching" | "project";
+type EntryType = "hub" | "sub-hub" | "paper" | "post" | "note" | "teaching" | "project";
 
 type EntryNode = {
   id: string;
@@ -975,6 +985,7 @@ Node visual defaults:
 
 ```txt
 hub       square, larger, label always visible
+sub-hub   square, normal size, grey, hover label
 paper     circle, medium-large
 post      circle, medium
 note      circle, smaller
@@ -1540,6 +1551,7 @@ Use CSS variable tokens:
   --color-danger: #b91c1c;
 
   --graph-hub: #111111;
+  --graph-sub-hub: #7a808a;
   --graph-paper: #3657d8;
   --graph-post: #64748b;
   --graph-note: #71717a;
@@ -1637,7 +1649,7 @@ Default inclusion:
 draft !== true
 date exists
 type ∈ [paper, post, note, teaching, project]
-hub excluded by default
+hub and sub-hub excluded by default
 ```
 
 Config:
@@ -1647,7 +1659,7 @@ rss: {
   enabled: true,
   route: "/writing/rss.xml",
   includeTypes: ["paper", "post", "note", "teaching", "project"],
-  excludeTypes: ["hub"]
+  excludeTypes: ["hub", "sub-hub"]
 }
 ```
 
@@ -1735,13 +1747,15 @@ npm run new:entry
 CLI mode:
 
 ```bash
-npm run new:entry -- --type paper --title "Chain-of-Thought Information"
+npm run new:entry -- --type paper --title "Chain-of-Thought Information" --path machine-learning-theory/chain-of-thought-information
+npm run new:entry -- --type sub-hub --title "Quantum Mechanics" --path learning/quantum-mechanics
 ```
 
 Creates:
 
 ```txt
-src/content/writing/papers/chain-of-thought-information.mdx
+src/content/writing/machine-learning-theory/chain-of-thought-information.mdx
+src/content/writing/learning/quantum-mechanics/index.mdx
 ```
 
 Default frontmatter:

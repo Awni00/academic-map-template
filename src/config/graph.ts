@@ -8,6 +8,13 @@ export const graphConfig = {
       color: "var(--graph-hub)",
       labelVisibility: "always"
     },
+    "sub-hub": {
+      label: "Sub-hub",
+      shape: "square",
+      size: 10,
+      color: "var(--graph-sub-hub)",
+      labelVisibility: "hover"
+    },
     paper: {
       label: "Paper",
       shape: "circle",

@@ -278,7 +278,7 @@ function drawNode(
   ctx.strokeStyle = state.selected ? cssVar("--color-fg") : cssVar("--color-bg");
   ctx.lineWidth = state.selected ? 2.5 : 1;
 
-  if (node.type === "hub") {
+  if (node.type === "hub" || node.type === "sub-hub") {
     ctx.beginPath();
     ctx.rect(node.x - radius, node.y - radius, radius * 2, radius * 2);
     ctx.fill();
@@ -351,6 +351,7 @@ function polygon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: nu
 function nodeColor(type: string): string {
   const map: Record<string, string> = {
     hub: "--graph-hub",
+    "sub-hub": "--graph-sub-hub",
     paper: "--graph-paper",
     post: "--graph-post",
     note: "--graph-note",

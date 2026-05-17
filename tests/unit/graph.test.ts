@@ -83,6 +83,29 @@ describe("graph utilities", () => {
     ]);
   });
 
+  it("keeps sub-hubs out of top-level hub topics", () => {
+    const { index } = buildGraphIndex([
+      {
+        id: "learning/index",
+        body: "",
+        data: { title: "Learning", type: "hub", summary: "Hub", tags: [], links: ["./quantum-mechanics"] }
+      },
+      {
+        id: "learning/quantum-mechanics/index",
+        body: "",
+        data: {
+          title: "Quantum Mechanics",
+          type: "sub-hub",
+          summary: "Sub-hub",
+          tags: [],
+          links: []
+        }
+      }
+    ]);
+    expect(index.nodes.find((node) => node.id === "learning/quantum-mechanics")?.type).toBe("sub-hub");
+    expect(index.hubs.map((node) => node.id)).toEqual(["learning"]);
+  });
+
   it("filters search documents by query and type", () => {
     const { index } = buildGraphIndex(entries);
     const docs = toSearchDocuments(index.nodes);

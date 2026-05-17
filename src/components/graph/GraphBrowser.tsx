@@ -22,7 +22,7 @@ const FOCUS_DEPTH = writingConfig.browser.focus.depth;
 const VIEWS = ["map", "topics", "list"] as const;
 type View = (typeof VIEWS)[number];
 
-const TYPE_ORDER: EntryType[] = ["hub", "paper", "post", "note", "project", "teaching"];
+const TYPE_ORDER: EntryType[] = ["hub", "sub-hub", "paper", "post", "note", "project", "teaching"];
 
 export default function GraphBrowser({ graph }: GraphBrowserProps) {
   const [state, setState] = useState<WritingBrowserState>(() => readStateFromUrl());
@@ -218,7 +218,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 onSelect={(id) => patch({ selected: id })}
               />
               <div className="graph-legend" aria-hidden="true">
-                {(["hub", "paper", "note", "teaching", "project"] as const).map((type) => {
+                {(["hub", "sub-hub", "paper", "note", "teaching", "project"] as const).map((type) => {
                   const cfg = graphConfig.nodeTypes[type];
                   return (
                     <span key={type}>

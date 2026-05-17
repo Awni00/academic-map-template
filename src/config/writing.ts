@@ -1,4 +1,4 @@
-const ENTRY_TYPES = ["hub", "paper", "post", "note", "teaching", "project"] as const;
+const ENTRY_TYPES = ["hub", "sub-hub", "paper", "post", "note", "teaching", "project"] as const;
 export type EntryType = (typeof ENTRY_TYPES)[number];
 
 /**
@@ -53,7 +53,7 @@ export const writingConfig = {
     enabled: true,
     route: "/writing/rss.xml",
     includeTypes: ["paper", "post", "note", "teaching", "project"],
-    excludeTypes: ["hub"]
+    excludeTypes: ["hub", "sub-hub"]
   },
   browser: {
     defaultView: {
@@ -86,6 +86,7 @@ export const writingConfig = {
       default: "reading" as ArticleWidth,
       byType: {
         hub: "flex" as ArticleWidth,
+        "sub-hub": "flex" as ArticleWidth,
         paper: "reading" as ArticleWidth,
         post: "reading" as ArticleWidth,
         note: "reading" as ArticleWidth,
@@ -100,6 +101,7 @@ export const writingConfig = {
       mobile: "collapsed",
       byType: {
         hub: true,
+        "sub-hub": true,
         paper: true,
         post: true,
         note: true,
@@ -129,6 +131,10 @@ export const writingConfig = {
         // Hubs have few headings of their own; their LocalGraph IS the
         // contextual landmark, so promote it to the header and drop the TOC.
         hub: {
+          toc: { where: "none" as PlacementToc },
+          localGraph: { where: "header" as PlacementGraph }
+        },
+        "sub-hub": {
           toc: { where: "none" as PlacementToc },
           localGraph: { where: "header" as PlacementGraph }
         },

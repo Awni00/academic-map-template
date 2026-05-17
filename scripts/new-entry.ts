@@ -16,8 +16,9 @@ if (!writingConfig.entryTypes.includes(type)) {
 
 const entryPath = canonicalizeWritingPath(args.path ?? args.slug ?? title);
 if (!entryPath) throw new Error("Entry path must not be empty.");
-const filePath = path.join("src/content/writing", type === "hub" ? entryPath : `${entryPath}.mdx`);
-const finalPath = type === "hub" ? path.join(filePath, "index.mdx") : filePath;
+const ownsFolder = type === "hub" || type === "sub-hub";
+const filePath = path.join("src/content/writing", ownsFolder ? entryPath : `${entryPath}.mdx`);
+const finalPath = ownsFolder ? path.join(filePath, "index.mdx") : filePath;
 await assertNoDuplicatePath(entryPath);
 await fs.mkdir(path.dirname(finalPath), { recursive: true });
 await fs.writeFile(finalPath, frontmatter(title, type), "utf8");
