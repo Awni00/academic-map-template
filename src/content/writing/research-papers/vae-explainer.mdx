@@ -1,0 +1,54 @@
+---
+title: "Variational autoencoders: a short explainer"
+type: "paper"
+aliases:
+  - VAE explainer
+  - variational autoencoders
+date: "2026-05-18"
+summary: "A placeholder paper-style explainer introducing VAEs as latent-variable generative models trained with an evidence lower bound."
+tags:
+  - papers
+  - generative-models
+  - latent-variable-models
+links:
+  - research-papers
+  - machine-learning-theory
+authors:
+  - Your Name
+draft: false
+theme: global
+---
+
+Variational autoencoders are a clean example of how a generative model can pair a hidden representation with a tractable training objective. They assume that each observation `x` is produced from an unobserved latent variable `z`, then learn both a decoder that maps `z` back to data and an encoder that approximates the posterior distribution over `z`.
+
+## Model
+
+The generative story is:
+
+1. Draw a latent variable `z` from a simple prior, usually `p(z) = N(0, I)`.
+2. Draw data from a decoder distribution `p_\theta(x | z)`.
+
+The challenge is that the exact posterior `p_\theta(z | x)` is usually intractable. VAEs introduce an encoder `q_\phi(z | x)` that acts as a learned approximation.
+
+<MathBlock title="Evidence lower bound">
+For one data point, the VAE objective is
+$$
+\log p_\theta(x)
+\ge
+\mathbb{E}_{q_\phi(z \mid x)}[\log p_\theta(x \mid z)]
+-
+\mathrm{KL}(q_\phi(z \mid x) \| p(z)).
+$$
+</MathBlock>
+
+The first term rewards reconstructions that explain the observed data. The second term keeps the inferred latents close to the prior, which makes it possible to sample new examples by drawing `z` from the prior and decoding it.
+
+<Callout type="tip" title="Useful mental model">
+A VAE is not just an autoencoder with noise. It is a latent-variable model where the encoder exists to make likelihood-based training practical.
+</Callout>
+
+## Why it matters
+
+VAEs are useful as a template for probabilistic representation learning. They make the trade-off between compression, reconstruction, and sampleability explicit, and they give a compact language for discussing posterior approximation, regularized latent spaces, and generative modeling.
+
+This placeholder paper links back to [[research-papers]] as a normal example entry in the site template, and to [[machine-learning-theory]] for readers who want the broader learning-theory context.
