@@ -210,6 +210,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 graph={visibleGraph}
                 height={620}
                 selected={state.selected}
+                selectedStyle="soft-glow"
                 highlighted={focusIds}
                 dimUnhighlighted={FOCUS_MODE === "dim"}
                 hubLayout={graphConfig.layout.hubs}
