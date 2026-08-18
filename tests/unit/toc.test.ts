@@ -78,14 +78,14 @@ describe("article TOC depth config", () => {
   });
 });
 
-function entry(layout?: WritingEntryLike["data"]["layout"]): WritingEntryLike {
+function entry(article?: WritingEntryLike["data"]["article"]): WritingEntryLike {
   return {
     id: "paper",
     body: "",
     data: {
       title: "Paper",
       type: "paper",
-      layout
+      article
     }
   } as WritingEntryLike;
 }

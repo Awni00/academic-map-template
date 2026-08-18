@@ -36,7 +36,7 @@ import {
 import { entryToRecord } from "../lib/graph/resolveLinks";
 import {
   effectiveAsides,
-  resolveArticleWidth,
+  resolveArticleMode,
   resolveAsides,
   resolvePlacement
 } from "../lib/article/placement";
@@ -57,12 +57,17 @@ const node = record.node;
 const entryType = getEntryType(node.type);
 const byId = new Map(graph.nodes.map((item) => [item.id, item]));
 
-const articleWidth = resolveArticleWidth(entry);
+const articleMode = resolveArticleMode(entry);
+const isAbstract = articleMode === "abstract";
 const placement = resolvePlacement(entry);
 const tocConfig = resolveTocConfig(entry, writingConfig);
 const tocHeadings = filterHeadingsForToc(headings, tocConfig);
 const asidesRequested = resolveAsides(entry);
-const asidesEffective = effectiveAsides(asidesRequested, articleWidth, placement.toc.where);
+// Abstract-mode bodies are a few paragraphs with no gutter to render
+// into, so margin asides always degrade to inline there.
+const asidesEffective = isAbstract
+  ? "inline"
+  : effectiveAsides(asidesRequested, placement.toc.where);
 
 const outgoing = graph.outgoing[node.id] ?? [];
 const backlinkIds = graph.backlinks[node.id] ?? [];
@@ -73,6 +78,7 @@ const toLinkedItem = (id: string) => {
 };
 const backlinks = backlinkIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
 const venue = entry.data.venue;
@@ -115,8 +121,11 @@ const dateRows = displayDateRows?.length
 
 // Slot derivation. The TOC lives in either the left or right grid
 // column; backlinks/related can also live there if explicitly placed.
+// An abstract has no heading structure to outline, so the TOC is
+// suppressed regardless of placement config. Backlinks, related, and
+// the local graph stay put — graph context is the point of these pages.
 const tocSide: "left" | "right" | "none" =
-  placement.toc.where === "none" ? "none" : placement.toc.where;
+  isAbstract || placement.toc.where === "none" ? "none" : placement.toc.where;
 const backlinksSide = placement.backlinks.where;
 const relatedSide = placement.related.where;
 const localGraphInHeader = placement.localGraph.where === "header";
@@ -171,10 +180,9 @@ const right = renderSide("right");
   <article class="writing-shell">
     <div
       class="article-grid"
-      data-width={articleWidth}
+      data-mode={articleMode}
       data-toc={tocSide}
       data-asides={asidesEffective}
-      data-has-left={renderLeft ? "true" : "false"}
       data-has-right={renderRight ? "true" : "false"}
       data-has-foot={renderFooter ? "true" : undefined}
     >
@@ -308,9 +316,30 @@ const right = renderSide("right");
       }
 
       <main class="article-main">
-        <div class="article-content" data-asides={asidesEffective}>
-          <Content components={components} />
-        </div>
+        {
+          hero && (
+            <Figure
+              class="article-hero"
+              src={hero.src}
+              alt={hero.alt ?? ""}
+              caption={hero.caption}
+            />
+          )
+        }
+        {
+          isAbstract ? (
+            <section class="abstract-block" aria-label="Abstract">
+              <h2 class="abstract-block__label">Abstract</h2>
+              <div class="article-content" data-asides={asidesEffective}>
+                <Content components={components} />
+              </div>
+            </section>
+          ) : (
+            <div class="article-content" data-asides={asidesEffective}>
+              <Content components={components} />
+            </div>
+          )
+        }
       </main>
 
       {
@@ -345,17 +374,18 @@ const right = renderSide("right");
           </aside>
         )
       }
+
+      <EntryFooter
+        graph={graph}
+        currentId={node.id}
+        headings={headings}
+        tocConfig={tocConfig}
+        tocInFoot={false}
+        showLocalGraph={localGraphInFooter}
+        backlinks={backlinksInFooter ? backlinks : []}
+        related={relatedInFooter ? related : []}
+        bibtex={(entry.data as { bibtex?: string }).bibtex}
+      />
     </div>
-    <EntryFooter
-      graph={graph}
-      currentId={node.id}
-      headings={headings}
-      tocConfig={tocConfig}
-      tocInFoot={false}
-      showLocalGraph={localGraphInFooter}
-      backlinks={backlinksInFooter ? backlinks : []}
-      related={relatedInFooter ? related : []}
-      bibtex={(entry.data as { bibtex?: string }).bibtex}
-    />
   </article>
 </BaseLayout>

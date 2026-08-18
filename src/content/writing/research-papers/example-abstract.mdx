@@ -1,0 +1,46 @@
+---
+title: "Latent structure in overparameterized models"
+type: "paper"
+date: "2026-06-02"
+displayDates:
+  - label: "Page"
+    date: "2026-06-02"
+  - label: "arXiv v1"
+    date: "2026-05-14"
+summary: "A placeholder abstract-only record: a paper worth keeping in the graph that does not have its own explainer."
+venue: "Example Conference on Learning Representations, 2026"
+tags:
+  - papers
+  - latent-variable-models
+links:
+  - research-papers
+  - machine-learning-theory
+  - ./vae-explainer
+authors:
+  - name: "Your Name"
+    affiliation: "Your University"
+    url: "https://example.com"
+  - name: "Collaborator Name"
+    affiliation: "Example AI Lab"
+draft: false
+theme: global
+external:
+  arxiv: "https://arxiv.org/abs/0000.00000"
+  code: "https://github.com/example/latent-structure"
+hero:
+  src: "/figures/latent-map.svg"
+  alt: "Two-dimensional embedding of a learned latent space"
+  caption: "Figure 1: the learned latent space, projected to two dimensions."
+article:
+  mode: abstract
+---
+
+Overparameterized models routinely fit their training data exactly and still
+generalize, which the classical bias-variance picture does not anticipate. We
+study what the learned representation looks like in this regime. Writing the
+predictor as a composition of an encoder $f_\theta$ and a readout $g_\phi$, we
+show that the encoder concentrates on a low-dimensional subspace whose dimension
+tracks the intrinsic dimension of the data rather than the parameter count. We
+give a bound on the excess risk in terms of that effective dimension, and verify
+on synthetic mixtures and standard image benchmarks that the predicted scaling
+holds across three orders of magnitude in model size.

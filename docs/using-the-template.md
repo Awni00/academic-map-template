@@ -82,13 +82,26 @@ draft: false
 external:
   arxiv: "https://arxiv.org/abs/..."
   code: "https://github.com/..."
-layout:
-  width: reading
+hero:
+  src: "/figures/teaser.svg"
+  alt: "Description of the figure"
+  caption: "Optional caption."
+article:
+  mode: article
   asides: margin
   toc:
     minDepth: 2
     maxDepth: 4
 ```
+
+The `article` block holds per-entry presentation overrides and mirrors the
+`article` block in the entry type registry, so the same keys mean the same
+thing at both levels. Do not name this key `layout`: Astro reserves
+`frontmatter.layout` as a path to a layout component and will fail the build
+with a syntax error if it holds an object.
+
+`hero` renders an optional lead figure above the article body. It works in
+both presentation modes.
 
 For paper-style writing entries, `venue` is intentionally stored in entry
 frontmatter even if the same paper also appears in `src/data/publications.bib`.
@@ -135,11 +148,42 @@ arXiv v1: May 21, 2025
 NeurIPS: Sep 18, 2025
 ```
 
-`layout.toc` controls which article heading depths appear in the table of
+`article.toc` controls which article heading depths appear in the table of
 contents for this entry. Depths map to Markdown heading levels `##` through
 `######`; `#` is reserved for the article title rendered by the layout. Omitted
 fields inherit from the type-level or global default, which includes `h2` and
 `h3`.
+
+### Abstract-Only Entries
+
+Use `article.mode: abstract` to record a paper that does not have its own
+explainer or post. The entry body *is* the paper's abstract, and the layout
+presents it as an emphasized block under the standard article header:
+
+```yaml
+title: "Latent structure in overparameterized models"
+type: "paper"
+venue: "Example Conference on Learning Representations, 2026"
+authors:
+  - name: "Your Name"
+    affiliation: "Your University"
+external:
+  arxiv: "https://arxiv.org/abs/..."
+  code: "https://github.com/..."
+hero:
+  src: "/figures/teaser.svg"
+  alt: "Model architecture"
+article:
+  mode: abstract
+```
+
+Mode is presentation only. Keep `type: "paper"` (or whichever type fits) so the
+entry keeps its usual graph shape and colour, its RSS inclusion, and its place
+in topic lists. An abstract entry is a full graph citizen: backlinks, related
+entries, and the local graph all render in the footer as usual.
+
+Because the body is the abstract, the article table of contents is suppressed
+in this mode regardless of placement config, and `<Aside>` blocks render inline.
 
 Routes mirror the content-relative path:
 

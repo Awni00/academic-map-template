@@ -8,7 +8,8 @@ import {
   isHubType,
   publicationsConfig,
   siteConfig,
-  validateEntryTypes
+  validateEntryTypes,
+  writingConfig
 } from "../../src/config/resolve";
 import type { EntryTypeDefinition } from "../../src/config/types";
 
@@ -19,6 +20,16 @@ describe("resolved config", () => {
     expect(entryTypeOwnsFolder("sub-hub")).toBe(true);
     expect(getEntryType("paper").label).toBe("Paper");
     expect(graphConfig.nodeTypes.paper).toEqual(getEntryType("paper").graph);
+  });
+
+  it("leaves every built-in entry type in the standard article mode", () => {
+    // Article mode is a presentation axis layered onto the existing
+    // registry. No built-in type opts into abstract mode, so adding the
+    // axis must not change how any existing entry renders.
+    expect(writingConfig.entryLayout.mode.default).toBe("article");
+    for (const entryType of entryTypeDefinitions) {
+      expect(writingConfig.entryLayout.mode.byType[entryType.id]).toBe("article");
+    }
   });
 
   it("defaults publication abstracts to popup display on publication surfaces", () => {

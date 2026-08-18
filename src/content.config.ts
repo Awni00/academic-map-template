@@ -52,6 +52,14 @@ const externalLinks = z
   .partial()
   .optional();
 
+const hero = z
+  .object({
+    src: z.string().url().or(z.string().startsWith("/")),
+    alt: z.string().default(""),
+    caption: z.string().optional()
+  })
+  .optional();
+
 const writing = defineCollection({
   loader: glob({
     base: "./src/content/writing",
@@ -89,10 +97,24 @@ const writing = defineCollection({
     math: mathConfig.optional(),
     external: externalLinks,
     bibtex: z.string().optional(),
-    layout: z
+    // Optional lead figure rendered above the article body. Available in
+    // both presentation modes, not just "abstract".
+    hero,
+    // Per-entry presentation overrides. Mirrors the entry-type registry's
+    // `article` block, so the same keys mean the same thing at both levels.
+    //
+    // NOTE: this must not be named `layout`. Astro reserves `frontmatter.layout`
+    // as a path to a layout component and emits
+    //   import __astro_layout_component__ from <value>
+    // which is a syntax error for any object value.
+    article: z
       .object({
-        // Override the article body width for this entry.
-        width: z.enum(["reading", "flex"]).optional(),
+        // Presentation mode. "abstract" renders a short paper-record page
+        // whose body is the abstract itself, emphasized as a block; the
+        // default "article" is the standard long-form layout. This only
+        // affects presentation — `type` still drives graph styling, RSS,
+        // and recent-writing inclusion.
+        mode: z.enum(["article", "abstract"]).optional(),
         // Override aside placement: "margin" floats <Aside> blocks into
         // the right gutter; "inline" renders them as left-bordered blocks.
         asides: z.enum(["margin", "inline"]).optional(),

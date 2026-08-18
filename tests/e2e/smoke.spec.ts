@@ -197,6 +197,81 @@ test("writing entry and RSS render", async ({ page }) => {
   expect(await response?.text()).toContain('<rss version="2.0">');
 });
 
+test("abstract-mode entry renders its record layout", async ({ page }) => {
+  await page.goto("/writing/research-papers/example-abstract");
+  await expect(
+    page.getByRole("heading", {
+      name: "Latent structure in overparameterized models",
+    }),
+  ).toBeVisible();
+
+  // The `article` frontmatter block must reach the layout. This also guards
+  // the key name itself: Astro reserves `layout`, so renaming it back would
+  // fail the build outright.
+  const grid = page.locator(".article-grid");
+  await expect(grid).toHaveAttribute("data-mode", "abstract");
+  await expect(grid).toHaveAttribute("data-toc", "none");
+
+  // The abstract owns the body, so no TOC rail is rendered.
+  await expect(page.locator(".sidebar-section--toc")).toHaveCount(0);
+
+  const block = page.locator(".abstract-block");
+  await expect(block).toBeVisible();
+  await expect(block.locator(".abstract-block__label")).toHaveText("Abstract");
+  await expect(block).toContainText("Overparameterized models routinely fit");
+  await expect(block.locator(".katex").first()).toBeVisible();
+
+  // Header metadata still comes from the shared Distill-style header.
+  await expect(page.locator(".article-byline")).toContainText("Venue");
+  await expect(page.locator(".article-external")).toContainText("arXiv");
+  await expect(page.locator(".article-hero img")).toBeVisible();
+
+  // Abstract entries stay full graph citizens.
+  const entryNav = page.getByRole("region", { name: "Entry navigation" });
+  await expect(entryNav).toContainText("Backlinks");
+  await expect(entryNav).toContainText("Related");
+});
+
+test("article column and footer share one left edge across layouts", async ({
+  page,
+}) => {
+  const viewport = page.viewportSize();
+  // Below the 980px breakpoint the grid collapses to a single block column,
+  // where alignment is trivially satisfied; the invariant under test is the
+  // multi-column one.
+  if ((viewport?.width ?? 0) <= 980) return;
+
+  const routes = [
+    "/writing/research-papers", // hub, no rail rendered
+    "/writing/research-papers/example-abstract", // abstract mode, no rail
+    "/writing/education-teaching/bias-variance-by-example", // toc: none
+    "/writing/machine-learning-theory/test-error-decomposition", // left toc
+    "/writing/research-papers/vae-explainer", // left toc + margin asides
+  ];
+
+  const edges: number[] = [];
+  for (const route of routes) {
+    await page.goto(route);
+    const header = await page.locator(".article-header").boundingBox();
+    const footer = await page.locator(".entry-foot").boundingBox();
+    expect(header, route).not.toBeNull();
+    expect(footer, route).not.toBeNull();
+
+    // The footer lives in the grid's body column, so it inherits both the
+    // header's left edge and the prose measure.
+    expect(Math.abs(header!.x - footer!.x), route).toBeLessThanOrEqual(1);
+    expect(Math.abs(header!.width - footer!.width), route).toBeLessThanOrEqual(1);
+    edges.push(header!.x);
+  }
+
+  // The left rail is reserved whether or not a sidebar renders into it, so
+  // every layout starts at the same x. Without that reservation these split
+  // into distinct groups depending on which rails each page happens to show.
+  for (const edge of edges) {
+    expect(Math.abs(edge - edges[0])).toBeLessThanOrEqual(1);
+  }
+});
+
 test("media layout controls size figures and embeds", async ({ page }) => {
   await page.goto("/fixtures/media-layout-controls");
   await expect(page.locator("#media-layout-controls-fixture")).toBeVisible();

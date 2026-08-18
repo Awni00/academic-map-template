@@ -1,6 +1,5 @@
 export { writingConfig } from "./resolve";
 export type {
-  ArticleWidth,
   AsidePlacement,
   EntryType,
   ListConfig,

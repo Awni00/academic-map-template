@@ -15,7 +15,6 @@ export const defaultEntryTypes = [
       labelVisibility: "always"
     },
     article: {
-      width: "flex",
       localGraph: true,
       placement: {
         toc: { where: "none" },
@@ -37,7 +36,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "flex",
       localGraph: true,
       placement: {
         toc: { where: "none" },
@@ -58,7 +56,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "reading",
       localGraph: true,
       asides: "margin"
     }
@@ -76,7 +73,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "reading",
       localGraph: true,
       asides: "margin"
     }
@@ -94,7 +90,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "reading",
       localGraph: true
     }
   },
@@ -111,7 +106,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "reading",
       localGraph: false,
       placement: {
         toc: { where: "none" }
@@ -131,7 +125,6 @@ export const defaultEntryTypes = [
       labelVisibility: "hover"
     },
     article: {
-      width: "flex",
       localGraph: true
     }
   }

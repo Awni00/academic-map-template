@@ -7,7 +7,7 @@ import { defaultWritingConfig } from "./defaults/writing";
 import { siteConfigOverrides } from "../site/config";
 import { normalizeTocConfig } from "../lib/article/toc";
 import type {
-  ArticleWidth,
+  ArticleMode,
   AsidePlacement,
   DeepPartial,
   EntryType,
@@ -38,7 +38,6 @@ const fallbackEntryType: EntryTypeDefinition = {
   includeInRecent: true,
   graph: fallbackGraph,
   article: {
-    width: "reading",
     localGraph: true
   }
 };
@@ -107,7 +106,7 @@ function resolveWritingConfig(): WritingConfig {
     defaultWritingConfig,
     siteConfigOverrides.writing as DeepPartial<WritingConfig> | undefined
   );
-  const articleWidthByType: Record<EntryType, ArticleWidth> = {};
+  const modeByType: Record<EntryType, ArticleMode> = {};
   const localGraphByType: Record<EntryType, boolean> = {};
   const placementByType: WritingConfig["entryLayout"]["placement"]["byType"] = {};
   const asidesByType: Record<EntryType, AsidePlacement> = {};
@@ -116,8 +115,7 @@ function resolveWritingConfig(): WritingConfig {
   const rssExcludeTypes: EntryType[] = [];
 
   for (const entryType of entryTypeDefinitions) {
-    articleWidthByType[entryType.id] =
-      entryType.article?.width ?? base.entryLayout.articleWidth.default;
+    modeByType[entryType.id] = entryType.article?.mode ?? base.entryLayout.mode.default;
     localGraphByType[entryType.id] = entryType.article?.localGraph ?? true;
     if (entryType.article?.placement) placementByType[entryType.id] = entryType.article.placement;
     asidesByType[entryType.id] = entryType.article?.asides ?? base.entryLayout.asides.default;
@@ -145,11 +143,11 @@ function resolveWritingConfig(): WritingConfig {
     },
     entryLayout: {
       ...base.entryLayout,
-      articleWidth: {
-        ...base.entryLayout.articleWidth,
+      mode: {
+        ...base.entryLayout.mode,
         byType: {
-          ...articleWidthByType,
-          ...base.entryLayout.articleWidth.byType
+          ...modeByType,
+          ...base.entryLayout.mode.byType
         }
       },
       localGraph: {

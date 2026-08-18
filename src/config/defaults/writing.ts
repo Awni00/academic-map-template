@@ -53,8 +53,8 @@ export const defaultWritingConfig = {
     }
   },
   entryLayout: {
-    articleWidth: {
-      default: "reading",
+    mode: {
+      default: "article",
       byType: {}
     },
     localGraph: {

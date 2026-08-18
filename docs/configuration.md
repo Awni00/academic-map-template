@@ -109,7 +109,6 @@ entryTypes: [
       labelVisibility: "hover"
     },
     article: {
-      width: "reading",
       localGraph: true,
       asides: "margin"
     }
@@ -134,7 +133,12 @@ Common fields:
 - `graph.shape`: one of `circle`, `square`, `diamond`, or `hexagon`.
 - `graph.color`: any CSS color, including project CSS variables.
 - `graph.labelVisibility`: `always`, `hover`, or `never`.
-- `article.width`: `reading` or `flex`.
+- `article.mode`: `article` (default) or `abstract`. `abstract` renders a short
+  paper-record page whose body is the abstract itself. This is presentation
+  only — graph styling and feed inclusion still come from the entry type. Most
+  sites leave this at the default and opt in per entry with `article.mode` in
+  frontmatter; set it here only for a type that is always abstract-only. See
+  [Abstract-Only Entries](using-the-template.md#abstract-only-entries).
 - `article.localGraph`: whether this type shows local graph context by default.
 - `article.placement`: type-level TOC, local graph, backlinks, and related-entry
   placement.
@@ -209,7 +213,7 @@ entryTypes: [
 Individual entries can override the effective depth range in frontmatter:
 
 ```yaml
-layout:
+article:
   toc:
     minDepth: 2
     maxDepth: 4

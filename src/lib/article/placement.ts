@@ -1,6 +1,6 @@
 import {
   writingConfig,
-  type ArticleWidth,
+  type ArticleMode,
   type AsidePlacement,
   type EntryType,
   type PlacementGraph,
@@ -45,7 +45,7 @@ export function resolvePlacement(entry: WritingEntryLike): ResolvedPlacement {
   const placementConfig = writingConfig.entryLayout.placement;
   const fromDefault = placementConfig.default as Partial<PlacementSpec>;
   const fromType = (placementConfig.byType as Record<string, Partial<PlacementSpec>>)[type] ?? {};
-  const fromFrontmatter = entry.data.layout?.placement ?? {};
+  const fromFrontmatter = entry.data.article?.placement ?? {};
 
   return {
     toc: {
@@ -88,22 +88,24 @@ export function hasSlot(
 }
 
 /**
- * Resolve the article body width: per-entry frontmatter override
- * (`layout.width`) → byType → global default.
+ * Resolve the article presentation mode: per-entry frontmatter override
+ * (`article.mode`) → byType → global default. Mode is a presentation axis
+ * only; the entry type continues to drive graph styling and feed
+ * inclusion, so an abstract-mode paper still renders as a paper node.
  */
-export function resolveArticleWidth(entry: WritingEntryLike): ArticleWidth {
+export function resolveArticleMode(entry: WritingEntryLike): ArticleMode {
   const type = entry.data.type as EntryType;
-  const widthCfg = writingConfig.entryLayout.articleWidth;
+  const cfg = writingConfig.entryLayout.mode;
   return (
-    (entry.data.layout?.width as ArticleWidth | undefined) ??
-    (widthCfg.byType as Record<string, ArticleWidth>)[type] ??
-    widthCfg.default
+    (entry.data.article?.mode as ArticleMode | undefined) ??
+    (cfg.byType as Record<string, ArticleMode>)[type] ??
+    cfg.default
   );
 }
 
 /**
  * Resolve the requested aside placement for an entry: frontmatter
- * (`layout.asides`) → byType → default. The per-instance `<Aside
+ * (`article.asides`) → byType → default. The per-instance `<Aside
  * placement>` prop overrides this further at render time and is handled
  * by CSS via the `data-aside-placement` attribute.
  */
@@ -111,7 +113,7 @@ export function resolveAsides(entry: WritingEntryLike): AsidePlacement {
   const type = entry.data.type as EntryType;
   const cfg = writingConfig.entryLayout.asides;
   return (
-    ((entry.data.layout as { asides?: AsidePlacement } | undefined)?.asides) ??
+    ((entry.data.article as { asides?: AsidePlacement } | undefined)?.asides) ??
     (cfg.byType as Record<string, AsidePlacement>)[type] ??
     cfg.default
   );
@@ -119,16 +121,14 @@ export function resolveAsides(entry: WritingEntryLike): AsidePlacement {
 
 /**
  * Apply the auto-degrade rule for margin asides: they need a free right
- * gutter, which means the article must use the reading-width column AND
- * the TOC must not occupy the right rail. Otherwise fall back to inline.
+ * gutter, so the TOC must not occupy the right rail. Otherwise fall back
+ * to inline.
  */
 export function effectiveAsides(
   requested: AsidePlacement,
-  articleWidth: ArticleWidth,
   toc: PlacementToc
 ): AsidePlacement {
   if (requested !== "margin") return "inline";
-  if (articleWidth !== "reading") return "inline";
   if (toc === "right") return "inline";
   return "margin";
 }

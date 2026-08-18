@@ -1,10 +1,10 @@
 ---
 task_id: t-20260809-C99S
 task_name: create-abstract-article-layout
-status: todo
+status: completed
 date_created: '2026-08-09'
-date_started: null
-date_completed: null
+date_started: '2026-08-15'
+date_completed: '2026-08-15'
 due_date: null
 priority: p1
 effort: m

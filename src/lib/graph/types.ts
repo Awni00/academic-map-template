@@ -2,7 +2,6 @@ import type { EntryType } from "../../config";
 
 export type { EntryType };
 
-export type ArticleWidth = "reading" | "flex";
 
 export type EntryNode = {
   id: string;
@@ -117,8 +116,13 @@ export type WritingEntryLike = {
     draft?: boolean;
     theme?: "global" | "system" | "light" | "dark";
     external?: Record<string, string | undefined>;
-    layout?: {
-      width?: "reading" | "flex";
+    hero?: {
+      src: string;
+      alt?: string;
+      caption?: string;
+    };
+    article?: {
+      mode?: "article" | "abstract";
       asides?: "margin" | "inline";
       toc?: {
         minDepth?: number;

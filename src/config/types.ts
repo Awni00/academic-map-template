@@ -8,7 +8,13 @@ export type PlacementToc = "left" | "right" | "none";
 export type PlacementGraph = "header" | "footer" | "none";
 export type PlacementNav = "left" | "right" | "footer" | "none";
 export type AsidePlacement = "margin" | "inline";
-export type ArticleWidth = "reading" | "flex";
+/**
+ * Article presentation mode. "article" is the standard long-form layout;
+ * "abstract" renders a short paper-record page whose body is the abstract.
+ * This is a presentation axis only — the entry type still drives graph
+ * styling, RSS, and recent-writing inclusion.
+ */
+export type ArticleMode = "article" | "abstract";
 export type TocDepth = 2 | 3 | 4 | 5 | 6;
 export type TocConfig = {
   minDepth: TocDepth;
@@ -31,7 +37,7 @@ export type EntryTypeGraphConfig = {
 };
 
 export type EntryTypeArticleConfig = {
-  width?: ArticleWidth;
+  mode?: ArticleMode;
   localGraph?: boolean;
   placement?: Partial<PlacementSpec>;
   asides?: AsidePlacement;
@@ -111,9 +117,9 @@ export type WritingConfig = {
     list: ListConfig;
   };
   entryLayout: {
-    articleWidth: {
-      default: ArticleWidth;
-      byType: Record<EntryType, ArticleWidth>;
+    mode: {
+      default: ArticleMode;
+      byType: Record<EntryType, ArticleMode>;
     };
     localGraph: {
       enabled: boolean;

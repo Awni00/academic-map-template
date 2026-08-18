@@ -15,7 +15,7 @@ export {
   writingConfig
 } from "./resolve";
 export type {
-  ArticleWidth,
+  ArticleMode,
   AsidePlacement,
   DeepPartial,
   EntryType,

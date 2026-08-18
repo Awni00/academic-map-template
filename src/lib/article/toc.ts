@@ -58,7 +58,7 @@ export function resolveTocConfig(entry: WritingEntryLike, config: WritingConfig)
     fromDefault,
     `writing.entryLayout.toc.byType.${type}`
   );
-  return normalizeTocConfig(entry.data.layout?.toc, fromType, "layout.toc");
+  return normalizeTocConfig(entry.data.article?.toc, fromType, "article.toc");
 }
 
 export function filterHeadingsForToc(

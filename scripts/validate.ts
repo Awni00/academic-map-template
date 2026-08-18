@@ -60,7 +60,7 @@ async function readWritingEntries(root: string): Promise<WritingEntryLike[]> {
             tags: parsed.data.tags ?? [],
             links: parsed.data.links ?? [],
             draft: parsed.data.draft ?? false,
-            layout: parsed.data.layout
+            article: parsed.data.article
           }
         } as WritingEntryLike;
       })

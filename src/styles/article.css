@@ -253,18 +253,24 @@
 /* ── Article grid ───────────────────────────────────────────────────── */
 
 /*
- * Three-column conditional grid:
- *   [left gutter] [article body] [right gutter]
+ * Three-column grid with a constant track set:
+ *   [left rail] [article body] [right rail]
  *
- * Each gutter renders only when populated, controlled by data-attributes
- * set in WritingEntryLayout:
+ * Data-attributes set in WritingEntryLayout select what renders, never
+ * how wide the columns are:
  *   data-toc      = "left" | "right" | "none"   — which side hosts the TOC strip
  *   data-asides   = "margin" | "inline"        — whether <Aside> uses the right gutter
- *   data-has-left / data-has-right = "true" | "false" — sidebar element actually rendered
- *   data-width    = "reading" | "flex"          — body cap (720px vs 1fr)
+ *   data-mode     = "article" | "abstract"     — standard body vs abstract card
  *
- * The header spans all three columns so the title and meta stay centred
- * over the article body regardless of which gutters are rendering.
+ * The left rail is ALWAYS allocated, even on entries with no sidebar to
+ * put in it. That is deliberate: the track set stays the same width on
+ * every page, so the body column — and therefore the header, the prose
+ * and the footer — starts at the same x regardless of which optional
+ * pieces a given entry renders. An empty rail is just whitespace; a
+ * conditional one would slide the whole article sideways.
+ *
+ * Every entry uses the same body track (760 prose + 32 gap + 240 aside
+ * gutter). There is no per-entry width option.
  */
 .article-grid {
   display: grid;
@@ -274,7 +280,7 @@
      entries occupy the same horizontal real estate. Margin-aside
      entries use the full track via the sub-grid in .article-content. */
   grid-template-columns:
-    [left-start] var(--col-left, 0) [left-end body-start]
+    [left-start] var(--col-left, 200px) [left-end body-start]
     minmax(0, var(--col-body, 1032px)) [body-end right-start]
     var(--col-right, 0) [right-end];
   column-gap: var(--col-gap, 32px);
@@ -288,22 +294,17 @@
   justify-content: center;
 }
 
-/* Conditionally enable each gutter. The left/right gutters open only
-   when a sidebar is actually rendered there (TOC, backlinks, etc.).
-   Asides DO NOT live in the outer right column — they sit inside the
-   article-main as a sub-grid (see .article-content[data-asides=margin]).
-   Instead, when asides are in margin mode we widen the body track so
-   the sub-grid (760 body + 32 gap + 240 asides = 1032) fits. */
-.article-grid[data-has-left="true"]   { --col-left: 200px; }
+/* The right rail is the one gutter still opened on demand. It hosts a
+   right-placed TOC or nav strip, which competes for the same space as
+   margin asides — `effectiveAsides` already degrades those to inline
+   when the TOC sits right, so the two never claim the gutter at once. */
 .article-grid[data-has-right="true"]  { --col-right: 200px; }
 
-/* Flex-width entries fill all available room (up to the grid maximum). */
-.article-grid[data-width="flex"]      { --col-body: 1fr; }
-
-/* Header + footer span the whole grid. Body and gutters land in their
-   named columns automatically via grid-column. */
+/* Header, body and footer all land in the body column, so they share one
+   left edge. Rails land in their own tracks. */
 .article-header              { grid-column: body-start / body-end; }
 .article-main                { grid-column: body-start / body-end;  min-width: 0; }
+.entry-foot                  { grid-column: body-start / body-end;  min-width: 0; }
 .article-sidebar--left       { grid-column: left-start / left-end; }
 .article-sidebar--right      { grid-column: right-start / right-end; }
 
@@ -818,6 +819,64 @@
   color: var(--box-accent, var(--color-fg-soft));
 }
 
+/* ── Abstract mode ──────────────────────────────────────────────────── */
+
+/* Lead figure above the article body. Available in both modes, but it
+   carries most of its weight on abstract entries, where it stands in for
+   the paper's teaser figure. */
+.article-hero.article-figure {
+  margin: 0 0 36px;
+  max-width: min(100%, var(--article-layout-max-width, 760px));
+}
+
+/* The abstract card. Abstract-mode entries put the paper's abstract in
+   the article body, so the body itself gets the emphasis rather than
+   competing with a long-form prose column. */
+.abstract-block {
+  --abstract-pad-x: 28px;
+  --abstract-pad-y: 26px;
+  max-width: 760px;
+  padding: var(--abstract-pad-y) var(--abstract-pad-x);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.abstract-block__label {
+  /* Uppercase mono eyebrow, matching .article-meta. Set explicitly so it
+     never picks up prose h2 sizing. */
+  font-family: var(--font-mono);
+  font-size: var(--article-label-size, 12px);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin: 0 0 14px;
+}
+
+.abstract-block .article-content {
+  /* The card already caps the measure; let the prose fill it. */
+  max-width: none;
+}
+
+/* Trim the trailing prose margin so the card's padding sets the bottom gap. */
+.abstract-block .article-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* Abstract pages are short, so the standard header rhythm reads as too
+   airy. Tighten it without changing the header's structure. */
+.article-grid[data-mode="abstract"] .article-header {
+  padding-top: 40px;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.article-grid[data-mode="abstract"] .article-header[data-byline] {
+  margin-bottom: 36px;
+}
+
 /* ── Figure ─────────────────────────────────────────────────────────── */
 
 .article-figure {
@@ -1296,10 +1355,14 @@
 
 /* ── Narrow variant foot sections ───────────────────────────────────── */
 
+/* Lives in the grid's body column (see grid-column above), so it inherits
+   the article's left edge. Capped at the prose measure rather than the
+   full body track: margin asides are marginalia, not part of the column
+   the footer should match. */
 .entry-foot {
-  max-width: var(--content-narrow);
-  margin: 48px auto 80px;
-  padding: 0 1rem;
+  max-width: 760px;
+  margin: 48px 0 0;
+  padding: 0;
   border-top: 1px solid var(--color-rule);
 }
 
@@ -1405,8 +1468,7 @@
 }
 
 @media (max-width: 980px) {
-  .article-grid,
-  .article-grid[data-width="flex"] {
+  .article-grid {
     display: block;
     padding: 32px 1rem 64px;
   }
@@ -1442,6 +1504,15 @@
 
   .article-summary {
     font-size: var(--article-summary-size-mobile, 17px);
+  }
+
+  .abstract-block {
+    --abstract-pad-x: 18px;
+    --abstract-pad-y: 20px;
+  }
+
+  .article-grid[data-mode="abstract"] .article-header {
+    padding: 32px 1rem 24px;
   }
 }
 
