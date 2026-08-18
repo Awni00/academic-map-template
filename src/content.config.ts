@@ -97,8 +97,9 @@ const writing = defineCollection({
     math: mathConfig.optional(),
     external: externalLinks,
     bibtex: z.string().optional(),
-    // Optional lead figure rendered above the article body. Available in
-    // both presentation modes, not just "abstract".
+    // Optional figure rendered alongside the article body. Available in
+    // both presentation modes; article mode leads with it, abstract mode
+    // places it after the abstract.
     hero,
     // Per-entry presentation overrides. Mirrors the entry-type registry's
     // `article` block, so the same keys mean the same thing at both levels.

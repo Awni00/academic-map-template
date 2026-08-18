@@ -316,8 +316,11 @@ const right = renderSide("right");
       }
 
       <main class="article-main">
+        {/* Article mode leads with the hero; abstract mode puts it after the
+            abstract, so the paper's own words open the record. Placed in the
+            DOM rather than reordered in CSS so reading order matches. */}
         {
-          hero && (
+          hero && !isAbstract && (
             <Figure
               class="article-hero"
               src={hero.src}
@@ -338,6 +341,16 @@ const right = renderSide("right");
             <div class="article-content" data-asides={asidesEffective}>
               <Content components={components} />
             </div>
+          )
+        }
+        {
+          hero && isAbstract && (
+            <Figure
+              class="article-hero"
+              src={hero.src}
+              alt={hero.alt ?? ""}
+              caption={hero.caption}
+            />
           )
         }
       </main>

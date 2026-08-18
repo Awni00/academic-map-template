@@ -224,7 +224,12 @@ test("abstract-mode entry renders its record layout", async ({ page }) => {
   // Header metadata still comes from the shared Distill-style header.
   await expect(page.locator(".article-byline")).toContainText("Venue");
   await expect(page.locator(".article-external")).toContainText("arXiv");
-  await expect(page.locator(".article-hero img")).toBeVisible();
+
+  // No hero on this entry, so the abstract's own closing rule is the only
+  // divider before the footer — the footer drops its top border rather than
+  // stacking a second hairline just below.
+  await expect(page.locator(".article-hero")).toHaveCount(0);
+  await expect(page.locator(".entry-foot")).toHaveCSS("border-top-width", "0px");
 
   // Abstract entries stay full graph citizens.
   const entryNav = page.getByRole("region", { name: "Entry navigation" });

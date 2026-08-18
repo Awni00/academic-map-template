@@ -100,8 +100,11 @@ thing at both levels. Do not name this key `layout`: Astro reserves
 `frontmatter.layout` as a path to a layout component and will fail the build
 with a syntax error if it holds an object.
 
-`hero` renders an optional lead figure above the article body. It works in
-both presentation modes.
+`hero` renders an optional figure alongside the article body. It works in both
+presentation modes, but its position differs: in `article` mode it leads the
+page, above the body; in `abstract` mode it follows the abstract, so the
+paper's own words open the record and the figure illustrates what was just
+read.
 
 For paper-style writing entries, `venue` is intentionally stored in entry
 frontmatter even if the same paper also appears in `src/data/publications.bib`.
@@ -158,7 +161,8 @@ fields inherit from the type-level or global default, which includes `h2` and
 
 Use `article.mode: abstract` to record a paper that does not have its own
 explainer or post. The entry body *is* the paper's abstract, and the layout
-presents it as an emphasized block under the standard article header:
+sets it off with hairline rules and an `ABSTRACT` label under the standard
+article header:
 
 ```yaml
 title: "Latent structure in overparameterized models"

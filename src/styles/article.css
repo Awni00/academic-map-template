@@ -260,7 +260,7 @@
  * how wide the columns are:
  *   data-toc      = "left" | "right" | "none"   — which side hosts the TOC strip
  *   data-asides   = "margin" | "inline"        — whether <Aside> uses the right gutter
- *   data-mode     = "article" | "abstract"     — standard body vs abstract card
+ *   data-mode     = "article" | "abstract"     — standard body vs abstract block
  *
  * The left rail is ALWAYS allocated, even on entries with no sidebar to
  * put in it. That is deliberate: the track set stays the same width on
@@ -821,60 +821,79 @@
 
 /* ── Abstract mode ──────────────────────────────────────────────────── */
 
-/* Lead figure above the article body. Available in both modes, but it
-   carries most of its weight on abstract entries, where it stands in for
-   the paper's teaser figure. */
+/* Lead figure for the article body. In article mode it leads the page; in
+   abstract mode it follows the abstract, so the paper's own words open the
+   record and the figure illustrates what was just read. */
 .article-hero.article-figure {
   margin: 0 0 36px;
   max-width: min(100%, var(--article-layout-max-width, 760px));
 }
 
-/* The abstract card. Abstract-mode entries put the paper's abstract in
-   the article body, so the body itself gets the emphasis rather than
-   competing with a long-form prose column. */
+.article-grid[data-mode="abstract"] .article-hero.article-figure {
+  margin: 36px 0 0;
+}
+
+/* The abstract block. Abstract-mode entries put the paper's abstract in
+   the article body, bracketed by hairline rules with a mono eyebrow.
+   Deliberately unfilled: backgrounds in this stylesheet are for inset
+   content (code, figure frames, dialogs), never for primary prose. */
 .abstract-block {
-  --abstract-pad-x: 28px;
-  --abstract-pad-y: 26px;
   max-width: 760px;
-  padding: var(--abstract-pad-y) var(--abstract-pad-x);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
+  padding: 26px 0 28px;
+  border-top: 1px solid var(--color-rule);
+  border-bottom: 1px solid var(--color-rule);
 }
 
 .abstract-block__label {
-  /* Uppercase mono eyebrow, matching .article-meta. Set explicitly so it
+  /* Same spec as the byline and entry-footer labels, so the abstract
+     reads as one more labelled field of the record. Set explicitly so it
      never picks up prose h2 sizing. */
   font-family: var(--font-mono);
   font-size: var(--article-label-size, 12px);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.25;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted);
   margin: 0 0 14px;
 }
 
 .abstract-block .article-content {
-  /* The card already caps the measure; let the prose fill it. */
+  /* The block already caps the measure; let the prose fill it. */
   max-width: none;
 }
 
-/* Trim the trailing prose margin so the card's padding sets the bottom gap. */
 .abstract-block .article-content > :last-child {
   margin-bottom: 0;
 }
 
 /* Abstract pages are short, so the standard header rhythm reads as too
-   airy. Tighten it without changing the header's structure. */
+   airy. Tighten it, and drop the header's closing rule: it would land
+   about 50px above the abstract's opening rule, giving two hairlines in
+   quick succession. The abstract's top rule terminates the header. */
 .article-grid[data-mode="abstract"] .article-header {
   padding-top: 40px;
-  padding-bottom: 24px;
-  margin-bottom: 32px;
+  padding-bottom: 0;
+  margin-bottom: 40px;
+  border-bottom: 0;
 }
 
-.article-grid[data-mode="abstract"] .article-header[data-byline] {
-  margin-bottom: 36px;
+/* Same reasoning at the other end: the footer opens with its own rule,
+   which would sit just below the abstract's closing one. The abstract
+   block owns both its boundaries, so the footer drops its rule and the
+   section padding supplies the gap. Keeping the abstract's rule rather
+   than the footer's means the block still closes properly on entries
+   whose footer is empty. */
+.article-grid[data-mode="abstract"] .entry-foot {
+  border-top: 0;
+  margin-top: 0;
+}
+
+/* Unless a hero sits between them: then the abstract's closing rule is
+   already spoken for and the footer needs its own divider back. */
+.article-grid[data-mode="abstract"] .article-main:has(.article-hero) ~ .entry-foot {
+  border-top: 1px solid var(--color-rule);
+  margin-top: 48px;
 }
 
 /* ── Figure ─────────────────────────────────────────────────────────── */
@@ -1507,12 +1526,14 @@
   }
 
   .abstract-block {
-    --abstract-pad-x: 18px;
-    --abstract-pad-y: 20px;
+    padding: 22px 0 24px;
   }
 
   .article-grid[data-mode="abstract"] .article-header {
-    padding: 32px 1rem 24px;
+    /* Horizontal padding comes back at this breakpoint; keep the base
+       rule's zero bottom padding so the abstract's top rule still does
+       the work of closing the header. */
+    padding: 32px 1rem 0;
   }
 }
 
