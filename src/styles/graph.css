@@ -382,6 +382,25 @@
   background-image: radial-gradient(circle, var(--color-border-soft) 0.6px, transparent 0.6px);
 }
 
+/* Floating label shown beside the cursor for `labelVisibility: "hover"` types.
+   Replaces react-force-graph's built-in tooltip (its hit detection is
+   unreliable under canvas fingerprinting protection — see nodeInteraction.ts),
+   and unlike that hardcoded black-on-grey box it follows the site theme. */
+.graph-tooltip {
+  position: absolute;
+  z-index: 2;
+  width: max-content;
+  max-width: max(50%, 150px);
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--color-bg);
+  background: color-mix(in srgb, var(--color-fg) 82%, transparent);
+  pointer-events: none;
+}
+
 .graph-loading {
   font-family: var(--font-ui);
   font-size: 13px;
@@ -390,6 +409,8 @@
 
 .graph-legend {
   position: absolute;
+  /* Decorative overlay — must not eat pointer events from nodes beneath it. */
+  pointer-events: none;
   bottom: 14px;
   left: 18px;
   display: flex;

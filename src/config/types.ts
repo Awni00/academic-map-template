@@ -33,7 +33,15 @@ export type EntryTypeGraphConfig = {
   shape: GraphNodeShape;
   size: number;
   color: string;
+  /**
+   * How this type's title is shown.
+   *   "always" — painted on the canvas next to the node, permanently.
+   *   "hover"  — floating label beside the cursor while hovered.
+   *   "never"  — no label at all.
+   */
   labelVisibility: LabelVisibility;
+  /** Whether clicking a node of this type selects it. Defaults to true. */
+  interactive?: boolean;
 };
 
 export type EntryTypeArticleConfig = {

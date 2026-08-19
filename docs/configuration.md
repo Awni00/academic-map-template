@@ -132,7 +132,12 @@ Common fields:
   writing.
 - `graph.shape`: one of `circle`, `square`, `diamond`, or `hexagon`.
 - `graph.color`: any CSS color, including project CSS variables.
-- `graph.labelVisibility`: `always`, `hover`, or `never`.
+- `graph.labelVisibility`: `always` paints the title on the canvas beside the
+  node permanently (used for hubs), `hover` shows a floating label beside the
+  cursor, `never` shows no label at all.
+- `graph.interactive`: `false` makes nodes of this type ignore clicks. Defaults
+  to `true`. Whether a given graph responds to clicks at all is still decided by
+  the surface — the article-page and homepage graphs are read-only.
 - `article.mode`: `article` (default) or `abstract`. `abstract` renders a short
   paper-record page whose body is the abstract itself. This is presentation
   only — graph styling and feed inclusion still come from the entry type. Most

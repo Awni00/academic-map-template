@@ -1,7 +1,16 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { getEntryType, graphConfig, isHubType } from "../../config";
+import {
+  isTypeInteractive,
+  labelVisibilityFor,
+  nodeAtPoint,
+  nodePaintedRadius
+} from "../../lib/graph/nodeInteraction";
 import type { GraphIndex } from "../../lib/graph/types";
+
+/** Pointer travel (px) above which a press counts as a pan, not a click. */
+const DRAG_CLICK_TOLERANCE_PX = 5;
 
 type HubLayout = "circle" | "row" | "force";
 type LabelMode = "config" | "all" | "none";
@@ -59,6 +68,11 @@ export default function GraphCanvas({
   // could let the canvas render wider than its slot for one frame.
   const [width, setWidth] = useState<number | null>(null);
   const [ForceGraph, setForceGraph] = useState<ForceGraphComponent | null>(null);
+  // Node under the cursor, plus the pointer position (container px) used to
+  // place the floating label. `null` when the pointer is over empty canvas.
+  const [hover, setHover] = useState<{ node: any; x: number; y: number } | null>(null);
+  // Where the current press started, so a pan doesn't register as a click.
+  const pressRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -146,6 +160,58 @@ export default function GraphCanvas({
     };
   }, [graph, hubLayout, height, width, labelSide]);
 
+  // Drop a stale hover when the node set changes underneath it (e.g. a filter
+  // removed the node the cursor was over).
+  useEffect(() => {
+    setHover(null);
+  }, [graphData]);
+
+  /** Convert a pointer event to container-relative px, or null if not ready. */
+  const pointerToContainer = (event: { clientX: number; clientY: number }) => {
+    const container = containerRef.current;
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  /** Hit-test an event's own position. Never trust `hover` for this: a click
+   *  or tap needn't be preceded by a pointer move over the same spot. */
+  const nodeUnderEvent = (event: { clientX: number; clientY: number }) => {
+    const fg = fgRef.current;
+    const point = pointerToContainer(event);
+    if (!fg?.screen2GraphCoords || !point) return null;
+    const graphPoint = fg.screen2GraphCoords(point.x, point.y);
+    return { node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y), point };
+  };
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const hit = nodeUnderEvent(event);
+    if (!hit) return;
+    // Skip the state churn when the pointer is idling over empty canvas.
+    if (!hit.node && !hover) return;
+    setHover(hit.node ? { node: hit.node, x: hit.point.x, y: hit.point.y } : null);
+  }
+
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    pressRef.current = { x: event.clientX, y: event.clientY };
+  }
+
+  function handleClick(event: React.MouseEvent<HTMLDivElement>) {
+    const press = pressRef.current;
+    pressRef.current = null;
+    if (!onSelect) return;
+    if (press) {
+      const travel = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (travel > DRAG_CLICK_TOLERANCE_PX) return; // that was a pan
+    }
+    const node = nodeUnderEvent(event)?.node;
+    if (!node || !isTypeInteractive(node.type)) return;
+    onSelect(node.id);
+  }
+
+  const hoverIsClickable = Boolean(hover && onSelect && isTypeInteractive(hover.node.type));
+  const showFloatingLabel = Boolean(hover && labelVisibilityFor(hover.node.type) === "hover");
+
   // Tune the d3-force simulation so hubs get more personal space than the
   // small entries around them. The default many-body strength is a flat
   // -30 per node; we make hubs noticeably more repulsive, and we lengthen
@@ -184,7 +250,17 @@ export default function GraphCanvas({
   return (
     <div
       ref={containerRef}
-      style={{ width: "100%", height, overflow: "hidden", position: "relative" }}
+      style={{
+        width: "100%",
+        height,
+        overflow: "hidden",
+        position: "relative",
+        cursor: hoverIsClickable ? "pointer" : undefined
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={() => setHover(null)}
+      onPointerDown={handlePointerDown}
+      onClick={handleClick}
     >
       {ForceGraph && width != null ? (
         <ForceGraph
@@ -192,12 +268,20 @@ export default function GraphCanvas({
           width={width}
           height={height}
           graphData={graphData}
+          // Hover, labels and clicks are handled by this component instead of
+          // force-graph. Its own hit detection reads back pixels from an
+          // off-screen ID-colour canvas, which browsers with canvas
+          // fingerprinting protection (Brave by default) perturb — silently
+          // killing hover and clicks on a stable subset of nodes. Node drag
+          // rides on the same mechanism, and the layout pins hubs on purpose,
+          // so it goes too. Zoom/pan are gated separately and still work.
+          enablePointerInteraction={false}
+          enableNodeDrag={false}
           nodeRelSize={5}
           // d3-force uses `nodeRelSize * sqrt(nodeVal)` as the collision
           // radius (and the auto-size). Giving hubs a larger val widens the
           // empty bubble around each hub so its satellites don't crowd it.
           nodeVal={(node: any) => (isHubType(node.type) ? 6 : 1)}
-          nodeLabel={(node: any) => node.title}
           cooldownTicks={80}
           linkDirectionalParticles={0}
           linkColor={() => cssVar("--graph-edge")}
@@ -245,12 +329,6 @@ export default function GraphCanvas({
             }
             ctx.restore();
           }}
-          nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI, false);
-            ctx.fill();
-          }}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
             drawNode(ctx, node, globalScale, {
               selected: selected === node.id,
@@ -259,13 +337,41 @@ export default function GraphCanvas({
               selectedStyle
             });
           }}
-          onNodeClick={(node: any) => onSelect?.(node.id)}
         />
       ) : (
         <div className="graph-loading">Loading graph...</div>
       )}
+      {showFloatingLabel && hover && (
+        <div
+          className="graph-tooltip"
+          style={{
+            left: hover.x,
+            top: hover.y,
+            transform: labelTransform(hover.x, hover.y, width ?? 0, height)
+          }}
+        >
+          {hover.node.title}
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Keep the floating label inside the canvas. Horizontally it slides by a
+ * fraction of its own width proportional to how far right the cursor is, so it
+ * hugs the left edge on the left and the right edge on the right without ever
+ * needing to know how wide the text is. Vertically it sits below the cursor,
+ * flipping above when there isn't room.
+ */
+function labelTransform(x: number, y: number, width: number, height: number): string {
+  const shiftX = `-${clamp((x / Math.max(1, width)) * 100, 0, 100)}%`;
+  const shiftY = height > 130 && height - y < 100 ? "calc(-100% - 6px)" : "21px";
+  return `translate(${shiftX}, ${shiftY})`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function drawNode(
@@ -380,12 +486,6 @@ function nodeColor(type: string): string {
   const color = getEntryType(type).graph.color;
   const cssVariable = color.match(/^var\((--[^),\s]+)/)?.[1];
   return cssVariable ? cssVar(cssVariable) : color;
-}
-
-// Mirrors the painted radius used inside `drawNode` so arrowhead tips land
-// at the visible node edge instead of its d3 collision radius.
-function nodePaintedRadius(node: any): number {
-  return Math.max(3, getEntryType(node?.type).graph.size / 2);
 }
 
 function cssVar(name: string): string {
