@@ -242,12 +242,6 @@
    (default for hubs, opt-in via placement.localGraph.where = "header"). */
 .article-header__graph {
   margin-top: 24px;
-  height: 220px;
-  background: var(--color-bg-soft);
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
-  padding: 8px;
-  overflow: hidden;
 }
 
 /* ── Article grid ───────────────────────────────────────────────────── */
@@ -657,16 +651,6 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
-}
-
-/* Local graph block in sidebar */
-.local-graph {
-  background: var(--color-bg-soft);
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
-  height: 200px;
-  overflow: hidden;
-  padding: 8px;
 }
 
 /* ── Callout ────────────────────────────────────────────────────────── */
@@ -1438,14 +1422,6 @@
 .entry-foot-content a:hover {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
-}
-
-.entry-foot-graph {
-  background: var(--color-bg-soft);
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
-  padding: 8px;
-  height: 200px;
 }
 
 /* When the article has no sidebar, centre its main column. */

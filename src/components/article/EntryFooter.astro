@@ -1,5 +1,5 @@
 ---
-import LocalGraph from "../graph/LocalGraph";
+import LocalGraphMap from "../graph/LocalGraphMap";
 import {
   DEFAULT_TOC_CONFIG,
   filterHeadingsForToc,
@@ -37,17 +37,20 @@ const {
 } = Astro.props;
 
 const tocHeadings = tocInFoot ? filterHeadingsForToc(headings, tocConfig) : [];
+// Backlinks and related lists are suppressed when the map is shown: it already
+// draws those relationships, and `related` is the union of outgoing links and
+// backlinks, so the two lists also duplicated each other.
+const showLinkLists = !showLocalGraph;
 const hasAny =
   (tocInFoot && tocHeadings.length > 0) ||
   showLocalGraph ||
-  backlinks.length > 0 ||
-  related.length > 0 ||
+  (showLinkLists && (backlinks.length > 0 || related.length > 0)) ||
   Boolean(bibtex);
 ---
 
 {
   hasAny && (
-    <section class="entry-foot" aria-label="Entry navigation">
+    <section class="entry-foot" aria-label="Page navigation">
       {tocInFoot && tocHeadings.length > 0 && (
         <div class="entry-foot-section">
           <div class="entry-foot-label">On this page</div>
@@ -64,15 +67,13 @@ const hasAny =
       )}
       {showLocalGraph && (
         <div class="entry-foot-section">
-          <div class="entry-foot-label">Local graph</div>
+          <div class="entry-foot-label">Related</div>
           <div class="entry-foot-content">
-            <div class="entry-foot-graph">
-              <LocalGraph client:load graph={graph} currentId={currentId} />
-            </div>
+            <LocalGraphMap client:load graph={graph} currentId={currentId} />
           </div>
         </div>
       )}
-      {backlinks.length > 0 && (
+      {showLinkLists && backlinks.length > 0 && (
         <div class="entry-foot-section">
           <div class="entry-foot-label">Backlinks</div>
           <div class="entry-foot-content">
@@ -86,7 +87,7 @@ const hasAny =
           </div>
         </div>
       )}
-      {related.length > 0 && (
+      {showLinkLists && related.length > 0 && (
         <div class="entry-foot-section">
           <div class="entry-foot-label">Related</div>
           <div class="entry-foot-content">

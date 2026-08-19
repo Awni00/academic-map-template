@@ -25,6 +25,13 @@ type GraphCanvasProps = {
   dimUnhighlighted?: boolean;
   selectedStyle?: SelectedStyle;
   /**
+   * The node this view is *about* — the page you are on. Marked persistently
+   * and independently of `selected`, which moves as the reader inspects
+   * neighbours; without it the two meanings collapse and "where am I" is lost
+   * the moment anything else is clicked.
+   */
+  anchor?: string;
+  /**
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
    *   "all"    — paint every node's label.
@@ -55,6 +62,7 @@ export default function GraphCanvas({
   highlighted,
   dimUnhighlighted = false,
   selectedStyle = "outline",
+  anchor,
   labelMode = "config",
   labelSide = "auto",
   onSelect,
@@ -242,8 +250,20 @@ export default function GraphCanvas({
     onSelect(node.id);
   }
 
-  const hoverIsClickable = Boolean(hover && onSelect && isTypeInteractive(hover.node.type));
-  const showFloatingLabel = Boolean(hover && labelVisibilityFor(hover.node.type) === "hover");
+  // The selected node is the view you are already looking at, so it reads as
+  // clickable but does nothing. Exclude it rather than promising a navigation
+  // the surface will decline.
+  const hoverIsClickable = Boolean(
+    hover && onSelect && hover.node.id !== selected && isTypeInteractive(hover.node.type)
+  );
+  // With painted labels suppressed, the floating label is a node's only channel
+  // for its title, so every hovered node gets one regardless of its configured
+  // visibility. Honouring `labelVisibility` here would leave "always" types
+  // (hubs) silently anonymous — labelled nowhere on the canvas and unlabelled
+  // on hover — which is exactly backwards for the biggest nodes in the view.
+  const showFloatingLabel = Boolean(
+    hover && (labelMode === "none" || labelVisibilityFor(hover.node.type) === "hover")
+  );
 
   // Tune the d3-force simulation so hubs get more personal space than the
   // small entries around them. The default many-body strength is a flat
@@ -270,15 +290,25 @@ export default function GraphCanvas({
     // all sit comfortably inside the viewport. Without this the initial
     // auto-fit can clip nodes that the simulation flung outward early on.
     const timer = window.setTimeout(() => {
-      // Scale padding to the canvas size so the small per-entry LocalGraph
-      // (~190px tall) doesn't end up with most of its height eaten by
-      // gutters, while the large main map (~620px) still leaves room for
-      // hub labels at its edges.
-      const padding = Math.max(12, Math.min(80, Math.round(height * 0.08)));
-      fg.zoomToFit?.(400, padding);
+      fg.zoomToFit?.(400, fitPadding(height));
     }, 600);
     return () => window.clearTimeout(timer);
   }, [ForceGraph, graphData, height]);
+
+  // Re-frame when the slot changes width. The fit above runs once the
+  // simulation settles and is never revisited, so a canvas that gets narrower
+  // afterwards — a window resize, a responsive column switch — keeps framing
+  // computed for a viewport it no longer has, and nodes drift out of view.
+  // Deliberately separate from the effect above so a resize re-fits without
+  // also reheating the simulation and rearranging the layout under the reader.
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (!fg || width == null) return;
+    const timer = window.setTimeout(() => {
+      fg.zoomToFit?.(300, fitPadding(height));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [ForceGraph, width, height]);
 
   return (
     <div
@@ -365,6 +395,7 @@ export default function GraphCanvas({
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
             drawNode(ctx, node, globalScale, {
               selected: selected === node.id,
+              anchored: anchor === node.id,
               dimmed: dimUnhighlighted && highlighted ? !highlighted.has(node.id) : false,
               labelMode,
               selectedStyle
@@ -391,6 +422,16 @@ export default function GraphCanvas({
 }
 
 /**
+ * Padding for `zoomToFit`, scaled to the canvas size so the small per-entry
+ * LocalGraph (~190px tall) doesn't end up with most of its height eaten by
+ * gutters, while the large main map (~620px) still leaves room for hub labels
+ * at its edges.
+ */
+function fitPadding(height: number): number {
+  return Math.max(12, Math.min(80, Math.round(height * 0.08)));
+}
+
+/**
  * Keep the floating label inside the canvas. Horizontally it slides by a
  * fraction of its own width proportional to how far right the cursor is, so it
  * hugs the left edge on the left and the right edge on the right without ever
@@ -411,7 +452,13 @@ function drawNode(
   ctx: CanvasRenderingContext2D,
   node: any,
   globalScale: number,
-  state: { selected: boolean; dimmed: boolean; labelMode: LabelMode; selectedStyle: SelectedStyle }
+  state: {
+    selected: boolean;
+    dimmed: boolean;
+    labelMode: LabelMode;
+    selectedStyle: SelectedStyle;
+    anchored?: boolean;
+  }
 ) {
   const meta = getEntryType(node.type).graph;
   const radius = nodePaintedRadius(node);
@@ -422,6 +469,7 @@ function drawNode(
   if (state.selected && state.selectedStyle === "soft-glow") {
     drawSelectedGlow(ctx, node, radius, color, state.dimmed);
   }
+
 
   ctx.fillStyle = color;
   ctx.strokeStyle =
@@ -453,6 +501,11 @@ function drawNode(
     ctx.stroke();
   }
 
+  // Punched out on top of the fill it punches through.
+  if (state.anchored) {
+    drawAnchorCore(ctx, node, radius);
+  }
+
   if (shouldPaintLabel(node, state.labelMode)) {
     const label = node.title;
     const fontSize = Math.min(14, Math.max(9, 11 / globalScale));
@@ -470,6 +523,21 @@ function drawNode(
       ctx.fillText(label, node.x, node.y + offset);
     }
   }
+  ctx.restore();
+}
+
+/**
+ * Mark the anchor node: a small disc of page background punched through the
+ * glyph's centre. It leaves the node's shape and colour intact, and reads as
+ * annotation rather than as another node state — which matters, because
+ * selection already owns the glow.
+ */
+function drawAnchorCore(ctx: CanvasRenderingContext2D, node: any, radius: number) {
+  ctx.save();
+  ctx.fillStyle = cssVar("--color-bg");
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, Math.max(1.5, radius * 0.32), 0, 2 * Math.PI);
+  ctx.fill();
   ctx.restore();
 }
 

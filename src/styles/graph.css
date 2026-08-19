@@ -583,13 +583,150 @@
   color: var(--color-bg);
 }
 
-/* Local graph (article sidebar) */
+/* Local graph — the small per-entry neighbourhood shown in the article
+   header or footer. Deliberately unboxed: it sits directly on the page like a
+   figure, so its wrappers only ever supply spacing. `min-height` matches the
+   canvas height LocalGraph passes down, reserving the slot before the
+   force-graph chunk loads. */
 .local-graph {
-  height: 200px;
-  background: var(--color-bg-soft);
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
+  min-height: 190px;
   overflow: hidden;
+}
+
+/* ── Local graph map (miniature of the writing map) ─────────────────── */
+
+/* Canvas on its own surface, beside a panel describing the selected node.
+   Clicking a node selects it; navigation is always the explicit action at the
+   foot of the panel. */
+.local-graph-map {
+  /* Padding around the canvas. The panel adds the same to its height, so both
+     columns end on the same line. */
+  --map-pad: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  font-family: var(--font-ui);
+}
+
+.local-graph-map__canvas {
+  min-width: 0;
+  padding: var(--map-pad);
+  background: var(--color-bg-soft);
+  border-radius: 5px;
+}
+
+/* Sized to the framed canvas rather than the bare one, so the panel's contents
+   share the full height instead of bunching at the top. */
+.local-graph-map__side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: calc(var(--map-height, 240px) + 2 * var(--map-pad));
+  overflow: hidden;
+}
+
+.local-graph-map__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.local-graph-map__here {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.local-graph-map__title {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 4px;
+  color: var(--color-fg);
+}
+
+/* One line, always: which tags fit is the browser's business, and the trailing
+   ellipsis appears only when it actually truncates. The separator belongs to
+   the tag that *follows* it — hung off the preceding tag it would become a
+   dangling mark wherever the line runs out. */
+.local-graph-map__tags {
+  flex: none;
+  margin-bottom: 10px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.local-graph-map__tags span + span::before {
+  content: " · ";
+}
+
+/* The only element that grows, which is what pins the action to the foot and
+   keeps everything above it still as the selection changes. */
+.local-graph-map__summary {
+  flex: 1;
+  min-height: 0;
+  margin: 0 0 10px;
+  overflow: hidden;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-fg-soft);
+  /* Whatever exceeds the space fades rather than ending on a hard cut. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+}
+
+/* Scoped past `.entry-foot-content a`, which rules every link in an article
+   footer along the bottom — a hairline with no business under a filled button.
+   `margin-top: auto` keeps the action at the foot even when a page has no
+   summary to do the pushing. */
+.local-graph-map .local-graph-map__open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.local-graph-map .local-graph-map__open:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.local-graph-map__open-arrow {
+  transition: transform 0.12s ease;
+}
+
+.local-graph-map__open:hover .local-graph-map__open-arrow {
+  transform: translateX(2px);
+}
+
+@media (max-width: 860px) {
+  .local-graph-map {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ── View switcher (Map / Topics / List) ────────────────────────────── */

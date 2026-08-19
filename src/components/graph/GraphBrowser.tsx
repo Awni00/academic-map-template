@@ -150,7 +150,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       <div className="graph-view-bar">
         <div className="graph-view-bar__left">
           <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>Writing</span>
-          <span className="graph-view-bar__count">{entryCount} entries</span>
+          <span className="graph-view-bar__count">{entryCount} pages</span>
         </div>
         <div className="graph-view-bar__right">
           <input
@@ -321,7 +321,7 @@ function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
         </div>
       )}
       <a className="open-btn" href={node.url}>
-        Open entry →
+        Open page →
       </a>
       {outgoing.length > 0 && (
         <div className="sidebar-section">
