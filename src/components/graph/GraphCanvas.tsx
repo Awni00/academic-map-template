@@ -73,6 +73,9 @@ export default function GraphCanvas({
   const [hover, setHover] = useState<{ node: any; x: number; y: number } | null>(null);
   // Where the current press started, so a pan doesn't register as a click.
   const pressRef = useRef<{ x: number; y: number } | null>(null);
+  // Bumped on every theme switch purely to force a re-render — see the
+  // MutationObserver below for why that's what repaints the canvas.
+  const [, setThemeVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -165,6 +168,36 @@ export default function GraphCanvas({
   useEffect(() => {
     setHover(null);
   }, [graphData]);
+
+  /**
+   * Repaint when the site theme changes.
+   *
+   * Node and link colours are read from CSS custom properties at paint time
+   * (see `cssVar`), so they are only as fresh as the last paint. force-graph
+   * stops painting altogether once the simulation cools — `autoPauseRedraw`
+   * defaults to true, and its render loop skips the frame unless something has
+   * marked the canvas dirty. Flipping `data-theme` restyles the page around the
+   * canvas but never touches that flag, so the graph keeps the old theme's
+   * colours until some unrelated event (a resize, a filter change) happens to
+   * invalidate it — hence "the graph stays inverted for ten seconds".
+   *
+   * Re-rendering fixes it: force-graph's canvas-object props are plain
+   * callbacks recreated on every render, so reapplying them marks the canvas
+   * dirty and the next frame repaints with the new colours. We only need to
+   * cause the render — hence a counter whose value nothing reads.
+   *
+   * NB: this relies on those props staying inline. Memoising them (useCallback)
+   * without adding a theme dependency would silently bring the bug back.
+   */
+  useEffect(() => {
+    if (typeof MutationObserver === "undefined") return;
+    const observer = new MutationObserver(() => setThemeVersion((version) => version + 1));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"]
+    });
+    return () => observer.disconnect();
+  }, []);
 
   /** Convert a pointer event to container-relative px, or null if not ready. */
   const pointerToContainer = (event: { clientX: number; clientY: number }) => {
