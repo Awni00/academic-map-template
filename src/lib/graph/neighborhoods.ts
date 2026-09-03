@@ -30,7 +30,15 @@ export function neighborhoodIds(index: GraphIndex, id: string, depth: 1 | 2 = 1)
 
 export function graphNeighborhood(index: GraphIndex, id: string, depth: 1 | 2 = 1, maxNodes?: number): GraphIndex {
   const ids = neighborhoodIds(index, id, depth);
-  const nodes = index.nodes.filter((node) => ids.has(node.id)).slice(0, maxNodes);
+  // The centre goes in first. `maxNodes` trims in collection order, so a page
+  // with more neighbours than the budget could otherwise have the very node
+  // the neighbourhood is built around trimmed away.
+  const found = index.nodes.filter((node) => ids.has(node.id));
+  const ordered = [
+    ...found.filter((node) => node.id === id),
+    ...found.filter((node) => node.id !== id)
+  ];
+  const nodes = ordered.slice(0, maxNodes);
   const allowed = new Set(nodes.map((node) => node.id));
   const edges = index.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target));
   const backlinks: Record<string, string[]> = {};

@@ -83,6 +83,25 @@ describe("graph utilities", () => {
     ]);
   });
 
+  it("keeps the centre when maxNodes trims the neighborhood", () => {
+    const hub: WritingEntryLike = {
+      id: "wide/index",
+      body: "",
+      data: { title: "Wide", type: "hub", summary: "Hub", tags: [], links: [] }
+    };
+    // Every leaf links to the hub, and each sorts before it by id, so an
+    // order-preserving trim would drop the hub itself.
+    const leaves: WritingEntryLike[] = Array.from({ length: 8 }, (_, index) => ({
+      id: `aaa/leaf-${index}`,
+      body: "[[wide]]",
+      data: { title: `Leaf ${index}`, type: "note", summary: "Leaf", tags: [] }
+    }));
+    const { index } = buildGraphIndex([...leaves, hub]);
+    const neighborhood = graphNeighborhood(index, "wide", 1, 4);
+    expect(neighborhood.nodes).toHaveLength(4);
+    expect(neighborhood.nodes.map((node) => node.id)).toContain("wide");
+  });
+
   it("keeps sub-hubs out of top-level hub topics", () => {
     const { index } = buildGraphIndex([
       {
