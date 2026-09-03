@@ -64,7 +64,12 @@ export default function LocalGraphMap({
         />
       </div>
       {selected && (
-        <div className="local-graph-map__side">
+        <div
+          className="local-graph-map__side"
+          // Ties the panel to the node it describes, not merely to the map:
+          // the edge takes the selected type's colour and changes with it.
+          style={{ ["--map-accent" as string]: selectedType?.graph.color }}
+        >
           <div className="local-graph-map__meta">
             {selectedType && (
               <span

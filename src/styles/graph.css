@@ -624,6 +624,10 @@
   min-width: 0;
   height: calc(var(--map-height, 240px) + 2 * var(--map-pad));
   overflow: hidden;
+  /* Coloured by the selected node's type, so the panel is visibly about a
+     particular node rather than about the map in general. */
+  border-left: 2px solid var(--map-accent, var(--color-border));
+  padding-left: 14px;
 }
 
 .local-graph-map__meta {
@@ -723,9 +727,45 @@
   transform: translateX(2px);
 }
 
-@media (max-width: 860px) {
+/* Stacked, the two columns have nothing left to align to, so the rules that
+   made them end on the same line become harmful: the height lock stretches the
+   summary and strands the action at a bottom the content never reaches. The
+   panel takes its content height instead. The breakpoint is well below the
+   side-by-side layout's comfortable minimum, so tablets keep the aligned
+   two-column form. */
+@media (max-width: 640px) {
   .local-graph-map {
     grid-template-columns: minmax(0, 1fr);
+    /* Close enough to read as one block. Stacked, proximity is the only
+       grouping cue left — side by side, a shared baseline did that work. */
+    gap: 4px;
+  }
+
+  /* Flat where the two meet, so the map and the panel read as two segments of
+     a single object rather than two cards that happen to be near each other.
+     Both start at the same left edge, and the panel's accent continues it. */
+  .local-graph-map__canvas {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .local-graph-map__side {
+    height: auto;
+    overflow: visible;
+    padding-top: 12px;
+  }
+
+  /* With no fixed height there is nothing to truncate, so the summary is shown
+     whole rather than clamped behind a fade. */
+  .local-graph-map__summary {
+    flex: none;
+    margin-bottom: 14px;
+    mask-image: none;
+  }
+
+  /* Nothing to push the action down to; it follows the text directly. */
+  .local-graph-map .local-graph-map__open {
+    margin-top: 0;
   }
 }
 

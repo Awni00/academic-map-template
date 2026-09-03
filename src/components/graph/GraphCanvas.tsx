@@ -16,7 +16,6 @@ type HubLayout = "circle" | "row" | "force";
 type LabelMode = "config" | "all" | "none";
 type LabelSide = "top" | "bottom" | "auto";
 type SelectedStyle = "outline" | "soft-glow";
-
 type GraphCanvasProps = {
   graph: GraphIndex;
   height?: number;
@@ -152,6 +151,12 @@ export default function GraphCanvas({
       }
     }
 
+    // Pin the anchor at the origin, so the neighbourhood has a fixed centre
+    // rather than one the simulation happens to settle on.
+    if (anchor) {
+      pinned[anchor] = { fx: 0, fy: 0, side: resolveSide(0) };
+    }
+
     return {
       nodes: graph.nodes.map((node) => {
         const pin = pinned[node.id];
@@ -169,7 +174,7 @@ export default function GraphCanvas({
       }),
       links: graph.edges.map((edge) => ({ ...edge }))
     };
-  }, [graph, hubLayout, height, width, labelSide]);
+  }, [graph, hubLayout, height, width, labelSide, anchor]);
 
   // Drop a stale hover when the node set changes underneath it (e.g. a filter
   // removed the node the cursor was over).
@@ -265,6 +270,40 @@ export default function GraphCanvas({
     hover && (labelMode === "none" || labelVisibilityFor(hover.node.type) === "hover")
   );
 
+  /**
+   * Frame the viewport.
+   *
+   * Without an anchor, fit every node's bounding box. With one, fit a box
+   * centred on the anchor whose half-extents reach the furthest node: that
+   * puts the anchor dead centre by construction, where a bounding-box fit
+   * centres the *neighbourhood* and lets the anchor drift off-centre whenever
+   * its neighbours are lopsided. The cost is empty space on the sparser side.
+   */
+  const frame = (duration: number) => {
+    const fg = fgRef.current;
+    if (!fg || width == null) return;
+    const padding = fitPadding(height);
+    const nodes = graphData.nodes as Array<{ id: string; x?: number; y?: number; type?: any }>;
+    const anchorNode = anchor ? nodes.find((node) => node.id === anchor) : undefined;
+    if (!anchorNode || typeof anchorNode.x !== "number") {
+      fg.zoomToFit?.(duration, padding);
+      return;
+    }
+    let halfWidth = 1;
+    let halfHeight = 1;
+    for (const node of nodes) {
+      if (typeof node.x !== "number" || typeof node.y !== "number") continue;
+      const margin = nodePaintedRadius(node);
+      halfWidth = Math.max(halfWidth, Math.abs(node.x - anchorNode.x) + margin);
+      halfHeight = Math.max(halfHeight, Math.abs(node.y - (anchorNode.y ?? 0)) + margin);
+    }
+    fg.centerAt?.(anchorNode.x, anchorNode.y, duration);
+    fg.zoom?.(
+      Math.min((width / 2 - padding) / halfWidth, (height / 2 - padding) / halfHeight),
+      duration
+    );
+  };
+
   // Tune the d3-force simulation so hubs get more personal space than the
   // small entries around them. The default many-body strength is a flat
   // -30 per node; we make hubs noticeably more repulsive, and we lengthen
@@ -272,10 +311,17 @@ export default function GraphCanvas({
   useEffect(() => {
     if (!ForceGraph || !fgRef.current) return;
     const fg = fgRef.current;
+    // An anchored view is a small neighbourhood in a small box, and it wants
+    // visibly separated nodes. Many-body repulsion already acts between every
+    // pair, linked or not — what holds it back by default is the short
+    // `distanceMax`, not the node set — so both are opened up here.
+    const roomy = Boolean(anchor);
     const charge = fg.d3Force?.("charge");
     if (charge) {
-      charge.strength((node: any) => (isHubType(node.type) ? -180 : -45));
-      charge.distanceMax?.(280);
+      charge.strength((node: any) =>
+        isHubType(node.type) ? (roomy ? -400 : -180) : roomy ? -140 : -45
+      );
+      charge.distanceMax?.(roomy ? 900 : 280);
     }
     const link = fg.d3Force?.("link");
     if (link) {
@@ -285,15 +331,19 @@ export default function GraphCanvas({
         return isHubType(s) || isHubType(t) ? 60 : 35;
       });
     }
+    // Gather the neighbours toward a common radius, leaving their angles to
+    // the simulation so related nodes still drift together.
+    // Hard separation. Many-body alone lets nodes overlap once links pull them
+    // together, which is what makes a force layout look bunched; a collision
+    // force gives the neighbourhood a real minimum spacing.
+    fg.d3Force?.("anchorCollide", roomy ? collideForce(10) : null);
     fg.d3ReheatSimulation?.();
     // After the simulation settles, re-frame so pinned hubs + satellites
     // all sit comfortably inside the viewport. Without this the initial
     // auto-fit can clip nodes that the simulation flung outward early on.
-    const timer = window.setTimeout(() => {
-      fg.zoomToFit?.(400, fitPadding(height));
-    }, 600);
+    const timer = window.setTimeout(() => frame(400), 600);
     return () => window.clearTimeout(timer);
-  }, [ForceGraph, graphData, height]);
+  }, [ForceGraph, graphData, height, anchor]);
 
   // Re-frame when the slot changes width. The fit above runs once the
   // simulation settles and is never revisited, so a canvas that gets narrower
@@ -304,11 +354,9 @@ export default function GraphCanvas({
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg || width == null) return;
-    const timer = window.setTimeout(() => {
-      fg.zoomToFit?.(300, fitPadding(height));
-    }, 250);
+    const timer = window.setTimeout(() => frame(300), 250);
     return () => window.clearTimeout(timer);
-  }, [ForceGraph, width, height]);
+  }, [ForceGraph, width, height, anchor]);
 
   return (
     <div
@@ -427,6 +475,43 @@ export default function GraphCanvas({
  * gutters, while the large main map (~620px) still leaves room for hub labels
  * at its edges.
  */
+/**
+ * Keep nodes from overlapping by moving them apart directly, the way d3's own
+ * collide force does. O(n²), which is nothing at the twenty-odd nodes a local
+ * neighbourhood holds. Pinned nodes are left where they are.
+ */
+function collideForce(padding: number) {
+  let nodes: any[] = [];
+  const force = () => {
+    for (let i = 0; i < nodes.length; i += 1) {
+      for (let j = i + 1; j < nodes.length; j += 1) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const dx = (b.x ?? 0) - (a.x ?? 0);
+        const dy = (b.y ?? 0) - (a.y ?? 0);
+        const minimum = nodePaintedRadius(a) + nodePaintedRadius(b) + padding;
+        const distance = Math.hypot(dx, dy) || 1e-6;
+        if (distance >= minimum) continue;
+        const shift = ((minimum - distance) / distance) * 0.5;
+        const ox = dx * shift;
+        const oy = dy * shift;
+        if (a.fx == null) {
+          a.x -= ox;
+          a.y -= oy;
+        }
+        if (b.fx == null) {
+          b.x += ox;
+          b.y += oy;
+        }
+      }
+    }
+  };
+  force.initialize = (initial: any[]) => {
+    nodes = initial;
+  };
+  return force;
+}
+
 function fitPadding(height: number): number {
   return Math.max(12, Math.min(80, Math.round(height * 0.08)));
 }
