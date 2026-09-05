@@ -238,10 +238,22 @@
   }
 }
 
-/* LocalGraph rendered in the article header as a contextual landmark
-   (default for hubs, opt-in via placement.localGraph.where = "header"). */
+/* The local map rendered in the article header as a contextual landmark
+   (default for hubs, opt-in via placement.localGraph.where = "header").
+   `min-height` reserves the slot before the force-graph chunk loads, so the
+   prose below it doesn't jump; it matches the map's default canvas height
+   plus its padding. */
 .article-header__graph {
   margin-top: 24px;
+  min-height: 256px;
+}
+
+@media (max-width: 640px) {
+  /* The map stacks its panel under the canvas below this width, so the slot
+     no longer has a height worth reserving. */
+  .article-header__graph {
+    min-height: 0;
+  }
 }
 
 /* ── Article grid ───────────────────────────────────────────────────── */

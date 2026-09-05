@@ -2,16 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 
 import { getEntryType } from "../../config";
 import type { GraphIndex } from "../../lib/graph/types";
-import GraphCanvas, { type FrameInfo } from "./GraphCanvas";
+import GraphCanvas from "./GraphCanvas";
 import { useNeighborhood } from "./useNeighborhood";
-
-/**
- * How much of the selected node the side panel describes.
- *   "full"    — type, title, tags, summary, and the action to open it.
- *   "compact" — type and title only; enough to identify, not to read.
- *   "none"    — no panel; the canvas stands alone.
- */
-export type MapPanel = "full" | "compact" | "none";
 
 type LocalGraphMapProps = {
   graph: GraphIndex;
@@ -19,15 +11,6 @@ type LocalGraphMapProps = {
   depth?: 1 | 2;
   maxNodes?: number;
   height?: number;
-  panel?: MapPanel;
-  /**
-   * Draw the canvas on its own surface. The local map is otherwise
-   * deliberately unboxed — it sits on the page like a figure — so this is a
-   * considered departure, not a default.
-   */
-  boxed?: boolean;
-  /** TEMPORARY (hub-header variant fixture). */
-  onFrame?: (info: FrameInfo) => void;
 };
 
 /**
@@ -51,10 +34,7 @@ export default function LocalGraphMap({
   currentId,
   depth = 1,
   maxNodes = 20,
-  height = 240,
-  panel = "full",
-  boxed = true,
-  onFrame
+  height = 240
 }: LocalGraphMapProps) {
   const localGraph = useNeighborhood(graph, currentId, depth, maxNodes);
   // Selection starts on the page you are reading, so the panel is never empty
@@ -66,14 +46,7 @@ export default function LocalGraphMap({
   const selectedType = selected ? getEntryType(selected.type) : undefined;
 
   return (
-    <div
-      className={[
-        "local-graph-map",
-        `local-graph-map--${panel}`,
-        boxed ? "local-graph-map--boxed" : "local-graph-map--bare"
-      ].join(" ")}
-      style={{ ["--map-height" as string]: `${height}px` }}
-    >
+    <div className="local-graph-map" style={{ ["--map-height" as string]: `${height}px` }}>
       <div className="local-graph-map__canvas">
         <GraphCanvas
           graph={localGraph}
@@ -83,10 +56,9 @@ export default function LocalGraphMap({
           anchor={currentId}
           labelMode="none"
           onSelect={handleSelect}
-          onFrame={onFrame}
         />
       </div>
-      {selected && panel !== "none" && (
+      {selected && (
         <div
           className="local-graph-map__side"
           // Ties the panel to the node it describes, not merely to the map:
@@ -105,17 +77,15 @@ export default function LocalGraphMap({
             {selected.id === currentId && <span className="local-graph-map__here">This page</span>}
           </div>
           <h3 className="local-graph-map__title">{selected.title}</h3>
-          {panel === "full" && selected.tags.length > 0 && (
+          {selected.tags.length > 0 && (
             <div className="local-graph-map__tags">
               {selected.tags.map((tag) => (
                 <span key={tag}>{tag}</span>
               ))}
             </div>
           )}
-          {panel === "full" && selected.summary && (
-            <p className="local-graph-map__summary">{selected.summary}</p>
-          )}
-          {panel === "full" && selected.id !== currentId && (
+          {selected.summary && <p className="local-graph-map__summary">{selected.summary}</p>}
+          {selected.id !== currentId && (
             <a className="local-graph-map__open" href={selected.url}>
               <span>Open page</span>
               <span className="local-graph-map__open-arrow" aria-hidden="true">

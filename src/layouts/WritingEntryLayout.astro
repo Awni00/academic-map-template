@@ -21,7 +21,7 @@ import TwoColumns from "../components/article/TwoColumns.astro";
 import Video from "../components/article/Video.astro";
 import WrapFigure from "../components/article/WrapFigure.astro";
 import YouTubeVideo from "../components/article/YouTubeVideo.astro";
-import LocalGraph from "../components/graph/LocalGraph";
+import LocalGraphMap from "../components/graph/LocalGraphMap";
 import { getEntryType, writingConfig } from "../config";
 import {
   Code2,
@@ -276,7 +276,7 @@ const right = renderSide("right");
         {
           localGraphInHeader && (
             <div class="article-header__graph">
-              <LocalGraph client:load graph={graph} currentId={node.id} />
+              <LocalGraphMap client:load graph={graph} currentId={node.id} />
             </div>
           )
         }
