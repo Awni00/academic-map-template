@@ -1,0 +1,38 @@
+---
+/**
+ * Routes the test fixtures — in development only.
+ *
+ * Fixtures are scaffolding, not site content: each one instantiates components
+ * at known props so the Playwright suite can measure real layout geometry
+ * against them, which no unit test can do. They live in `src/fixtures/` rather
+ * than here, because everything under `src/pages/` is a public URL, and a
+ * template that ships its own test rig hands that page to every site generated
+ * from it — built into `dist/` and advertised in `sitemap.xml`.
+ *
+ * `getStaticPaths` returning `[]` under PROD is what keeps that from
+ * happening: `astro dev` serves these routes, `astro build` emits nothing.
+ * The e2e suite runs against the dev server (see playwright.config.ts), so it
+ * reaches them exactly as before.
+ *
+ * This guard is load-bearing. Removing it does not "simplify" anything — it
+ * publishes the fixtures.
+ */
+import MediaLayoutControls from "../../fixtures/MediaLayoutControls.astro";
+
+export function getStaticPaths() {
+  if (import.meta.env.PROD) return [];
+  // Astro hoists getStaticPaths out of this scope, so it cannot read `FIXTURES`
+  // below — the names live here and the components live there. Adding a fixture
+  // means adding it in both places.
+  return [{ params: { fixture: "media-layout-controls" } }];
+}
+
+const FIXTURES = {
+  "media-layout-controls": MediaLayoutControls
+} as const;
+
+const { fixture } = Astro.params;
+const Fixture = FIXTURES[fixture as keyof typeof FIXTURES];
+---
+
+{Fixture && <Fixture />}
