@@ -7,6 +7,11 @@ import {
   nodeAtPoint,
   nodePaintedRadius
 } from "../../lib/graph/nodeInteraction";
+import {
+  ANCHOR_RING,
+  computeAnchorGeometry,
+  fitPadding
+} from "../../lib/graph/anchorLayout";
 import type { GraphIndex } from "../../lib/graph/types";
 
 /** Pointer travel (px) above which a press counts as a pan, not a click. */
@@ -51,42 +56,6 @@ type GraphCanvasProps = {
    */
   hubLayout?: HubLayout;
 };
-
-/**
- * How many pixels one graph unit is worth in an anchored view.
- *
- * This is an input, not a measurement. The alternative — lay out under
- * whatever forces, measure the result, scale it to fill — makes the painted
- * size of a node a side effect of how many neighbours its page happens to
- * have: sparse neighbourhoods get magnified, dense ones shrink, and a node
- * means a different thing on every page. Stating the scale instead costs the
- * layout its freedom to be any size, which is what `ANCHOR_RING_*` below buys
- * back: the layout is given the job of fitting the canvas.
- */
-const ANCHOR_SCALE = 1.8;
-
-/** Neighbour radius, as a fraction of the half-extent the canvas can show. */
-const ANCHOR_RING_FRACTION = 0.72;
-
-/** How rigidly neighbours are held to the ring. */
-const ANCHOR_RING_STRENGTH = 0.8;
-
-/**
- * Many-body strength around the ring. Modest on purpose: with the radius held
- * radially, repulsion is only responsible for spreading neighbours *around*
- * the ring, and a stronger charge simply drags them off it.
- */
-const ANCHOR_CHARGE = -40;
-
-/**
- * Link strength in an anchored view. Low, because links no longer set the
- * radius — they express affinity only, drawing interlinked neighbours together
- * around the ring rather than leaving them at arbitrary angles.
- */
-const ANCHOR_LINK_STRENGTH = 0.1; // 0.2
-
-/** Clear space between glyph edges, in graph units. */
-const ANCHOR_MIN_GAP = 10;
 
 type ForceGraphComponent = React.ComponentType<any>;
 
@@ -307,35 +276,24 @@ export default function GraphCanvas({
   );
 
   /**
-   * The anchored view's geometry: where the neighbours sit, and how many
-   * pixels a graph unit is worth.
-   *
-   * Everything follows from `ANCHOR_SCALE`, which does not move. The ring
-   * radius is
-   * a fraction of the half-extent the canvas can show at that scale; it grows
-   * past that only when the neighbours would not fit around it, and only once
-   * growing has run out of room does the zoom drop below the scale. So the
-   * common case is a constant glyph size, and the crowded case degrades in one
-   * predictable direction.
+   * Where the neighbours sit and how many pixels a graph unit is worth. Pure
+   * arithmetic, so it lives in `lib/graph/anchorLayout` where a unit test can
+   * hold it to the invariant it exists for — see that module for the why.
    */
-  const anchorGeometry = useMemo(() => {
-    const usablePx = Math.min((width ?? 800) / 2 - fitPadding(height), height / 2 - fitPadding(height));
-    const neighbours = graph.nodes.filter((node) => node.id !== anchor);
-    const radii = neighbours.map((node) => nodePaintedRadius(node));
-    const maxRadius = radii.length ? Math.max(...radii) : 0;
-    const meanRadius = radii.length ? radii.reduce((a, b) => a + b, 0) / radii.length : 0;
-    // Half-extent available in *graph units* at the requested scale.
-    const usable = usablePx / ANCHOR_SCALE;
-    const target = ANCHOR_RING_FRACTION * usable;
-    // Smallest ring whose circumference seats every neighbour without overlap.
-    const needed = radii.length
-      ? (radii.length * (2 * meanRadius + ANCHOR_MIN_GAP)) / (2 * Math.PI)
-      : 0;
-    const ringRadius = Math.max(target, needed);
-    // Only once the ring has grown as far as it can may the scale give way.
-    const zoom = Math.min(ANCHOR_SCALE, usablePx / Math.max(ringRadius + maxRadius, 1));
-    return { ringRadius, zoom };
-  }, [width, height, graph.nodes, anchor]);
+  const anchorGeometry = useMemo(
+    () =>
+      computeAnchorGeometry(
+        ANCHOR_RING,
+        { widthPx: width ?? 800, heightPx: height, padPx: fitPadding(height) },
+        {
+          neighbourRadii: graph.nodes
+            .filter((node) => node.id !== anchor)
+            .map((node) => nodePaintedRadius(node)),
+          anchorRadius: nodePaintedRadius(graph.nodes.find((node) => node.id === anchor))
+        }
+      ),
+    [width, height, graph.nodes, anchor]
+  );
 
   /**
    * Frame the viewport.
@@ -389,7 +347,7 @@ export default function GraphCanvas({
         // The radial force owns the radius, so many-body is left with one job:
         // pushing neighbours apart *around* the ring.
         charge.strength((node: any) =>
-          isHubType(node.type) ? ANCHOR_CHARGE * 2.5 : ANCHOR_CHARGE
+          isHubType(node.type) ? ANCHOR_RING.charge * 2.5 : ANCHOR_RING.charge
         );
       } else {
         charge.strength((node: any) =>
@@ -405,7 +363,7 @@ export default function GraphCanvas({
         // express affinity only: two interlinked neighbours drift together
         // around the ring instead of sitting at arbitrary angles.
         link.distance(anchorGeometry.ringRadius);
-        link.strength?.(ANCHOR_LINK_STRENGTH);
+        link.strength?.(ANCHOR_RING.linkStrength);
       } else {
         link.distance((edge: any) => {
           const s = typeof edge.source === "object" ? edge.source.type : undefined;
@@ -419,12 +377,12 @@ export default function GraphCanvas({
     // together.
     fg.d3Force?.(
       "anchorRing",
-      roomy ? radialForce(anchorGeometry.ringRadius, ANCHOR_RING_STRENGTH) : null
+      roomy ? radialForce(anchorGeometry.ringRadius, ANCHOR_RING.ringStrength) : null
     );
     // Hard separation. Many-body alone lets nodes overlap once links pull them
     // together, which is what makes a force layout look bunched; a collision
     // force gives the neighbourhood a real minimum spacing.
-    fg.d3Force?.("anchorCollide", roomy ? collideForce(ANCHOR_MIN_GAP) : null);
+    fg.d3Force?.("anchorCollide", roomy ? collideForce(ANCHOR_RING.minGap) : null);
     fg.d3ReheatSimulation?.();
     // After the simulation settles, re-frame so pinned hubs + satellites
     // all sit comfortably inside the viewport. Without this the initial
@@ -637,10 +595,6 @@ function collideForce(padding: number) {
     nodes = initial;
   };
   return force;
-}
-
-function fitPadding(height: number): number {
-  return Math.max(12, Math.min(80, Math.round(height * 0.08)));
 }
 
 /**
