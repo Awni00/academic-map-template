@@ -589,7 +589,9 @@
    canvas height LocalGraph passes down, reserving the slot before the
    force-graph chunk loads. */
 .local-graph {
-  min-height: 190px;
+  /* Set inline from the component's `height`, so the reservation cannot drift
+     from the canvas it is reserving for. */
+  min-height: var(--local-graph-height, 190px);
   overflow: hidden;
 }
 
@@ -614,6 +616,28 @@
   padding: var(--map-pad);
   background: var(--color-bg-soft);
   border-radius: 5px;
+}
+
+/* Panel-less: nothing to sit beside, so the canvas stops stretching to half a
+   two-column grid and takes a readable measure of its own. */
+.local-graph-map--none {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+/* A compact panel describes the selection without inviting a read, so it wants
+   its height from its content rather than from the canvas beside it. */
+.local-graph-map--compact .local-graph-map__side {
+  height: auto;
+}
+
+/* The local map is otherwise deliberately unboxed (see above): this is the
+   opt-in that puts it back on a surface. */
+.local-graph-map--bare .local-graph-map__canvas {
+  padding: 0;
+  background: none;
+  border-radius: 0;
 }
 
 /* Sized to the framed canvas rather than the bare one, so the panel's contents

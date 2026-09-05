@@ -36,6 +36,12 @@ type GraphCanvasProps = {
    */
   anchor?: string;
   /**
+   * TEMPORARY (hub-header variant fixture). Reports what the framing settled
+   * on, so a comparison page can show the invariant as numbers rather than
+   * asking the eye to judge it. Removed once a variant is chosen.
+   */
+  onFrame?: (info: FrameInfo) => void;
+  /**
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
    *   "all"    — paint every node's label.
@@ -57,6 +63,26 @@ type GraphCanvasProps = {
   hubLayout?: HubLayout;
 };
 
+/** TEMPORARY (hub-header variant fixture). See `onFrame`. */
+export type FrameInfo = {
+  /** Pixels per graph unit actually applied. */
+  zoom: number;
+  /** What the spec asked for. `zoom` below this means crowding won. */
+  scaleTarget: number;
+  ringRadius: number;
+  targetRadius: number;
+  growth: number;
+  /**
+   * Radius the simulation actually delivered. Diverging from `ringRadius`
+   * means the forces are not honouring the geometry they were given — the
+   * measurement that exposed the d3 centring-force bug.
+   */
+  achievedRadius: number;
+  /** Painted diameter of the anchor's glyph, in pixels. */
+  anchorGlyphPx: number;
+  neighbourCount: number;
+};
+
 type ForceGraphComponent = React.ComponentType<any>;
 
 export default function GraphCanvas({
@@ -67,6 +93,7 @@ export default function GraphCanvas({
   dimUnhighlighted = false,
   selectedStyle = "outline",
   anchor,
+  onFrame,
   labelMode = "config",
   labelSide = "auto",
   onSelect,
@@ -317,6 +344,26 @@ export default function GraphCanvas({
     }
     fg.centerAt?.(anchorNode.x, anchorNode.y, duration);
     fg.zoom?.(anchorGeometry.zoom, duration);
+    if (onFrame) {
+      let achieved = 0;
+      let neighbours = 0;
+      for (const node of nodes) {
+        if (node.id === anchorNode.id) continue;
+        if (typeof node.x !== "number" || typeof node.y !== "number") continue;
+        neighbours += 1;
+        achieved = Math.max(
+          achieved,
+          Math.hypot(node.x - anchorNode.x, node.y - (anchorNode.y ?? 0))
+        );
+      }
+      onFrame({
+        ...anchorGeometry,
+        scaleTarget: ANCHOR_RING.scale,
+        achievedRadius: achieved,
+        anchorGlyphPx: 2 * nodePaintedRadius(anchorNode) * anchorGeometry.zoom,
+        neighbourCount: neighbours
+      });
+    }
   };
 
   // Tune the d3-force simulation so hubs get more personal space than the
