@@ -179,7 +179,26 @@ test("writing entry and RSS render", async ({ page }) => {
   const viewport = page.viewportSize();
   if ((viewport?.width ?? 0) > 680) {
     await expect(wrapInnerFigure).toHaveCSS("float", "right");
-    expect(Math.abs(wrapFigureBox!.width - 340)).toBeLessThanOrEqual(1);
+    // Width is authored on the block (figureWidth="48%", figureMaxWidth="340px")
+    // and applied as `width: <pct>; max-width: min(100%, <cap>)`. Derive the
+    // expectation from those two rather than hardcoding a pixel: the cap binds
+    // only once the column is wide enough, so a literal quietly encodes
+    // whichever side happened to win on the day it was written — this one
+    // encoded the cap, which does not bind at the current column width.
+    const authored = await wrapInnerFigure.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        width: style.getPropertyValue("--wrap-figure-width").trim(),
+        maxWidth: style.getPropertyValue("--wrap-figure-max-width").trim(),
+      };
+    });
+    const expectedWidth = Math.min(
+      (Number.parseFloat(authored.width) / 100) * wrapBox!.width,
+      Number.parseFloat(authored.maxWidth),
+    );
+    expect(Math.abs(wrapFigureBox!.width - expectedWidth)).toBeLessThanOrEqual(
+      1,
+    );
     expect(firstLine!.y).toBeLessThan(wrapFigureBox!.y + 40);
     expect(firstLine!.right).toBeLessThanOrEqual(wrapFigureBox!.x - 8);
   } else {
