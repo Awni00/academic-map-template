@@ -118,10 +118,9 @@ test("writing browser supports URL state and preview", async ({ page }) => {
   await expect(
     page.locator(".preview-pane").getByRole("heading").first(),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open Entry" })).toHaveAttribute(
-    "href",
-    /\/writing\//,
-  );
+  await expect(
+    page.locator(".preview-pane").getByRole("link", { name: "Open page" }),
+  ).toHaveAttribute("href", /\/writing\//);
 });
 
 test("writing entry and RSS render", async ({ page }) => {
@@ -232,7 +231,7 @@ test("abstract-mode entry renders its record layout", async ({ page }) => {
   await expect(page.locator(".entry-foot")).toHaveCSS("border-top-width", "0px");
 
   // Abstract entries stay full graph citizens.
-  const entryNav = page.getByRole("region", { name: "Entry navigation" });
+  const entryNav = page.getByRole("region", { name: "Page navigation" });
   await expect(entryNav).toContainText("Backlinks");
   await expect(entryNav).toContainText("Related");
 });
