@@ -76,7 +76,14 @@ export default function LocalGraphMap({
             )}
             {selected.id === currentId && <span className="local-graph-map__here">This page</span>}
           </div>
-          <h3 className="local-graph-map__title">{selected.title}</h3>
+          {/*
+            Not a heading. Its text is the selected node's title, which starts
+            as — and often is — the page's own <h1>, so a heading here puts the
+            same title in the outline twice and makes heading navigation
+            announce it once as the document and once as a widget's state. It
+            labels a panel that changes on click, which is not page structure.
+          */}
+          <p className="local-graph-map__title">{selected.title}</p>
           {selected.tags.length > 0 && (
             <div className="local-graph-map__tags">
               {selected.tags.map((tag) => (
