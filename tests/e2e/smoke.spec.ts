@@ -230,10 +230,14 @@ test("abstract-mode entry renders its record layout", async ({ page }) => {
   await expect(page.locator(".article-hero")).toHaveCount(0);
   await expect(page.locator(".entry-foot")).toHaveCSS("border-top-width", "0px");
 
-  // Abstract entries stay full graph citizens.
+  // Abstract entries stay full graph citizens, and their footer is exactly any
+  // other entry's: EntryFooter takes no abstract-specific input, so the map
+  // shows and the backlinks/related lists stay suppressed, rather than the map
+  // sitting alongside lists that draw the same edges.
   const entryNav = page.getByRole("region", { name: "Page navigation" });
-  await expect(entryNav).toContainText("Backlinks");
   await expect(entryNav).toContainText("Related");
+  await expect(entryNav.locator(".local-graph-map")).toBeVisible();
+  await expect(entryNav.getByText("Backlinks", { exact: true })).toHaveCount(0);
 });
 
 test("article column and footer share one left edge across layouts", async ({
