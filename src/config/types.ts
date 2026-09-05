@@ -46,7 +46,6 @@ export type EntryTypeGraphConfig = {
 
 export type EntryTypeArticleConfig = {
   mode?: ArticleMode;
-  localGraph?: boolean;
   placement?: Partial<PlacementSpec>;
   asides?: AsidePlacement;
   toc?: TocConfigOverride;
@@ -129,12 +128,14 @@ export type WritingConfig = {
       default: ArticleMode;
       byType: Record<EntryType, ArticleMode>;
     };
+    /**
+     * How much of the graph a per-entry local map shows. *Whether* and *where*
+     * it shows is `placement.localGraph.where`, which subsumed the boolean
+     * these used to sit beside.
+     */
     localGraph: {
-      enabled: boolean;
       defaultDepth: number;
       maxNodes: number;
-      mobile: "collapsed";
-      byType: Record<EntryType, boolean>;
     };
     hubPages: {
       autoRenderLinkedEntries: boolean;

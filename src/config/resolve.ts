@@ -107,7 +107,6 @@ function resolveWritingConfig(): WritingConfig {
     siteConfigOverrides.writing as DeepPartial<WritingConfig> | undefined
   );
   const modeByType: Record<EntryType, ArticleMode> = {};
-  const localGraphByType: Record<EntryType, boolean> = {};
   const placementByType: WritingConfig["entryLayout"]["placement"]["byType"] = {};
   const asidesByType: Record<EntryType, AsidePlacement> = {};
   const tocByType: Record<EntryType, TocConfigOverride> = {};
@@ -116,7 +115,6 @@ function resolveWritingConfig(): WritingConfig {
 
   for (const entryType of entryTypeDefinitions) {
     modeByType[entryType.id] = entryType.article?.mode ?? base.entryLayout.mode.default;
-    localGraphByType[entryType.id] = entryType.article?.localGraph ?? true;
     if (entryType.article?.placement) placementByType[entryType.id] = entryType.article.placement;
     asidesByType[entryType.id] = entryType.article?.asides ?? base.entryLayout.asides.default;
     if (entryType.article?.toc) tocByType[entryType.id] = entryType.article.toc;
@@ -150,13 +148,7 @@ function resolveWritingConfig(): WritingConfig {
           ...base.entryLayout.mode.byType
         }
       },
-      localGraph: {
-        ...base.entryLayout.localGraph,
-        byType: {
-          ...localGraphByType,
-          ...base.entryLayout.localGraph.byType
-        }
-      },
+      localGraph: { ...base.entryLayout.localGraph },
       toc: {
         ...base.entryLayout.toc,
         default: normalizeTocConfig(

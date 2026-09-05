@@ -58,11 +58,8 @@ export const defaultWritingConfig = {
       byType: {}
     },
     localGraph: {
-      enabled: true,
       defaultDepth: 1,
-      maxNodes: 20,
-      mobile: "collapsed",
-      byType: {}
+      maxNodes: 20
     },
     hubPages: {
       autoRenderLinkedEntries: true,

@@ -276,7 +276,13 @@ const right = renderSide("right");
         {
           localGraphInHeader && (
             <div class="article-header__graph">
-              <LocalGraphMap client:load graph={graph} currentId={node.id} />
+              <LocalGraphMap
+                client:load
+                graph={graph}
+                currentId={node.id}
+                depth={writingConfig.entryLayout.localGraph.defaultDepth as 1 | 2}
+                maxNodes={writingConfig.entryLayout.localGraph.maxNodes}
+              />
             </div>
           )
         }

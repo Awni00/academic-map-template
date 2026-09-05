@@ -1,4 +1,5 @@
 ---
+import { writingConfig } from "../../config";
 import LocalGraphMap from "../graph/LocalGraphMap";
 import {
   DEFAULT_TOC_CONFIG,
@@ -69,7 +70,13 @@ const hasAny =
         <div class="entry-foot-section">
           <div class="entry-foot-label">Related</div>
           <div class="entry-foot-content">
-            <LocalGraphMap client:load graph={graph} currentId={currentId} />
+            <LocalGraphMap
+              client:load
+              graph={graph}
+              currentId={currentId}
+              depth={writingConfig.entryLayout.localGraph.defaultDepth as 1 | 2}
+              maxNodes={writingConfig.entryLayout.localGraph.maxNodes}
+            />
           </div>
         </div>
       )}

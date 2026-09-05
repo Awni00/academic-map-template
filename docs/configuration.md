@@ -109,7 +109,6 @@ entryTypes: [
       labelVisibility: "hover"
     },
     article: {
-      localGraph: true,
       asides: "margin"
     }
   }
@@ -144,9 +143,10 @@ Common fields:
   sites leave this at the default and opt in per entry with `article.mode` in
   frontmatter; set it here only for a type that is always abstract-only. See
   [Abstract-Only Entries](using-the-template.md#abstract-only-entries).
-- `article.localGraph`: whether this type shows local graph context by default.
 - `article.placement`: type-level TOC, local graph, backlinks, and related-entry
-  placement.
+  placement. To hide the local map for a type, set
+  `placement.localGraph.where` to `"none"` — that is the only switch; there is
+  no separate boolean.
 - `article.asides`: default `<Aside>` placement.
 - `article.toc`: type-level heading depth defaults for the article table of
   contents.
