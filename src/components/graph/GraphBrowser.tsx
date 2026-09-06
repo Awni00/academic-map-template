@@ -272,7 +272,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 selectedStyle="soft-glow"
                 highlighted={focusIds}
                 dimUnhighlighted={FOCUS_MODE === "dim"}
-                draggable
+                drag={graphConfig.interaction.drag}
                 hubLayout={graphConfig.layout.hubs}
                 labelMode={graphConfig.layout.labels}
                 labelSide={graphConfig.layout.labelSide}

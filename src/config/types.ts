@@ -230,6 +230,21 @@ export type PublicationsConfig = {
   };
 };
 
+/**
+ * Whether readers can rearrange a graph by dragging its nodes, and what a drop
+ * does next.
+ *
+ *   "none"     — nodes are fixed. Panning and zooming still work.
+ *   "stays"    — a dropped node keeps where it was put, and nothing else moves.
+ *   "resettle" — as "stays", but the layout re-runs afterwards so the
+ *                neighbours make room. Livelier, at the cost of a whole-graph
+ *                recalculation on every drop.
+ *
+ * Both draggable modes pin on release: a mode that handed the node straight
+ * back to the forces would look like the drag had been refused.
+ */
+export type DragMode = "none" | "stays" | "resettle";
+
 export type GraphConfigBase = {
   colorBy: "type";
   links: {
@@ -248,6 +263,13 @@ export type GraphConfigBase = {
     hubs: "circle" | "row" | "force";
     labels: "config" | "all" | "none";
     labelSide: "top" | "bottom" | "auto";
+  };
+  interaction: {
+    /**
+     * Applies to the writing browser and the per-entry local maps. The
+     * homepage preview is decorative and never draggable.
+     */
+    drag: DragMode;
   };
 };
 

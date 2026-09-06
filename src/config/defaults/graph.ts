@@ -18,5 +18,11 @@ export const defaultGraphConfig = {
     hubs: "circle",
     labels: "config",
     labelSide: "auto"
+  },
+  interaction: {
+    // Dropped nodes stay put, and the rest of the layout is left alone: a
+    // reader who moves one node is answering "where should this sit", not
+    // asking for a new map.
+    drag: "stays"
   }
 } as const satisfies GraphConfigBase;

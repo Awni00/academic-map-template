@@ -7,8 +7,7 @@ import {
   canDragNode,
   grabTarget,
   passedThreshold,
-  pinAfterCancel,
-  pinAfterRelease
+  pinAfterCancel
 } from "../../src/lib/graph/nodeDrag";
 import { isTypeInteractive } from "../../src/lib/graph/nodeInteraction";
 
@@ -77,32 +76,10 @@ describe("passedThreshold", () => {
   });
 });
 
-describe("pinAfterRelease", () => {
-  it("pins at the drop point when the drop should stick", () => {
-    for (const release of ["keep", "gesture"] as const) {
-      expect(pinAfterRelease(freeGrab(), { x: 80, y: -5 }, release)).toEqual({ fx: 80, fy: -5 });
-    }
-  });
-
-  it("hands a free node back to the simulation when springing", () => {
-    expect(pinAfterRelease(freeGrab(), { x: 80, y: -5 }, "spring")).toEqual({
-      fx: undefined,
-      fy: undefined
-    });
-  });
-
-  // The regression that would otherwise destroy the pinned-hub layout the
-  // first time anyone dragged a hub, and stay invisible until the next
-  // re-layout moved it somewhere absurd.
-  it("restores a layout pin rather than clearing it", () => {
-    expect(pinAfterRelease(pinnedGrab(), { x: 999, y: 999 }, "spring")).toEqual({
-      fx: 50,
-      fy: -20
-    });
-  });
-});
-
 describe("pinAfterCancel", () => {
+  // The regression this guards: restoring the pin the node *had* rather than
+  // clearing it. Clearing would delete the `fx/fy` that `hubLayout` puts on
+  // hubs, the first time an interrupted drag touched one.
   it("returns both the position and the pin, so a cancel is a true no-op", () => {
     expect(pinAfterCancel(freeGrab())).toEqual({
       fx: undefined,

@@ -1,5 +1,7 @@
-import type { EntryType } from "../../config";
+import type { DragMode, EntryType } from "../../config";
 import { isTypeInteractive } from "./nodeInteraction";
+
+export type { DragMode };
 
 /**
  * Pointer travel (px) above which a press stops being a click.
@@ -12,8 +14,6 @@ import { isTypeInteractive } from "./nodeInteraction";
  */
 export const DRAG_CLICK_TOLERANCE_PX = 5;
 
-/** What becomes of a node when the pointer lets go. */
-export type DragRelease = "keep" | "spring" | "gesture";
 
 export type DraggableNode = {
   id: string;
@@ -97,22 +97,6 @@ export function grabTarget(grab: Grab, graphPoint: Point): Point {
 
 export function passedThreshold(grab: Grab, clientX: number, clientY: number): boolean {
   return Math.hypot(clientX - grab.clientX, clientY - grab.clientY) > DRAG_CLICK_TOLERANCE_PX;
-}
-
-/**
- * The pin a node should carry once the pointer lets go.
- *
- * "spring" restores whatever the node had *before* the drag: `undefined` for an
- * ordinary node, the layout's own coordinates for a pinned hub. Clearing
- * unconditionally would delete a deliberate pin.
- */
-export function pinAfterRelease(
-  grab: Grab,
-  dropped: Point,
-  release: DragRelease
-): { fx?: number; fy?: number } {
-  if (release === "spring") return { fx: grab.pinX, fy: grab.pinY };
-  return { fx: dropped.x, fy: dropped.y };
 }
 
 /** Undo: put the node back exactly where the press found it. */

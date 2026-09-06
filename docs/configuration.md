@@ -52,9 +52,27 @@ Supported top-level sections:
 - `site`: identity, metadata, links, navigation, homepage sections.
 - `theme`: default color mode, toggle behavior, typography choices.
 - `publications`: BibTeX source, grouping, author highlighting, previews.
-- `graph`: global graph link and layout settings.
+- `graph`: global graph link, layout, and interaction settings.
 - `writing`: writing route, browser behavior, validation behavior.
 - `entryTypes`: the writing entry type registry.
+
+### Graph interaction
+
+`graph.interaction.drag` decides whether readers can rearrange a graph by
+dragging its nodes:
+
+- `none` — nodes are fixed. Panning and zooming still work.
+- `stays` (default) — a dropped node keeps where it was put, and nothing else
+  moves.
+- `resettle` — as `stays`, but the layout re-runs afterwards so the neighbours
+  make room. Livelier, at the cost of recalculating the whole graph on every
+  drop.
+
+Both draggable modes pin the node on release; a mode that handed it straight
+back to the forces would look like the drag had been refused. The setting
+applies to the writing browser and the per-entry local maps. The homepage
+preview is decorative and is never draggable. Dragging is mouse and pen only —
+on touch, a drag pans the canvas as before.
 
 Low-level rendering internals should stay in template-owned code. If a visual or
 feature option should be reusable by many sites, add a documented config knob to

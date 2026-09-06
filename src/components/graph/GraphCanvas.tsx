@@ -19,8 +19,7 @@ import {
   grabTarget,
   passedThreshold,
   pinAfterCancel,
-  pinAfterRelease,
-  type DragRelease,
+  type DragMode,
   type Grab
 } from "../../lib/graph/nodeDrag";
 import type { GraphIndex } from "../../lib/graph/types";
@@ -44,15 +43,14 @@ type GraphCanvasProps = {
    */
   anchor?: string;
   /**
-   * Whether nodes can be dragged. Off by default: the decorative preview map
-   * has no reason to be rearranged, and a canvas that shifts under a reader
-   * who only meant to scroll past it is worse than an inert one.
+   * Whether nodes can be dragged, and what a drop does — see `DragMode`.
+   *
+   * Defaults to "none" rather than to the site setting, so a canvas is
+   * rearrangeable only where a caller says so: the decorative preview map has
+   * no reason to move, and a graph that shifts under a reader who meant to
+   * scroll past it is worse than an inert one.
    */
-  draggable?: boolean;
-  /** TEMPORARY (node-drag fixture). What a dropped node does. */
-  dragRelease?: DragRelease;
-  /** TEMPORARY (node-drag fixture). Re-settle the layout after a drop. */
-  dragReheat?: boolean;
+  drag?: DragMode;
   /**
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
@@ -85,9 +83,7 @@ export default function GraphCanvas({
   dimUnhighlighted = false,
   selectedStyle = "outline",
   anchor,
-  draggable = false,
-  dragRelease = "keep",
-  dragReheat = false,
+  drag = "none",
   labelMode = "config",
   labelSide = "auto",
   onSelect,
@@ -321,7 +317,7 @@ export default function GraphCanvas({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     pressRef.current = { x: event.clientX, y: event.clientY };
-    if (!draggable) return;
+    if (drag === "none") return;
     // Touch is left to pan and pinch. Claiming the gesture would need
     // `touch-action: none` across the canvas — d3 only blocks page scroll from
     // its own `touchmove` — which costs a tall canvas its scroll-through on a
@@ -368,22 +364,6 @@ export default function GraphCanvas({
     node.y = target.y;
   }
 
-  /**
-   * Hand a pinned node back to the simulation.
-   *
-   * Only meaningful under the "gesture" release: the other two either never
-   * pin, or pin as the whole point. force-graph disables its own
-   * `dblclick.zoom`, so the gesture is free to take.
-   */
-  function handleDoubleClick(event: React.MouseEvent<HTMLDivElement>) {
-    if (!draggable || dragRelease !== "gesture") return;
-    const node = nodeUnderEvent(event)?.node as any;
-    if (!node || !canDragNode(node, anchor)) return;
-    applyPin(node, { fx: undefined, fy: undefined });
-    skipReframeRef.current = true;
-    fgRef.current?.d3ReheatSimulation?.();
-  }
-
   function applyPin(node: any, pin: { fx?: number; fy?: number }) {
     node.fx = pin.fx;
     node.fy = pin.fy;
@@ -416,11 +396,10 @@ export default function GraphCanvas({
       node.y = back.y;
       return;
     }
-    const pin = pinAfterRelease(grab, { x: node.x, y: node.y }, dragRelease);
-    applyPin(node, pin);
-    // An unpinned node only springs back if something is running to pull it:
-    // clearing `fx` on a cooled engine changes nothing at all.
-    if (dragReheat || pin.fx == null) {
+    // Both draggable modes keep the position the reader chose. They differ in
+    // whether the rest of the layout is then asked to accommodate it.
+    applyPin(node, { fx: node.x, fy: node.y });
+    if (drag === "resettle") {
       skipReframeRef.current = true;
       fgRef.current?.d3ReheatSimulation?.();
     }
@@ -610,7 +589,6 @@ export default function GraphCanvas({
       // canvas is frozen until reload.
       onLostPointerCapture={(event) => endDrag(event, true)}
       onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
     >
       {ForceGraph && width != null ? (
         <ForceGraph

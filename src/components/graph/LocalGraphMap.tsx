@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getEntryType } from "../../config";
+import { getEntryType, graphConfig } from "../../config";
 import type { GraphIndex } from "../../lib/graph/types";
 import GraphCanvas from "./GraphCanvas";
 import { useNeighborhood } from "./useNeighborhood";
@@ -54,7 +54,7 @@ export default function LocalGraphMap({
           selected={selectedId}
           selectedStyle="soft-glow"
           anchor={currentId}
-          draggable
+          drag={graphConfig.interaction.drag}
           labelMode="none"
           onSelect={handleSelect}
         />

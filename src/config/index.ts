@@ -18,6 +18,7 @@ export type {
   ArticleMode,
   AsidePlacement,
   DeepPartial,
+  DragMode,
   EntryType,
   EntryTypeArticleConfig,
   EntryTypeDefinition,
