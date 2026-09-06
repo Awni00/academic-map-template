@@ -22,18 +22,9 @@ export const defaultWritingConfig = {
     excludeTypes: []
   },
   browser: {
-    defaultView: {
-      desktop: "map",
-      mobile: "topics"
-    },
-    urlState: true,
     focus: {
       mode: "dim",
       depth: 1
-    },
-    mobile: {
-      graphPlacement: "collapsed",
-      defaultPreviewMode: "cards"
     },
     topics: {
       showHubSummaries: true,

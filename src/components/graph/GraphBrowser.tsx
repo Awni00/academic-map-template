@@ -30,7 +30,12 @@ const VIEWS = ["map", "topics", "list"] as const;
 type View = (typeof VIEWS)[number];
 
 export default function GraphBrowser({ graph }: GraphBrowserProps) {
-  const [state, setState] = useState<WritingBrowserState>(() => readStateFromUrl());
+  // Initialised to a constant, not to the URL. The server has no `window`, so
+  // reading the URL during render makes the first client render disagree with
+  // the markup the server sent on any non-default `?view=`. The URL is applied
+  // in a mount effect instead — same shape as ThemeToggle.
+  const [state, setState] = useState<WritingBrowserState>(defaultState);
+  const [urlApplied, setUrlApplied] = useState(false);
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
   const typeCounts = useMemo(() => {
@@ -90,11 +95,20 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   }, [mapFilteredIds, graph, state.focus]);
   const selected = state.selected ? nodeById.get(state.selected) : graph.hubs[0] ?? graph.nodes[0];
   const focusNode = state.focus ? nodeById.get(state.focus) : undefined;
-  const view = (state.view ?? "map") as View;
+  const view = (state.view ?? defaultState.view) as View;
 
   useEffect(() => {
+    setState(readStateFromUrl());
+    setUrlApplied(true);
+  }, []);
+
+  useEffect(() => {
+    // Gated: `writeStateToUrl` omits the parameter whenever the view equals the
+    // default, so writing before the URL has been read would strip the very
+    // `?view=` this is about to honour.
+    if (!urlApplied) return;
     writeStateToUrl(state);
-  }, [state]);
+  }, [state, urlApplied]);
 
   function patch(patchState: Partial<WritingBrowserState>) {
     setState((current) => ({ ...current, ...patchState }));

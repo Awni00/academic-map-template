@@ -107,18 +107,9 @@ export type WritingConfig = {
     excludeTypes: readonly EntryType[];
   };
   browser: {
-    defaultView: {
-      desktop: "map" | "topics" | "list";
-      mobile: "map" | "topics" | "list";
-    };
-    urlState: boolean;
     focus: {
       mode: "dim" | "filter";
       depth: 1 | 2;
-    };
-    mobile: {
-      graphPlacement: "collapsed";
-      defaultPreviewMode: "cards";
     };
     topics: TopicsConfig;
     list: ListConfig;
