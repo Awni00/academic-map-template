@@ -54,6 +54,7 @@ export default function LocalGraphMap({
           selected={selectedId}
           selectedStyle="soft-glow"
           anchor={currentId}
+          draggable
           labelMode="none"
           onSelect={handleSelect}
         />

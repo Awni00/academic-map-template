@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { getEntryType, graphConfig, isHubType } from "../../config";
 import {
@@ -12,10 +12,18 @@ import {
   computeAnchorGeometry,
   fitPadding
 } from "../../lib/graph/anchorLayout";
+import {
+  DRAG_CLICK_TOLERANCE_PX,
+  beginGrab,
+  canDragNode,
+  grabTarget,
+  passedThreshold,
+  pinAfterCancel,
+  pinAfterRelease,
+  type DragRelease,
+  type Grab
+} from "../../lib/graph/nodeDrag";
 import type { GraphIndex } from "../../lib/graph/types";
-
-/** Pointer travel (px) above which a press counts as a pan, not a click. */
-const DRAG_CLICK_TOLERANCE_PX = 5;
 
 type HubLayout = "circle" | "row" | "force";
 type LabelMode = "config" | "all" | "none";
@@ -35,6 +43,16 @@ type GraphCanvasProps = {
    * the moment anything else is clicked.
    */
   anchor?: string;
+  /**
+   * Whether nodes can be dragged. Off by default: the decorative preview map
+   * has no reason to be rearranged, and a canvas that shifts under a reader
+   * who only meant to scroll past it is worse than an inert one.
+   */
+  draggable?: boolean;
+  /** TEMPORARY (node-drag fixture). What a dropped node does. */
+  dragRelease?: DragRelease;
+  /** TEMPORARY (node-drag fixture). Re-settle the layout after a drop. */
+  dragReheat?: boolean;
   /**
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
@@ -67,6 +85,9 @@ export default function GraphCanvas({
   dimUnhighlighted = false,
   selectedStyle = "outline",
   anchor,
+  draggable = false,
+  dragRelease = "keep",
+  dragReheat = false,
   labelMode = "config",
   labelSide = "auto",
   onSelect,
@@ -85,6 +106,31 @@ export default function GraphCanvas({
   const [hover, setHover] = useState<{ node: any; x: number; y: number } | null>(null);
   // Where the current press started, so a pan doesn't register as a click.
   const pressRef = useRef<{ x: number; y: number } | null>(null);
+  // Live for the pan predicate, which d3 evaluates at gesture start: React
+  // state would be a frame late and would re-render the canvas mid-press.
+  const draggingRef = useRef(false);
+  // The gesture in progress, paired with the live node object the simulation
+  // owns, so a move costs no lookup.
+  const grabRef = useRef<{ grab: Grab; node: any } | null>(null);
+  // Mirrors `draggingRef` into React purely to drive `autoPauseRedraw` and the
+  // cursor. Set once at each end of a gesture, never per move.
+  const [dragging, setDragging] = useState(false);
+  // Pins left behind by a drag. `graphData` builds fresh node objects whenever
+  // it recomputes — a width change, a filter change — so without this a dropped
+  // node silently jumps home the first time the column resizes.
+  const dropsRef = useRef(new Map<string, { fx: number; fy: number }>());
+  // Set when a drag reheats the engine, so the engine stop that follows is not
+  // mistaken for "the layout settled, re-frame the view".
+  const skipReframeRef = useRef(false);
+
+  // Drops belong to a graph, not to a component instance. Cleared during render
+  // rather than in an effect, which would run after the memo had already
+  // applied them to the wrong graph.
+  const dropsGraphRef = useRef(graph);
+  if (dropsGraphRef.current !== graph) {
+    dropsGraphRef.current = graph;
+    dropsRef.current.clear();
+  }
   // Bumped on every theme switch purely to force a re-render — see the
   // MutationObserver below for why that's what repaints the canvas.
   const [, setThemeVersion] = useState(0);
@@ -164,6 +210,14 @@ export default function GraphCanvas({
 
     return {
       nodes: graph.nodes.map((node) => {
+        // A position the reader chose outranks the one the layout computed.
+        // Reading a ref here is safe because drops are written during a gesture
+        // that triggers no recompute, and read on the next recompute that some
+        // other dependency causes — this must never be what *causes* one.
+        const drop = dropsRef.current.get(node.id);
+        if (drop) {
+          return { ...node, fx: drop.fx, fy: drop.fy, _labelSide: resolveSide(drop.fy) };
+        }
         const pin = pinned[node.id];
         if (pin) {
           return {
@@ -232,10 +286,32 @@ export default function GraphCanvas({
     const point = pointerToContainer(event);
     if (!fg?.screen2GraphCoords || !point) return null;
     const graphPoint = fg.screen2GraphCoords(point.x, point.y);
-    return { node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y), point };
+    return {
+      node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y),
+      point,
+      graphPoint
+    };
   };
 
+  /**
+   * Suppress canvas panning for exactly the length of a node drag.
+   *
+   * force-graph exposes the pan gate as a predicate its d3-zoom filter
+   * evaluates at gesture start, declared `triggerUpdate: false` — so reading a
+   * ref is enough and costs no render. `event.stopPropagation()` cannot do this
+   * job: d3 listens natively on the canvas for `mousedown`, while React's
+   * handler is delegated from the island root and sees `pointerdown`, a
+   * different event on a different element. Wheel zoom is untouched, since
+   * force-graph skips the pan clause for `wheel`.
+   */
+  const allowPan = useCallback(() => !draggingRef.current, []);
+
   function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const held = grabRef.current;
+    if (held) {
+      dragTo(held, event);
+      return; // no hit test and no hover churn while a node is in hand
+    }
     const hit = nodeUnderEvent(event);
     if (!hit) return;
     // Skip the state churn when the pointer is idling over empty canvas.
@@ -245,6 +321,109 @@ export default function GraphCanvas({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     pressRef.current = { x: event.clientX, y: event.clientY };
+    if (!draggable) return;
+    // Touch is left to pan and pinch. Claiming the gesture would need
+    // `touch-action: none` across the canvas — d3 only blocks page scroll from
+    // its own `touchmove` — which costs a tall canvas its scroll-through on a
+    // phone, and there is no hover on touch to say what you are about to grab.
+    if (event.pointerType === "touch") return;
+    const hit = nodeUnderEvent(event);
+    if (!hit?.node || !canDragNode(hit.node, anchor)) return;
+    grabRef.current = { grab: beginGrab(hit.node, hit.graphPoint, event), node: hit.node };
+    draggingRef.current = true;
+    // Survive leaving the container: without capture, a fast drag off the edge
+    // drops the node wherever the pointer happened to cross the boundary.
+    // Capture is a convenience, not a requirement — it throws if the pointer is
+    // no longer active, and losing it should not cost us the drag.
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      /* no capture; the gesture still works inside the container */
+    }
+  }
+
+  function dragTo(held: { grab: Grab; node: any }, event: React.PointerEvent<HTMLDivElement>) {
+    const fg = fgRef.current;
+    const point = pointerToContainer(event);
+    if (!fg?.screen2GraphCoords || !point) return;
+    const { grab, node } = held;
+    if (!grab.moved) {
+      // Nothing is written below the tolerance, so a click can never pin a
+      // node — which would otherwise quietly pin every node anyone clicked.
+      if (!passedThreshold(grab, event.clientX, event.clientY)) return;
+      grab.moved = true;
+      // The only two renders a gesture costs, both at its edges: one to unpause
+      // the redraw loop and change the cursor, one to put them back.
+      setDragging(true);
+      // The floating label would fight the cursor it is anchored to.
+      setHover(null);
+    }
+    const target = grabTarget(grab, fg.screen2GraphCoords(point.x, point.y));
+    // `fx/fy` instructs the simulation; `x/y` is what gets painted, what the
+    // links read for their endpoints, and what `nodeAtPoint` hit-tests. On a
+    // cooled engine no tick ever runs to copy one into the other.
+    node.fx = target.x;
+    node.fy = target.y;
+    node.x = target.x;
+    node.y = target.y;
+  }
+
+  /**
+   * Hand a pinned node back to the simulation.
+   *
+   * Only meaningful under the "gesture" release: the other two either never
+   * pin, or pin as the whole point. force-graph disables its own
+   * `dblclick.zoom`, so the gesture is free to take.
+   */
+  function handleDoubleClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (!draggable || dragRelease !== "gesture") return;
+    const node = nodeUnderEvent(event)?.node as any;
+    if (!node || !canDragNode(node, anchor)) return;
+    applyPin(node, { fx: undefined, fy: undefined });
+    skipReframeRef.current = true;
+    fgRef.current?.d3ReheatSimulation?.();
+  }
+
+  function applyPin(node: any, pin: { fx?: number; fy?: number }) {
+    node.fx = pin.fx;
+    node.fy = pin.fy;
+    if (pin.fx != null && pin.fy != null) {
+      dropsRef.current.set(node.id, { fx: pin.fx, fy: pin.fy });
+    } else {
+      dropsRef.current.delete(node.id);
+    }
+  }
+
+  function endDrag(event: React.PointerEvent<HTMLDivElement>, cancelled: boolean) {
+    const held = grabRef.current;
+    grabRef.current = null;
+    draggingRef.current = false;
+    try {
+      if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      /* already released by the browser */
+    }
+    // Never crossed the tolerance: that was a click, and nothing moved.
+    if (!held || !held.grab.moved) return;
+    setDragging(false);
+    const { grab, node } = held;
+    if (cancelled) {
+      const back = pinAfterCancel(grab);
+      applyPin(node, back);
+      node.x = back.x;
+      node.y = back.y;
+      return;
+    }
+    const pin = pinAfterRelease(grab, { x: node.x, y: node.y }, dragRelease);
+    applyPin(node, pin);
+    // An unpinned node only springs back if something is running to pull it:
+    // clearing `fx` on a cooled engine changes nothing at all.
+    if (dragReheat || pin.fx == null) {
+      skipReframeRef.current = true;
+      fgRef.current?.d3ReheatSimulation?.();
+    }
   }
 
   function handleClick(event: React.MouseEvent<HTMLDivElement>) {
@@ -417,12 +596,21 @@ export default function GraphCanvas({
         height,
         overflow: "hidden",
         position: "relative",
-        cursor: hoverIsClickable ? "pointer" : undefined
+        cursor: dragging ? "grabbing" : hoverIsClickable ? "pointer" : undefined
       }}
       onPointerMove={handlePointerMove}
-      onPointerLeave={() => setHover(null)}
+      onPointerLeave={() => {
+        if (!grabRef.current) setHover(null);
+      }}
       onPointerDown={handlePointerDown}
+      onPointerUp={(event) => endDrag(event, false)}
+      onPointerCancel={(event) => endDrag(event, true)}
+      // A capture lost to a browser gesture — alt-tab, a context menu — never
+      // sends pointerup. Without this the pan predicate stays false and the
+      // canvas is frozen until reload.
+      onLostPointerCapture={(event) => endDrag(event, true)}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     >
       {ForceGraph && width != null ? (
         <ForceGraph
@@ -439,6 +627,17 @@ export default function GraphCanvas({
           // so it goes too. Zoom/pan are gated separately and still work.
           enablePointerInteraction={false}
           enableNodeDrag={false}
+          // Dragging is this component's own (see `handlePointerDown`), built
+          // on the same arithmetic hit-testing, so it survives the readback
+          // problem above. The pan gate has to yield to it: d3-zoom would
+          // otherwise pan the canvas out from under the node being moved.
+          enablePanInteraction={allowPan}
+          // Mutating `node.fx` marks nothing dirty, and the render loop skips
+          // any frame nothing marked — the same mechanism that strands old
+          // theme colours on the canvas (see above). A drag on a cooled engine
+          // would be invisible. Unpausing for the length of the gesture is the
+          // switch the library provides for exactly this.
+          autoPauseRedraw={!dragging}
           nodeRelSize={5}
           // d3-force uses `nodeRelSize * sqrt(nodeVal)` as the collision
           // radius (and the auto-size). Giving hubs a larger val widens the
@@ -450,6 +649,13 @@ export default function GraphCanvas({
           // near, so it is given room to get there.
           cooldownTicks={anchor ? 300 : 80}
           onEngineStop={() => {
+            // A drag's reheat runs the full cooldown and then lands here.
+            // Re-framing on that would re-centre and re-zoom the view seconds
+            // after the reader let go, which reads as the canvas lurching.
+            if (skipReframeRef.current) {
+              skipReframeRef.current = false;
+              return;
+            }
             if (anchor) frame(400);
           }}
           linkDirectionalParticles={0}
