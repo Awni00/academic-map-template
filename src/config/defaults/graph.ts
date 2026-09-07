@@ -20,9 +20,10 @@ export const defaultGraphConfig = {
     labelSide: "auto"
   },
   interaction: {
-    // Dropped nodes stay put, and the rest of the layout is left alone: a
-    // reader who moves one node is answering "where should this sit", not
-    // asking for a new map.
-    drag: "stays"
+    // Dropped nodes stay put and the layout re-settles around them, so moving
+    // one node reads as rearranging a live thing rather than parking a sticker
+    // on a still image. Sites that want the cheaper, stiller behaviour can set
+    // "stays"; see docs/configuration.md.
+    drag: "resettle"
   }
 } as const satisfies GraphConfigBase;

@@ -14,7 +14,6 @@ export type { DragMode };
  */
 export const DRAG_CLICK_TOLERANCE_PX = 5;
 
-
 export type DraggableNode = {
   id: string;
   type?: EntryType;

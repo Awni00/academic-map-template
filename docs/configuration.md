@@ -62,11 +62,11 @@ Supported top-level sections:
 dragging its nodes:
 
 - `none` — nodes are fixed. Panning and zooming still work.
-- `stays` (default) — a dropped node keeps where it was put, and nothing else
-  moves.
-- `resettle` — as `stays`, but the layout re-runs afterwards so the neighbours
-  make room. Livelier, at the cost of recalculating the whole graph on every
-  drop.
+- `stays` — a dropped node keeps where it was put, and nothing else moves.
+  Cheaper, and leaves the rest of the layout exactly as the reader found it.
+- `resettle` (default) — as `stays`, but the layout re-runs afterwards so the
+  neighbours make room. Livelier, at the cost of recalculating the whole graph
+  on every drop.
 
 Both draggable modes pin the node on release; a mode that handed it straight
 back to the forces would look like the drag had been refused. The setting
