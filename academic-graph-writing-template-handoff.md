@@ -172,15 +172,15 @@ Recommended structure:
 │  │
 │  ├─ content/
 │  │  ├─ writing/
-│  │  │  ├─ machine-learning-theory/
+│  │  │  ├─ hub-1/
 │  │  │  │  ├─ index.mdx
 │  │  │  │  ├─ bias-variance-refresher.mdx
 │  │  │  │  ├─ test-error-decomposition.mdx
 │  │  │  │  └─ bv-sim.mdx
-│  │  │  ├─ education-teaching/
+│  │  │  ├─ hub-3/
 │  │  │  │  ├─ index.mdx
 │  │  │  │  └─ bias-variance-by-example.mdx
-│  │  │  └─ research-papers/
+│  │  │  └─ hub-2/
 │  │  │     └─ index.mdx
 │  │  │
 │  │  └─ pages/
@@ -587,7 +587,7 @@ tags:
   - learning-theory
   - information-theory
 links:
-  - machine-learning-theory
+  - hub-1
   - chain-of-thought
 draft: false
 theme: global
@@ -596,7 +596,7 @@ external:
   code: "https://github.com/..."
 ---
 
-Body text with semantic graph links like [[machine-learning-theory]].
+Body text with semantic graph links like [[hub-1]].
 ```
 
 ---
@@ -609,11 +609,11 @@ Use topic-first directories, and use `index.mdx` for hubs that own child entries
 Examples:
 
 ```txt
-src/content/writing/machine-learning-theory/index.mdx
-  → /writing/machine-learning-theory
+src/content/writing/hub-1/index.mdx
+  → /writing/hub-1
 
-src/content/writing/machine-learning-theory/bias-variance-refresher.mdx
-  → /writing/machine-learning-theory/bias-variance-refresher
+src/content/writing/hub-1/entry-1.mdx
+  → /writing/hub-1/entry-1
 ```
 
 Path derivation:
@@ -674,8 +674,8 @@ Normal Markdown links render normally but do not contribute graph edges, even if
 
 ```yaml
 links:
-  - machine-learning-theory
-  - machine-learning-theory/bias-variance-refresher
+  - hub-1
+  - hub-1/entry-1
 ```
 
 Behavior:
@@ -691,8 +691,8 @@ Supported syntax:
 
 ```md
 [[ml-theory]]
-[[machine-learning-theory/bias-variance-refresher]]
-[[machine-learning-theory/bias-variance-refresher|the bias-variance refresher]]
+[[hub-1/entry-1]]
+[[hub-1/entry-1|Entry 1]]
 [[./test-error-decomposition]]
 ```
 
@@ -852,7 +852,7 @@ URL state must be supported:
 
 ```txt
 /writing?view=map
-/writing?focus=machine-learning-theory
+/writing?focus=hub-1
 /writing?selected=cot-info
 /writing?type=paper,note
 /writing?tag=learning-theory
@@ -1415,7 +1415,7 @@ BibTeX example:
   pdf          = {/publications/example-paper.pdf},
   arxiv        = {2601.00000},
   code         = {https://github.com/...},
-  blog         = {/writing/machine-learning-theory/bias-variance-refresher},
+  blog         = {/writing/hub-1/entry-1},
   slides       = {/publications/example-slides.pdf}
 }
 ```
@@ -1755,15 +1755,15 @@ npm run new:entry
 CLI mode:
 
 ```bash
-npm run new:entry -- --type paper --title "Chain-of-Thought Information" --path machine-learning-theory/chain-of-thought-information
-npm run new:entry -- --type sub-hub --title "Quantum Mechanics" --path learning/quantum-mechanics
+npm run new:entry -- --type paper --title "Entry 1" --path hub-1/entry-1
+npm run new:entry -- --type sub-hub --title "Hub 5" --path hub-4/hub-5
 ```
 
 Creates:
 
 ```txt
-src/content/writing/machine-learning-theory/chain-of-thought-information.mdx
-src/content/writing/learning/quantum-mechanics/index.mdx
+src/content/writing/hub-1/entry-1.mdx
+src/content/writing/hub-4/hub-5/index.mdx
 ```
 
 Default frontmatter:

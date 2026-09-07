@@ -81,28 +81,28 @@ test("publication abstracts open as configured popups", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".publication-abstract")).toHaveCount(0);
   await page
-    .locator('[data-dialog-open="abstract-example2026biasvariance"]')
+    .locator('[data-dialog-open="abstract-example2026paperone"]')
     .click();
   const homeDialog = page.getByRole("dialog", {
-    name: "Abstract for Bias and Variance: an Illustrated Refresher",
+    name: "Abstract for Example Paper 1",
   });
   await expect(homeDialog).toBeVisible();
   await expect(homeDialog).toContainText(
-    "A demo publication for the academic-graph template",
+    "This generic publication demonstrates",
   );
   await homeDialog.getByRole("button", { name: "Close" }).click();
 
   await page.goto("/publications");
   await expect(page.locator(".publication-abstract")).toHaveCount(0);
   await page
-    .locator('[data-dialog-open="abstract-example2026biasvariance"]')
+    .locator('[data-dialog-open="abstract-example2026paperone"]')
     .click();
   const publicationsDialog = page.getByRole("dialog", {
-    name: "Abstract for Bias and Variance: an Illustrated Refresher",
+    name: "Abstract for Example Paper 1",
   });
   await expect(publicationsDialog).toBeVisible();
   await expect(publicationsDialog).toContainText(
-    "A demo publication for the academic-graph template",
+    "This generic publication demonstrates",
   );
 });
 
@@ -113,7 +113,7 @@ test("writing browser supports URL state and preview", async ({ page }) => {
     "true",
   );
   await expect(
-    page.getByRole("button", { name: /Machine Learning Theory/ }),
+    page.getByRole("button", { name: /Hub 1/ }),
   ).toBeVisible();
   await expect(
     page.locator(".preview-pane").getByRole("heading").first(),
@@ -124,15 +124,15 @@ test("writing browser supports URL state and preview", async ({ page }) => {
 });
 
 test("writing entry and RSS render", async ({ page }) => {
-  await page.goto("/writing/machine-learning-theory/bias-variance-refresher");
+  await page.goto("/writing/hub-1/entry-1");
   await expect(
     page.getByRole("heading", {
-      name: "Bias and Variance: an Illustrated Refresher",
+      name: "Entry 1",
     }),
   ).toBeVisible();
   await expect(page.locator(".article-byline")).toContainText("Venue");
   await expect(page.locator(".article-byline")).toContainText(
-    "Sample Conference on Learning Systems",
+    "Example Conference 1",
   );
   await expect(page.locator(".article-byline__col--date")).toContainText(
     "Date",
@@ -144,25 +144,25 @@ test("writing entry and RSS render", async ({ page }) => {
   await expect(page.locator(".katex").first()).toBeVisible();
   await expect(page.locator(".figure-grid[data-columns='2']")).toBeVisible();
   await expect(page.locator(".figure-grid")).toContainText(
-    "Two complementary views of the bias-variance trade-off",
+    "Two example figures arranged in a responsive grid",
   );
-  await page.goto("/writing/research-papers/vae-explainer");
+  await page.goto("/writing/hub-2/entry-4");
   await expect(
     page.getByRole("heading", {
-      name: "Variational autoencoders: a short explainer",
+      name: "Entry 4",
     }),
   ).toBeVisible();
   await expect(page.locator(".article-byline__col--date")).toContainText(
     "Page: May 18, 2026",
   );
   await expect(page.locator(".article-byline__col--date")).toContainText(
-    "arXiv v1: Apr 7, 2026",
+    "Example v1: Apr 7, 2026",
   );
   await expect(page.locator(".article-byline__col--date")).toContainText(
-    "Demo venue: May 12, 2026",
+    "Example venue: May 12, 2026",
   );
 
-  const wrapFigure = page.locator(".vae-model-wrap");
+  const wrapFigure = page.locator(".example-model-wrap");
   const wrapInnerFigure = wrapFigure.locator(".wrap-figure__figure");
   const wrapParagraphs = wrapFigure.locator(":scope > p");
   await expect(wrapFigure).toBeVisible();
@@ -216,10 +216,10 @@ test("writing entry and RSS render", async ({ page }) => {
 });
 
 test("abstract-mode entry renders its record layout", async ({ page }) => {
-  await page.goto("/writing/research-papers/example-abstract");
+  await page.goto("/writing/hub-2/entry-5");
   await expect(
     page.getByRole("heading", {
-      name: "Latent structure in overparameterized models",
+      name: "Entry 5",
     }),
   ).toBeVisible();
 
@@ -236,7 +236,7 @@ test("abstract-mode entry renders its record layout", async ({ page }) => {
   const block = page.locator(".abstract-block");
   await expect(block).toBeVisible();
   await expect(block.locator(".abstract-block__label")).toHaveText("Abstract");
-  await expect(block).toContainText("Overparameterized models routinely fit");
+  await expect(block).toContainText("Lorem ipsum dolor sit amet");
   await expect(block.locator(".katex").first()).toBeVisible();
 
   // Header metadata still comes from the shared Distill-style header.
@@ -269,11 +269,11 @@ test("article column and footer share one left edge across layouts", async ({
   if ((viewport?.width ?? 0) <= 980) return;
 
   const routes = [
-    "/writing/research-papers", // hub, no rail rendered
-    "/writing/research-papers/example-abstract", // abstract mode, no rail
-    "/writing/education-teaching/bias-variance-by-example", // toc: none
-    "/writing/machine-learning-theory/test-error-decomposition", // left toc
-    "/writing/research-papers/vae-explainer", // left toc + margin asides
+    "/writing/hub-2", // hub, no rail rendered
+    "/writing/hub-2/entry-5", // abstract mode, no rail
+    "/writing/hub-3/entry-6", // toc: none
+    "/writing/hub-1/entry-2", // left toc
+    "/writing/hub-2/entry-4", // left toc + margin asides
   ];
 
   const edges: number[] = [];

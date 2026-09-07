@@ -29,8 +29,8 @@ const description = "Internal fixture page for template media layout controls.";
         caption="Fixture grid with equal media frames."
       >
         <Figure
-          src="/figures/bias-variance-curve.svg"
-          alt="Bias-variance curve fixture."
+          src="/figures/example-chart.svg"
+          alt="Example chart fixture."
           caption="Source figure through the Figure src prop."
         />
         <Figure mediaInset="0.75rem">
@@ -38,8 +38,8 @@ const description = "Internal fixture page for template media layout controls.";
             slot="figure"
             class="fixture-picture"
             style="--fixture-style-token: 1;"
-            src="/figures/dartboard.svg"
-            alt="Dartboard fixture with a direct Picture class and style."
+            src="/figures/example-grid.svg"
+            alt="Example grid fixture with a direct Picture class and style."
             invertInDarkMode
           />
           <Fragment slot="caption">Slotted Picture with a per-figure media inset.</Fragment>
@@ -48,7 +48,7 @@ const description = "Internal fixture page for template media layout controls.";
 
       <PlotlyFigure
         class="fixture-plotly"
-        src="/figures/demo-plotly-vae-latent-scatter.html"
+        src="/figures/demo-plotly-example-scatter.html"
         iframeTitle="Fixture Plotly figure"
         caption="Plotly figure with the legacy height prop."
         height="480px"
@@ -57,7 +57,7 @@ const description = "Internal fixture page for template media layout controls.";
 
       <EmbedFrame
         class="fixture-embed"
-        src="/figures/demo-plotly-vae-metrics.html"
+        src="/figures/demo-plotly-example-bars.html"
         title="Fixture embedded figure"
         caption="EmbedFrame with the legacy height prop."
         height="360px"
@@ -78,10 +78,10 @@ const description = "Internal fixture page for template media layout controls.";
       <ImageComparison
         client:idle
         className="fixture-image-comparison"
-        leftSrc="/figures/bias-variance-curve.svg"
-        rightSrc="/figures/dartboard.svg"
-        leftAlt="Bias-variance curve fixture."
-        rightAlt="Dartboard fixture."
+        leftSrc="/figures/example-chart.svg"
+        rightSrc="/figures/example-grid.svg"
+        leftAlt="Example chart fixture."
+        rightAlt="Example grid fixture."
         mediaAspectRatio="3 / 2"
         mediaInset="0.25rem"
         showLabels={false}

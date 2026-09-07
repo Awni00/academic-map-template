@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dummy VAE latent scatter</title>
+    <title>Example scatter</title>
     <script>
       window.MathJax = {
         tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
@@ -35,7 +35,7 @@
     </style>
   </head>
   <body>
-    <div id="plot" role="img" aria-label="Dummy VAE latent-space scatter comparing three autoencoder variants."></div>
+    <div id="plot" role="img" aria-label="Scatter plot comparing three example series."></div>
     <script>
       const traces = [
         {
@@ -43,32 +43,32 @@
           y: [1.1, 0.9, 1.3, 0.8, 1.5, -0.4, -0.1, -0.7, -0.2, -1.0, -0.6, -1.2],
           mode: "markers",
           type: "scatter",
-          name: "AE",
+          name: "Series A",
           marker: { color: "#5068d8", size: 9, opacity: 0.86, line: { color: "#ffffff", width: 0.8 } },
-          hovertemplate: "AE<br>z₁: %{x:.2f}<br>z₂: %{y:.2f}<extra></extra>"
+          hovertemplate: "Series A<br>x: %{x:.2f}<br>y: %{y:.2f}<extra></extra>"
         },
         {
           x: [-1.3, -1.0, -0.8, -0.5, -0.2, 0.0, 0.3, 0.6, 0.8, 1.0, 1.2, 1.5],
           y: [0.8, 0.5, 1.0, 0.3, 0.7, -0.1, 0.2, -0.4, 0.1, -0.7, -0.3, -0.9],
           mode: "markers",
           type: "scatter",
-          name: "VAE",
+          name: "Series B",
           marker: { color: "#16a085", size: 9, opacity: 0.86, line: { color: "#ffffff", width: 0.8 } },
-          hovertemplate: "VAE<br>z₁: %{x:.2f}<br>z₂: %{y:.2f}<extra></extra>"
+          hovertemplate: "Series B<br>x: %{x:.2f}<br>y: %{y:.2f}<extra></extra>"
         },
         {
           x: [-1.6, -1.4, -1.2, -0.9, -0.6, 0.4, 0.7, 0.9, 1.1, 1.4, 1.6, 1.8],
           y: [0.7, 0.3, -0.1, -0.4, -0.7, 0.8, 0.5, 0.2, -0.2, -0.5, -0.8, -1.0],
           mode: "markers",
           type: "scatter",
-          name: "$\\beta$-VAE",
+          name: "Series C",
           marker: { color: "#d06f2f", size: 9, opacity: 0.86, line: { color: "#ffffff", width: 0.8 } },
-          hovertemplate: "β-VAE<br>z₁: %{x:.2f}<br>z₂: %{y:.2f}<extra></extra>"
+          hovertemplate: "Series C<br>x: %{x:.2f}<br>y: %{y:.2f}<extra></extra>"
         }
       ];
 
       const layout = {
-        title: { text: "Dummy latent-space diagnostic", x: 0.02, xanchor: "left" },
+        title: { text: "Example scatter", x: 0.02, xanchor: "left" },
         autosize: true,
         margin: { t: 72, r: 32, b: 74, l: 64 },
         plot_bgcolor: "#ffffff",
@@ -76,7 +76,7 @@
         font: { color: "#1f2933", size: 13 },
         legend: { orientation: "h", x: 0.5, xanchor: "center", y: -0.16 },
         xaxis: {
-          title: "latent coordinate $z_1$",
+          title: "example coordinate $x$",
           zeroline: false,
           gridcolor: "#edf0f4",
           range: [-2.1, 2.1],
@@ -84,7 +84,7 @@
           scaleratio: 1
         },
         yaxis: {
-          title: "latent coordinate $z_2$",
+          title: "example coordinate $y$",
           zeroline: false,
           gridcolor: "#edf0f4",
           range: [-1.8, 1.8]

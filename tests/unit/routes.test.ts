@@ -4,9 +4,9 @@ import { pageUrlFromId, pathEntrySlug, writingEntryUrl, writingFocusUrl } from "
 
 describe("route helpers", () => {
   it("creates writing URLs from the configurable route", () => {
-    expect(writingEntryUrl("learning/quantum-mechanics")).toBe("/writing/learning/quantum-mechanics");
-    expect(writingFocusUrl("learning/quantum-mechanics")).toBe("/writing?focus=learning%2Fquantum-mechanics");
-    expect(pathEntrySlug("writing/learning/quantum-mechanics")).toBe("learning/quantum-mechanics");
+    expect(writingEntryUrl("hub-4/hub-5")).toBe("/writing/hub-4/hub-5");
+    expect(writingFocusUrl("hub-4/hub-5")).toBe("/writing?focus=hub-4%2Fhub-5");
+    expect(pathEntrySlug("writing/hub-4/hub-5")).toBe("hub-4/hub-5");
   });
 
   it("maps custom page ids to public URLs", () => {

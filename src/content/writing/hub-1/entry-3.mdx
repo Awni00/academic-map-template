@@ -1,0 +1,58 @@
+---
+title: "Entry 3"
+type: "project"
+aliases:
+  - entry three
+date: "2026-02-28"
+summary: "A generic project entry demonstrating links, two-column content, math, and external metadata."
+tags:
+  - example
+  - sample
+  - project
+links:
+  - hub-2
+  - ./entry-1
+  - ./entry-2
+draft: false
+theme: global
+external:
+  code: "https://github.com/example/entry-3"
+---
+
+`entry-3` is a companion to [[./entry-1|Entry 1]]. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+## What it demonstrates
+
+Project pages can combine prose with a displayed expression:
+$$
+y_k = k + 1.
+$$
+
+<TwoColumns>
+<Fragment slot="left">
+
+### Example inputs
+
+- parameter $a$
+- parameter $b$
+- parameter $c$
+- iteration count $k$
+
+</Fragment>
+<Fragment slot="right">
+
+### Example outputs
+
+- output value one
+- output value two
+- generic chart
+- generic artifact
+
+</Fragment>
+</TwoColumns>
+
+<Callout type="note" title="Example implementation note">
+Use a note callout for installation details, compatibility information, or links to supporting files.
+</Callout>
+
+This entry also links to [[hub-2|Hub 2]] to demonstrate an edge between entries in different folders.

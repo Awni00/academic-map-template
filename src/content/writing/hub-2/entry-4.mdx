@@ -1,0 +1,158 @@
+---
+title: "Entry 4"
+type: "paper"
+aliases:
+  - entry four
+date: "2026-05-18"
+displayDates:
+  - label: "Page"
+    date: "2026-05-18"
+  - label: "Example v1"
+    date: "2026-04-07"
+  - label: "Example venue"
+    date: "2026-05-12"
+updated: "2026-05-18"
+summary: "A second generic paper-shaped page demonstrating wrapped and interactive figures."
+tags:
+  - example
+  - sample
+  - paper
+links:
+  - hub-2
+  - hub-1
+  - hub-1/entry-2
+  - hub-1/entry-3
+authors:
+  - name: "Example Author"
+    affiliation: "Example University"
+    url: "https://example.com"
+  - name: "Example Collaborator"
+    affiliation: "Example Laboratory"
+draft: false
+theme: global
+external:
+  arxiv: "https://arxiv.org/abs/0000.00000"
+  code: "https://github.com/example/entry-4"
+  slides: "/publications/example-slides.pdf"
+  doi: "10.0000/example.00002"
+bibtex: |
+  @misc{example2026papertwo,
+    title  = {Entry 4},
+    author = {Example Author and Example Collaborator},
+    year   = {2026},
+    note   = {Second sample entry},
+    url    = {https://example.com/writing/hub-2/entry-4}
+  }
+---
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla vitae elit libero, a pharetra augue. Donec ullamcorper nulla non metus auctor fringilla.
+
+<Aside>
+This aside confirms that a second long article can use margin annotations.
+</Aside>
+
+<Callout type="tip" title="Example idea">
+Use a callout near the introduction to highlight the central idea or give readers useful context.
+</Callout>
+
+## Example section
+
+1. Choose a value $a$.
+2. Add a second value $b$.
+3. Display their sum as $c=a+b$.
+
+<WrapFigure
+  class="example-model-wrap"
+  src="/figures/example-map.svg"
+  alt="An example map containing curves and sample marks."
+  caption="A local generic figure used to demonstrate wrapped media."
+  side="right"
+  figureWidth="48%"
+  figureMaxWidth="340px"
+>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec sed odio dui. Aenean lacinia bibendum nulla sed consectetur.
+
+Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Etiam porta sem malesuada magna mollis euismod.
+</WrapFigure>
+
+<ToggleFigure ariaLabel="Example figure variants" defaultValue="scatter">
+  <ToggleFigurePanel label="Example scatter" value="scatter">
+    <PlotlyFigure
+      src="/figures/demo-plotly-example-scatter.html"
+      iframeTitle="Interactive generic scatter plot"
+      caption="An interactive Plotly scatter containing example values."
+      height="480px"
+      showOpenLink={false}
+    />
+  </ToggleFigurePanel>
+
+  <ToggleFigurePanel label="Example bars" value="bars">
+    <PlotlyFigure
+      src="/figures/demo-plotly-example-bars.html"
+      iframeTitle="Interactive generic bar chart"
+      caption="An interactive Plotly bar chart containing example values."
+      height="480px"
+      showOpenLink={false}
+    />
+  </ToggleFigurePanel>
+</ToggleFigure>
+
+<TwoColumns>
+<Fragment slot="left">
+
+### Example side A
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sagittis lacus vel augue laoreet.
+
+</Fragment>
+<Fragment slot="right">
+
+### Example side B
+
+Maecenas sed diam eget risus varius blandit sit amet non magna.
+
+</Fragment>
+</TwoColumns>
+
+## Example expression
+
+<Statement label="Definition" title="example sum" id="def:example-sum" accent="accent">
+For values $r_1,\ldots,r_n$, define
+$$
+S_n = \sum_{i=1}^{n} r_i.
+$$
+</Statement>
+
+<Proof>
+The displayed expression follows directly from its definition. This sentence exists to demonstrate a proof block.
+</Proof>
+
+<Box title="Example display">
+$$
+S_2 = r_1 + r_2.
+$$
+</Box>
+
+<Comparison
+  leftLabel="Option A"
+  rightLabel="Option B"
+  left="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+  right="Duis mollis, est non commodo luctus, nisi erat porttitor ligula."
+/>
+
+<Callout type="warning" title="Example warning">
+Use warning callouts for caveats that readers should see before continuing.
+</Callout>
+
+<Callout type="info" title="Example information">
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</Callout>
+
+## Related examples
+
+- [[hub-2|Hub 2]] — the parent hub.
+- [[hub-1|Hub 1]] — another generic hub.
+- [[hub-1/entry-2|Entry 2]] — a short entry.
+- [[hub-1/entry-3|Entry 3]] — an entry with a different structural type.
+
+For another route without a graph edge, see [Publications](/publications).

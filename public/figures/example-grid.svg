@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="A 2x2 dartboard grid showing low and high bias crossed with low and high variance.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" role="img" aria-label="A two-by-two grid showing four dot arrangements.">
   <rect width="900" height="540" fill="#ffffff"/>
-  <text x="60" y="48" font-family="ui-serif, Georgia, serif" font-size="22" font-weight="600" fill="#15161a">Bias and variance, as throws at a target</text>
-  <text x="60" y="70" font-family="ui-sans-serif, system-ui" font-size="13" fill="#6b6d72">Each dot is one trained model. The bullseye is the true function.</text>
+  <text x="60" y="48" font-family="ui-serif, Georgia, serif" font-size="22" font-weight="600" fill="#15161a">Example grid</text>
+  <text x="60" y="70" font-family="ui-sans-serif, system-ui" font-size="13" fill="#6b6d72">Each panel contains a different arrangement of points.</text>
 
   <!-- column headers -->
-  <text x="262" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">Low variance</text>
-  <text x="638" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">High variance</text>
+  <text x="262" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">Column A</text>
+  <text x="638" y="118" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600">Column B</text>
 
   <!-- row headers -->
-  <text x="44" y="262" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 262)">Low bias</text>
-  <text x="44" y="430" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 430)">High bias</text>
+  <text x="44" y="262" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 262)">Row A</text>
+  <text x="44" y="430" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="13" fill="#15161a" font-weight="600" transform="rotate(-90 44 430)">Row B</text>
 
   <!-- Quadrant template (will instance 4 times) -->
   <defs>
@@ -21,7 +21,7 @@
     </g>
   </defs>
 
-  <!-- low bias, low variance: tight cluster on bullseye -->
+  <!-- example arrangement one -->
   <g transform="translate(262 262)">
     <use href="#target"/>
     <g fill="#15161a">
@@ -31,7 +31,7 @@
     </g>
   </g>
 
-  <!-- low bias, high variance: scattered around bullseye -->
+  <!-- example arrangement two -->
   <g transform="translate(638 262)">
     <use href="#target"/>
     <g fill="#15161a">
@@ -42,7 +42,7 @@
     </g>
   </g>
 
-  <!-- high bias, low variance: tight cluster off-bullseye -->
+  <!-- example arrangement three -->
   <g transform="translate(262 430)">
     <use href="#target"/>
     <g fill="#15161a">
@@ -52,7 +52,7 @@
     </g>
   </g>
 
-  <!-- high bias, high variance: scattered off-bullseye -->
+  <!-- example arrangement four -->
   <g transform="translate(638 430)">
     <use href="#target"/>
     <g fill="#15161a">

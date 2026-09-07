@@ -1,0 +1,143 @@
+---
+title: "Entry 1"
+type: "paper"
+aliases:
+  - entry one
+date: "2026-05-12"
+updated: "2026-05-12"
+summary: "A deliberately generic long-form paper entry used to demonstrate metadata, math, figures, and article components."
+venue: "Example Conference 1"
+tags:
+  - example
+  - sample
+  - paper
+links:
+  - hub-1
+  - hub-2
+  - ./entry-2
+  - hub-3/entry-6
+  - ./entry-3
+draft: false
+theme: global
+authors:
+  - name: "Example Author"
+    affiliation: "Example University"
+    url: "https://example.com"
+  - name: "Example Coauthor"
+    affiliation: "Example Institute"
+external:
+  arxiv: "https://arxiv.org/abs/0000.00000"
+  code: "https://github.com/example/entry-3"
+  slides: "/publications/example-slides.pdf"
+  doi: "10.0000/example.00001"
+bibtex: |
+  @misc{example2026paperone,
+    title  = {Entry 1},
+    author = {Example Author and Example Coauthor},
+    year   = {2026},
+    note   = {Sample entry for an academic website template},
+    url    = {https://example.com/writing/hub-1/entry-1}
+  }
+---
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. This page belongs to [[hub-1|Hub 1]] and links to [[hub-2|Hub 2]]. Maecenas faucibus mollis interdum.
+
+<Aside>
+Asides appear in the margin on wide screens and inline with the article on small screens.
+</Aside>
+
+<Callout type="tip" title="Example summary">
+Callouts can highlight a short summary, recommendation, warning, or point of context.
+</Callout>
+
+## Example setup
+
+You can use inline math such as $a^2 + b^2 = c^2$ by writing `$a^2 + b^2 = c^2$`.
+
+<Statement label="Definition" title="example quantity" id="def:example-quantity">
+Define the example quantity
+$$
+Q(a,b) = a^2 + 2ab + b^2.
+$$
+</Statement>
+
+<Box title="Example identity">
+Display math can emphasize an equation on its own line:
+$$
+Q(a,b) = (a+b)^2.
+$$
+</Box>
+
+## Example statement
+
+<Statement label="Theorem 1" title="Example theorem" id="thm:example" accent="accent">
+If $c=a+b$, then $c-c=0$.
+</Statement>
+
+<Proof>
+Substitute the definition of $c$ and cancel identical terms. Proof blocks visually distinguish an explanation from the surrounding text.
+</Proof>
+
+<Aside>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
+</Aside>
+
+## Example figures
+
+<FigureGrid columns={2} caption="Two example figures arranged in a responsive grid.">
+  <Figure
+    src="/figures/example-chart.svg"
+    alt="A generic line chart containing three unlabeled example series."
+    caption="Example chart with multiple curves and labels."
+  />
+  <Figure>
+    <Picture slot="figure" src="/figures/example-grid.svg" alt="A generic two-by-two grid of dots and targets." invertInDarkMode />
+    <Fragment slot="caption">Example grid with four arrangements.</Fragment>
+  </Figure>
+</FigureGrid>
+
+<TwoColumns>
+<Fragment slot="left">
+
+### Example column A
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec vitae sapien ut libero venenatis faucibus.
+
+</Fragment>
+<Fragment slot="right">
+
+### Example column B
+
+Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum, aenean imperdiet.
+
+</Fragment>
+</TwoColumns>
+
+<Comparison
+  leftLabel="Example A"
+  rightLabel="Example B"
+  left="Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+  right="Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+/>
+
+## More components
+
+<Callout type="warning" title="Example warning">
+Warning callouts draw attention to an important caveat or limitation.
+</Callout>
+
+<Callout type="info" title="Example information">
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+</Callout>
+
+<Callout title="Example note">
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+</Callout>
+
+## Related examples
+
+- [[./entry-2|Entry 2]] — a shorter sample entry.
+- [[hub-3/entry-6|Entry 6]] — another sample entry.
+- [[./entry-3|Entry 3]] — a generic entry with project-style metadata.
+
+See the [publications page](/publications) for a normal route link that does not add a graph edge.

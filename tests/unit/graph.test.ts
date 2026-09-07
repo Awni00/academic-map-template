@@ -51,8 +51,8 @@ const entries: WritingEntryLike[] = [
 
 describe("graph utilities", () => {
   it("normalizes keys and canonical paths", () => {
-    expect(normalizeKey(" Machine Learning Theory! ")).toBe("machine-learning-theory");
-    expect(canonicalizeWritingPath("Learning/Quantum Mechanics/index.mdx")).toBe("learning/quantum-mechanics");
+    expect(normalizeKey(" Hub 1! ")).toBe("hub-1");
+    expect(canonicalizeWritingPath("Hub 4/Hub 5/index.mdx")).toBe("hub-4/hub-5");
     expect(canonicalizeWritingPath("foo.mdx")).toBe("foo");
     expect(slugForEntry(entries[0])).toBe("learning");
     expect(referencePath("./note-one", "learning")).toBe("learning/note-one");
@@ -105,15 +105,15 @@ describe("graph utilities", () => {
   it("keeps sub-hubs out of top-level hub topics", () => {
     const { index } = buildGraphIndex([
       {
-        id: "learning/index",
+        id: "hub-4/index",
         body: "",
-        data: { title: "Learning", type: "hub", summary: "Hub", tags: [], links: ["./quantum-mechanics"] }
+        data: { title: "Hub 4", type: "hub", summary: "Hub", tags: [], links: ["./hub-5"] }
       },
       {
-        id: "learning/quantum-mechanics/index",
+        id: "hub-4/hub-5/index",
         body: "",
         data: {
-          title: "Quantum Mechanics",
+          title: "Hub 5",
           type: "sub-hub",
           summary: "Sub-hub",
           tags: [],
@@ -121,8 +121,8 @@ describe("graph utilities", () => {
         }
       }
     ]);
-    expect(index.nodes.find((node) => node.id === "learning/quantum-mechanics")?.type).toBe("sub-hub");
-    expect(index.hubs.map((node) => node.id)).toEqual(["learning"]);
+    expect(index.nodes.find((node) => node.id === "hub-4/hub-5")?.type).toBe("sub-hub");
+    expect(index.hubs.map((node) => node.id)).toEqual(["hub-4"]);
   });
 
   it("filters search documents by query and type", () => {

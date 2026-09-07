@@ -14,6 +14,6 @@
     <rect x="730" y="120" width="24" height="24"/>
     <rect x="525" y="130" width="24" height="24"/>
   </g>
-  <text x="80" y="70" font-family="ui-sans-serif, system-ui" font-size="28" fill="#111111">Latent reasoning map</text>
-  <text x="80" y="105" font-family="ui-sans-serif, system-ui" font-size="16" fill="#666666">A placeholder technical figure rendered as a local asset.</text>
+  <text x="80" y="70" font-family="ui-sans-serif, system-ui" font-size="28" fill="#111111">Example map</text>
+  <text x="80" y="105" font-family="ui-sans-serif, system-ui" font-size="16" fill="#666666">Curves and sample marks rendered from a local asset.</text>
 </svg>

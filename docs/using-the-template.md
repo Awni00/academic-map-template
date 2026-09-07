@@ -77,7 +77,7 @@ venue: "Conference or Journal Name"
 tags:
   - learning-theory
 links:
-  - machine-learning-theory/bias-variance-refresher
+  - hub-1/entry-1
 draft: false
 external:
   arxiv: "https://arxiv.org/abs/..."
@@ -192,11 +192,11 @@ in this mode regardless of placement config, and `<Aside>` blocks render inline.
 Routes mirror the content-relative path:
 
 ```txt
-src/content/writing/machine-learning-theory/index.mdx
-  -> /writing/machine-learning-theory
+src/content/writing/hub-1/index.mdx
+  -> /writing/hub-1
 
-src/content/writing/machine-learning-theory/bias-variance-refresher.mdx
-  -> /writing/machine-learning-theory/bias-variance-refresher
+src/content/writing/hub-1/entry-1.mdx
+  -> /writing/hub-1/entry-1
 ```
 
 Create entries with:
@@ -215,12 +215,12 @@ Ordinary Markdown links do not create graph edges.
 
 ```yaml
 links:
-  - machine-learning-theory
+  - hub-1
 ```
 
 ```md
-This entry links to [[machine-learning-theory]].
-This entry links with a label to [[machine-learning-theory|ML theory]].
+This entry links to [[hub-1]].
+This entry links with a label to [[hub-1|Hub 1]].
 This relative link points beside the current file: [[./neighbor-entry]].
 ```
 
