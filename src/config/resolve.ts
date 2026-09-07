@@ -36,10 +36,7 @@ const fallbackEntryType: EntryTypeDefinition = {
   ownsFolder: false,
   includeInRss: true,
   includeInRecent: true,
-  graph: fallbackGraph,
-  article: {
-    localGraph: true
-  }
+  graph: fallbackGraph
 };
 
 export const entryTypeDefinitions = validateEntryTypes(
