@@ -712,23 +712,14 @@ export default function GraphCanvas({
 }
 
 /**
- * Padding for `zoomToFit`, scaled to the canvas size so the small per-entry
- * LocalGraph (~190px tall) doesn't end up with most of its height eaten by
- * gutters, while the large main map (~620px) still leaves room for hub labels
- * at its edges.
- */
-/**
- * Keep nodes from overlapping by moving them apart directly, the way d3's own
- * collide force does. O(n²), which is nothing at the twenty-odd nodes a local
- * neighbourhood holds. Pinned nodes are left where they are.
- */
-/**
- * TEMPORARY (scale-model fixture). Pull every unpinned node toward a circle of
- * the given radius about the origin — the anchor's pinned position.
+ * Pull every unpinned node toward a circle of the given radius about the
+ * origin — the anchor's pinned position.
  *
- * This is the piece the current design is missing. Today the neighbourhood's
- * radius is an accident of link distance fighting many-body repulsion, which
- * is why it moves with the neighbour count; here it is simply stated.
+ * This is what makes an anchored neighbourhood's radius a *stated* quantity.
+ * Without it the radius is an accident of link distance fighting many-body
+ * repulsion, which is why it used to move with the neighbour count and take
+ * the painted glyph size with it. Dragged and pinned nodes are skipped, so a
+ * node the reader placed is not tugged back onto the ring.
  */
 function radialForce(radius: number, strength: number) {
   let nodes: any[] = [];
@@ -749,6 +740,11 @@ function radialForce(radius: number, strength: number) {
   return force;
 }
 
+/**
+ * Keep nodes from overlapping by moving them apart directly, the way d3's own
+ * collide force does. O(n²), which is nothing at the twenty-odd nodes a local
+ * neighbourhood holds. Pinned nodes are left where they are.
+ */
 function collideForce(padding: number) {
   let nodes: any[] = [];
   const force = () => {
