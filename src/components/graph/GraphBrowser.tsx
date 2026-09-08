@@ -405,7 +405,6 @@ function TagFilter({
 
 type Direction = "both" | "out" | "in";
 
-const DIRECTION_MARK: Record<Direction, string> = { both: "↔", out: "→", in: "←" };
 const DIRECTION_TEXT: Record<Direction, string> = {
   both: "links both ways",
   out: "links to",
@@ -501,9 +500,7 @@ function Preview({
                     title={DIRECTION_TEXT[direction]}
                     aria-label={`${item.title} — ${DIRECTION_TEXT[direction]}`}
                   >
-                    <span className="connection-dir" aria-hidden="true">
-                      {DIRECTION_MARK[direction]}
-                    </span>
+                    <DirectionIcon direction={direction} />
                     <NodeIcon
                       shape={itemType.graph.shape as NodeShape}
                       color={itemType.graph.color as string}
@@ -539,6 +536,54 @@ function writeStateToUrl(state: WritingBrowserState) {
   const query = params.toString();
   const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
   window.history.replaceState(null, "", nextUrl);
+}
+
+/**
+ * Direction marker for a connection row.
+ *
+ * Drawn rather than typeset. The mono face renders its arrow glyphs as
+ * hairlines that barely respond to the weight axis, and a text glyph sits on a
+ * baseline while the node icon beside it is a box — so the two never lined up.
+ * A stroked path fixes the weight and the alignment at once.
+ */
+function DirectionIcon({ direction }: { direction: Direction }) {
+  const props = {
+    width: 16,
+    height: 12,
+    viewBox: "0 0 16 12",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+    className: "connection-dir"
+  } as const;
+  switch (direction) {
+    case "both":
+      return (
+        <svg {...props}>
+          <path d="M3.4 6h9.2" />
+          <path d="M6.3 3.1 3.3 6l3 2.9" />
+          <path d="M9.7 3.1 12.7 6l-3 2.9" />
+        </svg>
+      );
+    case "out":
+      return (
+        <svg {...props}>
+          <path d="M2.6 6h9.9" />
+          <path d="M9.2 2.7 12.6 6l-3.4 3.3" />
+        </svg>
+      );
+    case "in":
+    default:
+      return (
+        <svg {...props}>
+          <path d="M13.4 6H3.5" />
+          <path d="M6.8 2.7 3.4 6l3.4 3.3" />
+        </svg>
+      );
+  }
 }
 
 type NodeShape = "square" | "circle" | "diamond" | "hexagon";

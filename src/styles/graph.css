@@ -574,15 +574,13 @@
 }
 
 /* Fixed column so the arrows line up as a scannable strip: direction is read
-   down the list, not row by row. */
+   down the list, not row by row. `display: block` is what puts them on the
+   node icon's centre line — as an inline element the glyph would sit on the
+   text baseline instead. */
 .connection-dir {
   flex: 0 0 auto;
-  width: 14px;
-  font-family: var(--font-mono);
-  font-size: 15px;
-  line-height: 1;
-  color: var(--color-muted-2);
-  text-align: center;
+  display: block;
+  color: var(--color-fg-soft);
 }
 
 .preview-link:hover .connection-dir {
