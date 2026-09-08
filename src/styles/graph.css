@@ -133,37 +133,18 @@
   padding: 0 0 1rem;
 }
 
+/* Two columns: the map, and the preview for whatever is selected in it.
+   There is no third column of controls — topic navigation happens on the
+   hub glyphs themselves and the filters live in the canvas bar, so nothing
+   here restates in text what the map already shows in ink. */
 .graph-browser__grid {
   display: grid;
-  grid-template-columns: 280px minmax(420px, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   min-height: 720px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-bg);
   overflow: hidden;
-}
-
-/* Left panel */
-.graph-panel--left {
-  border-right: 1px solid var(--color-border);
-  background: var(--color-bg-soft);
-  padding: 22px 22px 28px;
-  overflow-y: auto;
-  font-family: var(--font-ui);
-}
-
-.graph-control {
-  margin-bottom: 22px;
-}
-
-.graph-control > label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 9px;
 }
 
 /* Search */
@@ -187,53 +168,6 @@
 .graph-input:focus {
   border-color: var(--color-accent-line);
   box-shadow: 0 0 0 3px var(--color-accent-soft);
-}
-
-/* Topic tree (hubs) */
-.topic-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.topic-list button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--color-fg-soft);
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-quiet);
-}
-
-.topic-list button::before {
-  content: "›";
-  color: var(--color-muted-2);
-  font-size: 11px;
-  flex: 0 0 auto;
-}
-
-.topic-list button:hover {
-  background: var(--color-bg-soft-2);
-}
-
-.topic-list button[aria-pressed="true"] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  font-weight: 500;
-}
-
-.topic-list button[aria-pressed="true"]::before {
-  color: var(--color-accent);
 }
 
 /* Type pills row */
@@ -282,6 +216,19 @@
   flex: 0 0 auto;
 }
 
+.graph-button__count {
+  color: var(--color-muted-2);
+}
+
+.graph-button[aria-pressed="true"] .graph-button__count {
+  color: inherit;
+}
+
+.graph-button__caret {
+  font-size: 8px;
+  line-height: 1;
+}
+
 /* Segmented control (focus / view) */
 .graph-seg {
   display: inline-flex;
@@ -323,10 +270,71 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
   padding: 12px 22px;
   border-bottom: 1px solid var(--color-border-soft);
   background: var(--color-bg);
+}
+
+/* Filters live in the bar rather than a column beside the map, and the type
+   chips double as the legend — see the note in GraphBrowser's markup. */
+.graph-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.graph-typefilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.graph-tagfilter {
+  position: relative;
+  display: flex;
+}
+
+.graph-tagpop {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: min(320px, 70vw);
+  max-height: 260px;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.09);
+}
+
+.graph-tagpop__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.graph-tagpop__clear {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.graph-tagpop__clear:hover {
+  color: var(--color-fg);
 }
 
 .graph-crumbs {
@@ -407,39 +415,9 @@
   color: var(--color-muted);
 }
 
-.graph-legend {
-  position: absolute;
-  /* Decorative overlay — must not eat pointer events from nodes beneath it. */
-  pointer-events: none;
-  bottom: 14px;
-  left: 18px;
-  display: flex;
-  gap: 14px;
-  font-family: var(--font-ui);
-  font-size: 11.5px;
-  color: var(--color-muted);
-  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  padding: 6px 12px;
-  border-radius: 5px;
-  border: 0.5px solid var(--color-border);
-  backdrop-filter: blur(6px);
-}
-
-.graph-legend span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.graph-legend .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
 .graph-legend-icon {
   display: inline-block;
+  flex: 0 0 auto;
   vertical-align: -2px;
 }
 
@@ -798,6 +776,13 @@
   display: flex;
   gap: 14px;
   align-items: center;
+}
+
+/* Sized here rather than inline, so the mobile rule below can hand the field
+   the leftover width instead of holding it at a fixed 240px and pushing the
+   view switcher off the side of the screen. */
+.graph-view-bar__right .graph-input {
+  width: 240px;
 }
 
 /* ── Topics view ────────────────────────────────────────────────────── */
@@ -1321,14 +1306,29 @@
     min-height: 0;
   }
 
-  .graph-panel--left,
+  /* Stacked, the map comes first and the preview follows it — the reader
+     meets the graph immediately instead of scrolling past a column of
+     controls to reach it. */
   .graph-panel--right {
     border: 0;
-    border-bottom: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
   }
 
   .graph-canvas {
     min-height: 420px;
+  }
+
+  /* Crumbs above, filters below, each on its own line: side by side they
+     collapse into two cramped, wrapping halves. */
+  .graph-canvas-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 14px;
+  }
+
+  .graph-tagpop {
+    right: auto;
+    left: 0;
   }
 
   .hubsec-head {
@@ -1363,6 +1363,19 @@
 
   .graph-view-bar {
     flex-wrap: wrap;
+  }
+
+  /* Search and the view switcher drop to their own full-width line, with the
+     field taking whatever the switcher leaves. */
+  .graph-view-bar__right {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  .graph-view-bar__right .graph-input {
+    width: auto;
+    flex: 1 1 150px;
+    min-width: 0;
   }
 }
 

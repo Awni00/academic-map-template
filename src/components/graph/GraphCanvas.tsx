@@ -674,8 +674,17 @@ export default function GraphCanvas({
             const source = link.source;
             const target = link.target;
             if (!source || !target) return;
+            // An edge belongs to the highlight only when both of its ends do.
+            // Without this the dim is fought by the strongest ink on the
+            // canvas: faded nodes kept full-strength edges radiating out of
+            // them, which is most of what the eye actually reads in a dense
+            // region.
+            const dimmed =
+              dimUnhighlighted && highlighted
+                ? !(highlighted.has(source.id) && highlighted.has(target.id))
+                : false;
             ctx.save();
-            ctx.globalAlpha = 0.35;
+            ctx.globalAlpha = dimmed ? 0.08 : 0.35;
             ctx.strokeStyle = cssVar("--graph-edge");
             ctx.lineWidth = 1;
             ctx.beginPath();

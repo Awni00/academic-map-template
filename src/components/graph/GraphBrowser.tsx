@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  entryTypeDefinitions,
   getEntryType,
   graphConfig,
+  isHubType,
   writingConfig,
   type EntryType
 } from "../../config";
@@ -80,11 +80,17 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     if (!state.focus) return undefined;
     return neighborhoodIds(graph, state.focus, FOCUS_DEPTH);
   }, [graph, state.focus]);
+  // Only a *filtering* focus belongs in here. Under the default "dim" mode the
+  // focused hub changes nothing about which nodes are drawn, but naming
+  // `state.focus` as a dependency would still hand `GraphCanvas` a new graph
+  // object on every topic click — and that rebuilds every node from scratch,
+  // dropping the positions the simulation settled on and the ones the reader
+  // dragged. Focus reaches the canvas through `focusIds` instead.
+  const filteringFocus = FOCUS_MODE === "filter" ? state.focus : undefined;
   const visibleGraph = useMemo(() => {
-    const base =
-      state.focus && FOCUS_MODE === "filter"
-        ? graphNeighborhood(graph, state.focus, FOCUS_DEPTH)
-        : graph;
+    const base = filteringFocus
+      ? graphNeighborhood(graph, filteringFocus, FOCUS_DEPTH)
+      : graph;
     const nodes = base.nodes.filter((node) => mapFilteredIds.has(node.id));
     const allowed = new Set(nodes.map((node) => node.id));
     return {
@@ -92,7 +98,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       nodes,
       edges: base.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target))
     };
-  }, [mapFilteredIds, graph, state.focus]);
+  }, [mapFilteredIds, graph, filteringFocus]);
   const selected = state.selected ? nodeById.get(state.selected) : graph.hubs[0] ?? graph.nodes[0];
   const focusNode = state.focus ? nodeById.get(state.focus) : undefined;
   const view = (state.view ?? defaultState.view) as View;
@@ -169,7 +175,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
         <div className="graph-view-bar__right">
           <input
             className="graph-input"
-            style={{ width: 240 }}
             value={state.query ?? ""}
             onChange={(event) => patch({ query: event.target.value || undefined })}
             placeholder="Search title, tag, type…"
@@ -179,72 +184,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       </div>
       {view === "map" ? (
         <div className="graph-browser__grid">
-          <aside className="graph-panel graph-panel--left">
-            <div className="graph-control">
-              <label>Topics</label>
-              <ul className="topic-list">
-                {graph.hubs.map((hub) => (
-                  <li key={hub.id}>
-                    <button
-                      type="button"
-                      aria-pressed={state.focus === hub.id}
-                      onClick={() =>
-                        patch({
-                          focus: state.focus === hub.id ? undefined : hub.id,
-                          selected: hub.id
-                        })
-                      }
-                    >
-                      {hub.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="graph-control">
-              <label>Types</label>
-              <div className="graph-button-row">
-                {writingConfig.entryTypes.map((type) => {
-                  const entryType = getEntryType(type);
-                  const cfg = entryType.graph;
-                  const count = typeCounts[type] ?? 0;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      className="graph-button graph-button--type"
-                      style={{ ["--swatch" as any]: cfg?.color }}
-                      aria-pressed={(state.types ?? []).includes(type)}
-                      onClick={() => toggleType(type)}
-                    >
-                      {entryType.label}
-                      {count > 0 && <span style={{ color: "var(--color-muted-2)" }}>{count}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="graph-control">
-              <label>Tags</label>
-              <div className="graph-button-row">
-                {tags.slice(0, 12).map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className="graph-button"
-                    aria-pressed={(state.tags ?? []).includes(tag)}
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-          </aside>
-
           <div className="graph-panel graph-panel--center">
             <div className="graph-canvas-bar">
               <div className="graph-crumbs">
@@ -263,11 +202,46 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                   </>
                 )}
               </div>
+              <div className="graph-filters">
+                {/* Doubles as the canvas legend. Each chip carries the glyph
+                    its type is actually drawn with, so the vocabulary and the
+                    filter are one control rather than two that drift apart â
+                    and it sits in the chrome instead of overlaying the map. */}
+                <div className="graph-typefilter" role="group" aria-label="Filter by type">
+                  {writingConfig.entryTypes
+                    .filter((type) => (typeCounts[type] ?? 0) > 0)
+                    .map((type) => {
+                      const entryType = getEntryType(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className="graph-button"
+                          aria-pressed={(state.types ?? []).includes(type)}
+                          onClick={() => toggleType(type)}
+                        >
+                          <NodeIcon
+                            shape={entryType.graph.shape as NodeShape}
+                            color={entryType.graph.color as string}
+                          />
+                          {entryType.label}
+                          <span className="graph-button__count">{typeCounts[type]}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+                <TagFilter
+                  tags={tags}
+                  active={state.tags ?? []}
+                  onToggle={toggleTag}
+                  onClear={() => patch({ tags: undefined })}
+                />
+              </div>
             </div>
             <div className="graph-canvas">
               <GraphCanvas
                 graph={visibleGraph}
-                height={620}
+                height={660}
                 selected={state.selected}
                 selectedStyle="soft-glow"
                 highlighted={focusIds}
@@ -276,22 +250,20 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 hubLayout={graphConfig.layout.hubs}
                 labelMode={graphConfig.layout.labels}
                 labelSide={graphConfig.layout.labelSide}
-                onSelect={(id) => patch({ selected: id })}
+                onSelect={(id) => {
+                  // A hub is a place, not merely an entry: clicking one both
+                  // selects it and toggles the topic focus. The map's own
+                  // glyphs are the largest, always-labelled things on screen,
+                  // so they carry the navigation a separate topic list used to
+                  // duplicate in text beside them.
+                  const node = nodeById.get(id);
+                  if (node && isHubType(node.type)) {
+                    patch({ selected: id, focus: state.focus === id ? undefined : id });
+                  } else {
+                    patch({ selected: id });
+                  }
+                }}
               />
-              <div className="graph-legend" aria-hidden="true">
-                {entryTypeDefinitions.map((entryType) => {
-                  const cfg = entryType.graph;
-                  return (
-                    <span key={entryType.id}>
-                      <NodeIcon
-                        shape={cfg.shape as NodeShape}
-                        color={cfg.color as string}
-                      />
-                      {entryType.label}
-                    </span>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
@@ -310,6 +282,86 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
         />
       )}
     </section>
+  );
+}
+
+/**
+ * Tags behind a disclosure rather than spread across a permanent column.
+ * They are the weakest of the three filters â the search field already matches
+ * on tags â so they earn a button of chrome, not a third of the viewport.
+ */
+function TagFilter({
+  tags,
+  active,
+  onToggle,
+  onClear
+}: {
+  tags: string[];
+  active: string[];
+  onToggle: (tag: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    // `pointerdown`, not `click`: a press that starts outside should dismiss
+    // before the canvas underneath treats the release as a node selection.
+    const onPointerDown = (event: PointerEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  if (tags.length === 0) return null;
+
+  return (
+    <div className="graph-tagfilter" ref={ref}>
+      <button
+        type="button"
+        className="graph-button"
+        aria-expanded={open}
+        aria-pressed={active.length > 0}
+        onClick={() => setOpen((current) => !current)}
+      >
+        tags
+        {active.length > 0 && <span className="graph-button__count">{active.length}</span>}
+        <span className="graph-button__caret" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className="graph-tagpop">
+          <div className="graph-tagpop__list">
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className="graph-button"
+                aria-pressed={active.includes(tag)}
+                onClick={() => onToggle(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+          {active.length > 0 && (
+            <button type="button" className="graph-tagpop__clear" onClick={onClear}>
+              Clear tags
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
