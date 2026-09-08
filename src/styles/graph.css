@@ -482,7 +482,7 @@
 }
 
 .preview-summary,
-.preview-pane > p {
+.preview-pane > p.preview-body {
   font-family: var(--font-body);
   font-size: 14.5px;
   line-height: 1.55;
@@ -551,10 +551,19 @@
 /* A row selects the node rather than navigating to it, so it is a button —
    and it has to stop looking like the link it used to be, or the underline
    promises a page change that no longer happens. */
-.preview-link {
-  display: block;
-  width: 100%;
+/* Padding sits on the button rather than the li so the whole row is the
+   target: at list spacing alone the tappable box came out at 21px, under the
+   24px minimum. */
+.connection-list li {
   padding: 0;
+}
+
+.preview-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 0;
   border: 0;
   background: transparent;
   font: inherit;
@@ -562,6 +571,83 @@
   text-align: left;
   cursor: pointer;
   transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+/* Fixed column so the arrows line up as a scannable strip: direction is read
+   down the list, not row by row. */
+.connection-dir {
+  flex: 0 0 auto;
+  width: 11px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-muted-2);
+  text-align: center;
+}
+
+.preview-link:hover .connection-dir {
+  color: var(--color-accent);
+}
+
+.connection-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-section__count {
+  color: var(--color-muted-2);
+  margin-left: 2px;
+}
+
+/* Rows select rather than navigate, so a chain of them has no browser Back to
+   fall out of — the panel carries its own. Named, not bare, because knowing
+   where you would land is the useful half. */
+.preview-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+.preview-back:hover {
+  color: var(--color-fg);
+}
+
+/* Where the page sits in the corpus, derived from its path. */
+.preview-trail {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.preview-trail__link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+.preview-trail__link:hover {
+  color: var(--color-accent);
 }
 
 .preview-link:hover {

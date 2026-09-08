@@ -36,6 +36,10 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // in a mount effect instead — same shape as ThemeToggle.
   const [state, setState] = useState<WritingBrowserState>(defaultState);
   const [urlApplied, setUrlApplied] = useState(false);
+  // Where selection has been, so a reader who followed a chain of connections
+  // can retrace it. Rows select rather than navigate, so the browser's own
+  // Back button is not this — it would leave the page entirely.
+  const [history, setHistory] = useState<string[]>([]);
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
   const typeCounts = useMemo(() => {
@@ -124,6 +128,24 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
 
   function patch(patchState: Partial<WritingBrowserState>) {
     setState((current) => ({ ...current, ...patchState }));
+  }
+
+  /** Every deliberate move of the selection, from the canvas or from a row. */
+  function selectNode(id: string, extra?: Partial<WritingBrowserState>) {
+    const current = state.selected ?? selected?.id;
+    if (current && current !== id) {
+      // Capped: a reader clicking around the canvas for a few minutes should
+      // not accumulate an unbounded trail.
+      setHistory((previous) => [...previous, current].slice(-50));
+    }
+    patch({ selected: id, ...extra });
+  }
+
+  function goBack() {
+    const previous = history[history.length - 1];
+    if (!previous) return;
+    setHistory((current) => current.slice(0, -1));
+    patch({ selected: previous });
   }
 
   function toggleType(type: EntryType) {
@@ -287,9 +309,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                   // duplicate in text beside them.
                   const node = nodeById.get(id);
                   if (node && isHubType(node.type)) {
-                    patch({ selected: id, focus: state.focus === id ? undefined : id });
+                    selectNode(id, { focus: state.focus === id ? undefined : id });
                   } else {
-                    patch({ selected: id });
+                    selectNode(id);
                   }
                 }}
               />
@@ -298,7 +320,14 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
 
           <aside className="graph-panel graph-panel--right preview-pane">
             {selected ? (
-              <Preview node={selected} graph={graph} onSelect={(id) => patch({ selected: id })} />
+              <Preview
+                node={selected}
+                graph={graph}
+                nodeById={nodeById}
+                onSelect={selectNode}
+                back={history.length > 0 ? nodeById.get(history[history.length - 1]) : undefined}
+                onBack={goBack}
+              />
             ) : (
               <p className="muted">Select a node.</p>
             )}
@@ -398,30 +427,86 @@ function TagFilter({
   );
 }
 
+type Direction = "both" | "out" | "in";
+
+const DIRECTION_MARK: Record<Direction, string> = { both: "↔", out: "→", in: "←" };
+const DIRECTION_TEXT: Record<Direction, string> = {
+  both: "links both ways",
+  out: "links to",
+  in: "linked from"
+};
+// Reciprocal first: two pages that link to each other have the strongest
+// relationship on offer, and splitting the list by direction was precisely
+// what hid it â you had to notice the same title twice to see it at all.
+const DIRECTION_RANK: Record<Direction, number> = { both: 0, out: 1, in: 2 };
+
 /**
  * Panel describing whatever node is selected on the map.
  *
- * Its link rows *select*, they do not navigate — the same division of labour
+ * Its rows *select*, they do not navigate â the same division of labour
  * LocalGraphMap already documents. A reader following a chain of connections
- * is inspecting the graph, not leaving it, and a list row that silently
- * changes the page costs them the map they were reading. Navigation stays the
- * one explicit action: "Open page".
+ * is inspecting the graph, not leaving it, and a row that silently changes
+ * the page costs them the map they were reading. Navigation stays the one
+ * explicit action: "Open page".
  */
 function Preview({
   node,
   graph,
-  onSelect
+  nodeById,
+  onSelect,
+  back,
+  onBack
 }: {
   node: EntryNode;
   graph: GraphIndex;
+  nodeById: Map<string, EntryNode>;
   onSelect: (id: string) => void;
+  back?: EntryNode;
+  onBack: () => void;
 }) {
-  const linkedFrom = graph.linkedFrom[node.id] ?? [];
-  const linksTo = graph.linksTo[node.id] ?? [];
-  const byId = new Map(graph.nodes.map((item) => [item.id, item]));
   const entryType = getEntryType(node.type);
+  const connections = useMemo(() => {
+    const linksTo = new Set(graph.linksTo[node.id] ?? []);
+    const linkedFrom = new Set(graph.linkedFrom[node.id] ?? []);
+    // One row per connected page, not one per direction. A reciprocal link
+    // used to print twice â for the most connected entry in this corpus that
+    // meant ten rows carrying five relationships.
+    return [...new Set([...linksTo, ...linkedFrom])]
+      .map((id) => {
+        const item = nodeById.get(id);
+        if (!item) return undefined;
+        const direction: Direction =
+          linksTo.has(id) && linkedFrom.has(id) ? "both" : linksTo.has(id) ? "out" : "in";
+        return { item, direction };
+      })
+      .filter((entry): entry is { item: EntryNode; direction: Direction } => Boolean(entry))
+      .sort(
+        (a, b) =>
+          DIRECTION_RANK[a.direction] - DIRECTION_RANK[b.direction] ||
+          a.item.title.localeCompare(b.item.title)
+      );
+  }, [graph, node.id, nodeById]);
+
+  // Content is folder-structured and ids are paths, so a page's ancestors are
+  // just its path prefixes. "Where does this sit?" is the map's central
+  // question and the panel could not previously answer it.
+  const trail = useMemo(() => {
+    const parts = node.id.split("/");
+    const out: EntryNode[] = [];
+    for (let i = 1; i < parts.length; i += 1) {
+      const ancestor = nodeById.get(parts.slice(0, i).join("/"));
+      if (ancestor) out.push(ancestor);
+    }
+    return out;
+  }, [node.id, nodeById]);
+
   return (
     <>
+      {back && (
+        <button type="button" className="preview-back" onClick={onBack}>
+          <span aria-hidden="true">←</span> {back.title}
+        </button>
+      )}
       <div className="preview-header">
         <span className="pill" style={{ ["--pill-color" as any]: entryType.graph.color }}>
           {entryType.label}
@@ -434,6 +519,18 @@ function Preview({
         document outline twice. Same reasoning as LocalGraphMap's title.
       */}
       <p className="preview-title">{node.title}</p>
+      {trail.length > 0 && (
+        <p className="preview-trail">
+          {trail.map((ancestor, index) => (
+            <span key={ancestor.id}>
+              {index > 0 && <span aria-hidden="true"> › </span>}
+              <button type="button" className="preview-trail__link" onClick={() => onSelect(ancestor.id)}>
+                {ancestor.title}
+              </button>
+            </span>
+          ))}
+        </p>
+      )}
       {node.summary && <p className="preview-summary">{node.summary}</p>}
       {node.tags.length > 0 && (
         <div className="tag-list">
@@ -445,45 +542,39 @@ function Preview({
       <a className="open-btn" href={node.url}>
         Open page →
       </a>
-      <LinkSection label="Links to" ids={linksTo} byId={byId} onSelect={onSelect} />
-      <LinkSection label="Linked from" ids={linkedFrom} byId={byId} onSelect={onSelect} />
+      {connections.length > 0 && (
+        <div className="sidebar-section">
+          <p className="sidebar-section__label">
+            Connections <span className="sidebar-section__count">{connections.length}</span>
+          </p>
+          <ul className="connection-list">
+            {connections.map(({ item, direction }) => {
+              const itemType = getEntryType(item.type);
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="preview-link"
+                    onClick={() => onSelect(item.id)}
+                    title={DIRECTION_TEXT[direction]}
+                    aria-label={`${item.title} — ${DIRECTION_TEXT[direction]}`}
+                  >
+                    <span className="connection-dir" aria-hidden="true">
+                      {DIRECTION_MARK[direction]}
+                    </span>
+                    <NodeIcon
+                      shape={itemType.graph.shape as NodeShape}
+                      color={itemType.graph.color as string}
+                    />
+                    <span className="connection-title">{item.title}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </>
-  );
-}
-
-function LinkSection({
-  label,
-  ids,
-  byId,
-  onSelect
-}: {
-  label: string;
-  ids: string[];
-  byId: Map<string, EntryNode>;
-  onSelect: (id: string) => void;
-}) {
-  if (ids.length === 0) return null;
-  return (
-    <div className="sidebar-section">
-      {/* A label, not an <h2> — see the note on the title above. */}
-      <p className="sidebar-section__label">{label}</p>
-      <ul>
-        {ids.map((id) => {
-          const item = byId.get(id);
-          return (
-            <li key={id}>
-              {item ? (
-                <button type="button" className="preview-link" onClick={() => onSelect(id)}>
-                  {item.title}
-                </button>
-              ) : (
-                id
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }
 
