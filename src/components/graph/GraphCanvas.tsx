@@ -767,6 +767,7 @@ export default function GraphCanvas({
   return (
     <div
       ref={containerRef}
+      className="graph-canvas__surface"
       style={{
         width: "100%",
         height,

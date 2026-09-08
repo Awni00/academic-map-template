@@ -26,6 +26,13 @@ const defaultState: WritingBrowserState = {
 const FOCUS_MODE = writingConfig.browser.focus.mode;
 const FOCUS_DEPTH = writingConfig.browser.focus.depth;
 
+// Where graph.css stops laying the browser out in columns and stacks it.
+const STACK_BREAKPOINT = 980;
+// Stacked, the map shares the screen with the panel beneath it, so a desktop
+// canvas height would fill a phone on its own and push that panel out of sight.
+const CANVAS_HEIGHT = 660;
+const CANVAS_HEIGHT_NARROW = 420;
+
 const VIEWS = ["map", "topics", "list"] as const;
 type View = (typeof VIEWS)[number];
 
@@ -36,6 +43,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // in a mount effect instead — same shape as ThemeToggle.
   const [state, setState] = useState<WritingBrowserState>(defaultState);
   const [urlApplied, setUrlApplied] = useState(false);
+  // The canvas needs a pixel height, so this one piece of layout cannot live in
+  // the stylesheet with the rest. Matches the grid's own breakpoint.
+  const [narrow, setNarrow] = useState(false);
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
   const typeCounts = useMemo(() => {
@@ -112,6 +122,14 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   useEffect(() => {
     setState(readStateFromUrl());
     setUrlApplied(true);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${STACK_BREAKPOINT}px)`);
+    const update = () => setNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
@@ -270,7 +288,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
             <div className="graph-canvas">
               <GraphCanvas
                 graph={visibleGraph}
-                height={660}
+                height={narrow ? CANVAS_HEIGHT_NARROW : CANVAS_HEIGHT}
                 selected={state.selected}
                 selectedStyle="soft-glow"
                 emphasized={hasSelection ? emphasizedIds : undefined}

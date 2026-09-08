@@ -389,6 +389,16 @@
   text-underline-offset: 2px;
 }
 
+/* d3-zoom calls preventDefault on touch, so without this a vertical swipe that
+   begins on the canvas pans the graph and the page underneath refuses to
+   scroll — several hundred pixels of dead end in the middle of a phone screen.
+   `pan-y` hands vertical scrolling back to the browser before the event is
+   ever dispatched, and leaves taps, horizontal panning and pinch to the graph.
+   Not scoped to a breakpoint: a large touchscreen has the same problem. */
+.graph-canvas__surface {
+  touch-action: pan-y;
+}
+
 .graph-canvas {
   flex: 1;
   position: relative;
@@ -1391,7 +1401,9 @@
   }
 
   .graph-canvas {
-    min-height: 420px;
+    min-height: 0;
+    /* 24px each side costs a seventh of the width on a phone. */
+    padding: 10px;
   }
 
   /* Crumbs above, filters below, each on its own line: side by side they
@@ -1399,13 +1411,49 @@
   .graph-canvas-bar {
     flex-direction: column;
     align-items: stretch;
+    /* Explicitly not `wrap`, which it inherits from the row layout above: a
+       wrapping *column* takes its width from its content rather than its
+       container, which sized the filter row to the full width of the chips and
+       let the grid's overflow clip the tags button off the end. */
+    flex-wrap: nowrap;
+    gap: 8px;
     padding: 10px 14px;
   }
 
-  .graph-tagpop {
-    right: auto;
-    left: 0;
+  /* One scrolling row rather than a wrapped block. Wrapped, six chips stood
+     three rows deep and pushed the map most of the way down the screen. */
+  .graph-filters {
+    flex-wrap: nowrap;
+    gap: 8px;
   }
+
+  .graph-typefilter {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Chips are small targets; let the strip settle on one. */
+    scroll-snap-type: x proximity;
+  }
+
+  .graph-typefilter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .graph-typefilter .graph-button {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .graph-tagfilter {
+    flex: 0 0 auto;
+  }
+
+  .graph-view-bar {
+    padding: 10px 14px;
+  }
+
 
   .hubsec-head {
     grid-template-columns: 28px 1fr;
