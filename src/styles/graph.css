@@ -376,6 +376,19 @@
   color: var(--color-fg);
 }
 
+.graph-crumbs .crumb--empty {
+  color: var(--color-muted-2);
+  font-style: italic;
+}
+
+.graph-crumbs__reset {
+  margin-left: 2px;
+  padding: 0 2px;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .graph-canvas {
   flex: 1;
   position: relative;

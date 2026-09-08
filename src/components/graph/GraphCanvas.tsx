@@ -32,8 +32,28 @@ type GraphCanvasProps = {
   graph: GraphIndex;
   height?: number;
   selected?: string;
-  highlighted?: Set<string>;
-  dimUnhighlighted?: boolean;
+  /**
+   * Nodes to paint at full strength; every other node drops to a single
+   * faded tier. `undefined` means nothing is selected and all nodes paint
+   * full.
+   *
+   * One tier, not one per mechanism: a node that misses both the type filter
+   * and the focused region is faded once, not twice. Three depths of ink are
+   * not legible as a ranking — they just read as "some of this is broken".
+   */
+  emphasized?: Set<string>;
+  /**
+   * The focused region, which governs *edges*: an edge fades unless both of
+   * its ends are inside. `undefined` leaves every edge at full strength.
+   *
+   * Deliberately separate from `emphasized`, because the two answer different
+   * questions. A region focus is a claim about structure, so the structure
+   * inside it is part of the claim. A type or tag selection is a claim about
+   * node properties, and fading the skeleton underneath one would recreate
+   * exactly the emptiness that emphasis replaced — three lit nodes floating
+   * in nothing, telling you nothing about where they live.
+   */
+  focusRegion?: Set<string>;
   selectedStyle?: SelectedStyle;
   /**
    * The node this view is *about* — the page you are on. Marked persistently
@@ -73,14 +93,34 @@ type GraphCanvasProps = {
   hubLayout?: HubLayout;
 };
 
+/**
+ * The one de-emphasis level. Deep enough to read as secondary, shallow enough
+ * that the graph's skeleton survives — the whole point of fading rather than
+ * removing is that the unselected nodes keep holding the structure up.
+ */
+const FADE_ALPHA = 0.32;
+/**
+ * Labels are wayfinding, not type membership. Fading a hub's glyph is fine;
+ * fading its name off the map costs the reader the only text anchors they
+ * have, exactly when a filter has made everything else less familiar.
+ */
+const FADED_LABEL_ALPHA = 0.6;
+/**
+ * Ceiling for the settle-time fit. `zoomToFit` derives scale from the node
+ * bounding box, which degenerates to a point for a single node and to a line
+ * for two — filling the viewport with one glyph. Nothing about a small graph
+ * means the reader wants to be that close to it.
+ */
+const MAX_FIT_ZOOM = 2.5;
+
 type ForceGraphComponent = React.ComponentType<any>;
 
 export default function GraphCanvas({
   graph,
   height = 520,
   selected,
-  highlighted,
-  dimUnhighlighted = false,
+  emphasized,
+  focusRegion,
   selectedStyle = "outline",
   anchor,
   drag = "none",
@@ -505,7 +545,24 @@ export default function GraphCanvas({
     const nodes = graphData.nodes as Array<{ id: string; x?: number; y?: number; type?: any }>;
     const anchorNode = anchor ? nodes.find((node) => node.id === anchor) : undefined;
     if (!anchorNode || typeof anchorNode.x !== "number") {
-      fg.zoomToFit?.(duration, padding);
+      // `zoomToFit` reads its scale off the node bounding box, which has no
+      // area for one node and no height for two in a row — so a small graph
+      // gets magnified until a single glyph fills the canvas. Where the fit
+      // would exceed the ceiling we centre and cap by hand; everywhere else
+      // this defers to the library, so the ordinary case is untouched.
+      const box = boundingBox(nodes);
+      const fit = box
+        ? Math.min(
+            (width - padding * 2) / Math.max(box.w, 1e-6),
+            (height - padding * 2) / Math.max(box.h, 1e-6)
+          )
+        : Infinity;
+      if (box && fit > MAX_FIT_ZOOM) {
+        fg.centerAt?.(box.cx, box.cy, duration);
+        fg.zoom?.(MAX_FIT_ZOOM, duration);
+      } else {
+        fg.zoomToFit?.(duration, padding);
+      }
       return;
     }
     fg.centerAt?.(anchorNode.x, anchorNode.y, duration);
@@ -674,17 +731,14 @@ export default function GraphCanvas({
             const source = link.source;
             const target = link.target;
             if (!source || !target) return;
-            // An edge belongs to the highlight only when both of its ends do.
-            // Without this the dim is fought by the strongest ink on the
-            // canvas: faded nodes kept full-strength edges radiating out of
-            // them, which is most of what the eye actually reads in a dense
-            // region.
-            const dimmed =
-              dimUnhighlighted && highlighted
-                ? !(highlighted.has(source.id) && highlighted.has(target.id))
-                : false;
+            // An edge belongs to the focused region only when both of its
+            // ends do. Note this reads `focusRegion`, never `emphasized`: a
+            // type or tag selection must leave the skeleton alone.
+            const faded = focusRegion
+              ? !(focusRegion.has(source.id) && focusRegion.has(target.id))
+              : false;
             ctx.save();
-            ctx.globalAlpha = dimmed ? 0.08 : 0.35;
+            ctx.globalAlpha = faded ? 0.08 : 0.35;
             ctx.strokeStyle = cssVar("--graph-edge");
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -725,7 +779,8 @@ export default function GraphCanvas({
             drawNode(ctx, node, globalScale, {
               selected: selected === node.id,
               anchored: anchor === node.id,
-              dimmed: dimUnhighlighted && highlighted ? !highlighted.has(node.id) : false,
+              // The selected node is exempt: see drawSelectedGlow.
+              faded: selected !== node.id && !!emphasized && !emphasized.has(node.id),
               labelMode,
               selectedStyle
             });
@@ -829,6 +884,32 @@ function labelTransform(x: number, y: number, width: number, height: number): st
   return `translate(${shiftX}, ${shiftY})`;
 }
 
+/**
+ * Extent of the settled nodes, or `null` if none have positions yet. Width and
+ * height can legitimately be zero — one node, or several in a line — which is
+ * precisely the case the fit ceiling exists for.
+ */
+function boundingBox(nodes: Array<{ x?: number; y?: number }>) {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (const node of nodes) {
+    if (typeof node.x !== "number" || typeof node.y !== "number") continue;
+    minX = Math.min(minX, node.x);
+    maxX = Math.max(maxX, node.x);
+    minY = Math.min(minY, node.y);
+    maxY = Math.max(maxY, node.y);
+  }
+  if (minX === Infinity) return null;
+  return {
+    w: maxX - minX,
+    h: maxY - minY,
+    cx: (minX + maxX) / 2,
+    cy: (minY + maxY) / 2
+  };
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -839,7 +920,7 @@ function drawNode(
   globalScale: number,
   state: {
     selected: boolean;
-    dimmed: boolean;
+    faded: boolean;
     labelMode: LabelMode;
     selectedStyle: SelectedStyle;
     anchored?: boolean;
@@ -849,10 +930,10 @@ function drawNode(
   const radius = nodePaintedRadius(node);
   const color = nodeColor(node.type);
   ctx.save();
-  ctx.globalAlpha = state.dimmed ? 0.18 : 1;
+  ctx.globalAlpha = state.faded ? FADE_ALPHA : 1;
 
   if (state.selected && state.selectedStyle === "soft-glow") {
-    drawSelectedGlow(ctx, node, radius, color, state.dimmed);
+    drawSelectedGlow(ctx, node, radius, color);
   }
 
 
@@ -897,6 +978,10 @@ function drawNode(
     ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
     ctx.fillStyle = cssVar("--color-fg");
     ctx.textAlign = "center";
+    // Floored rather than inherited: the glyph says "not what you filtered
+    // for", the name says "you are here", and only the first of those is
+    // worth dimming.
+    if (state.faded) ctx.globalAlpha = FADED_LABEL_ALPHA;
 
     const side: "top" | "bottom" = node._labelSide === "bottom" ? "bottom" : "top";
     const offset = radius + 6;
@@ -926,17 +1011,22 @@ function drawAnchorCore(ctx: CanvasRenderingContext2D, node: any, radius: number
   ctx.restore();
 }
 
+/**
+ * Selection is a third axis — what the reader is inspecting — and not a claim
+ * about matching anything, so it paints at full strength even when the node
+ * under it is faded. Otherwise selecting a node and then filtering it out
+ * leaves the preview pane describing something all but invisible.
+ */
 function drawSelectedGlow(
   ctx: CanvasRenderingContext2D,
   node: any,
   radius: number,
-  color: string,
-  dimmed: boolean
+  color: string
 ) {
   const glowRadius = radius + 4;
   ctx.save();
   ctx.fillStyle = color;
-  ctx.globalAlpha = dimmed ? 0.05 : 0.18;
+  ctx.globalAlpha = 0.18;
   ctx.beginPath();
   ctx.arc(node.x, node.y, glowRadius, 0, 2 * Math.PI);
   ctx.fill();
