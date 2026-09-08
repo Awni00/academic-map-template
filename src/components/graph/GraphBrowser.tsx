@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  getEntryType,
-  graphConfig,
-  isHubType,
-  writingConfig,
-  type EntryType
-} from "../../config";
-import { graphNeighborhood, neighborhoodIds } from "../../lib/graph/neighborhoods";
+import { getEntryType, graphConfig, writingConfig, type EntryType } from "../../config";
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
 import { searchWriting, toSearchDocuments } from "../../lib/search/writingSearch";
 import GraphCanvas from "./GraphCanvas";
@@ -21,10 +14,6 @@ type GraphBrowserProps = {
 const defaultState: WritingBrowserState = {
   view: "map"
 };
-
-// Focus mode + depth are config-only — see writingConfig.browser.focus.
-const FOCUS_MODE = writingConfig.browser.focus.mode;
-const FOCUS_DEPTH = writingConfig.browser.focus.depth;
 
 // Where graph.css stops laying the browser out in columns and stacks it.
 const STACK_BREAKPOINT = 980;
@@ -63,9 +52,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   //
   //   View    Applies                              Does NOT apply
   //   ----    -------                              --------------
-  //   map     query, types, tags, focus            —
-  //   list    query, types                         tags, focus
-  //   topics  query                                types, tags, focus
+  //   map     query, types, tags                   —
+  //   list    query, types                         tags
+  //   topics  query                                types, tags
   //
   // The map *applies* all four, but not by removing anything: on a map an
   // attribute selection marks nodes, it does not delete them. Removal there
@@ -89,34 +78,12 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     () => new Set(mapSearchResults.map((doc) => doc.id)),
     [mapSearchResults]
   );
-  const focusIds = useMemo(() => {
-    if (!state.focus) return undefined;
-    return neighborhoodIds(graph, state.focus, FOCUS_DEPTH);
-  }, [graph, state.focus]);
-  const hasSelection = Boolean(
-    state.query || state.types?.length || state.tags?.length || state.focus
-  );
-  // One predicate, four inputs. A node paints full-strength iff it satisfies
-  // the query, the type chips, the tag chips *and* the focused region —
-  // rather than focus dimming while the other three deleted, which is how
-  // these used to compose (by accident).
-  const emphasizedIds = useMemo(() => {
-    if (!focusIds) return mapMatchIds;
-    return new Set([...mapMatchIds].filter((id) => focusIds.has(id)));
-  }, [mapMatchIds, focusIds]);
-  // Only a *filtering* focus removes nodes from the map, and that is opt-in
-  // config. Note what is absent: the attribute filters, which no longer touch
-  // the node set at all. That also settles the re-layout — handing
-  // `GraphCanvas` a new graph object rebuilds every node from scratch,
-  // dropping both the settled positions and the ones the reader dragged, so
-  // the fewer things that can change this identity the better.
-  const filteringFocus = FOCUS_MODE === "filter" ? state.focus : undefined;
-  const visibleGraph = useMemo(
-    () => (filteringFocus ? graphNeighborhood(graph, filteringFocus, FOCUS_DEPTH) : graph),
-    [graph, filteringFocus]
-  );
+  // Nothing removes nodes from the map: an attribute selection marks them and
+  // leaves the graph object identical, which is what keeps the layout from
+  // re-settling. Handing `GraphCanvas` a new graph rebuilds every node from
+  // scratch and drops both the settled positions and any the reader dragged.
+  const hasSelection = Boolean(state.query || state.types?.length || state.tags?.length);
   const selected = state.selected ? nodeById.get(state.selected) : graph.hubs[0] ?? graph.nodes[0];
-  const focusNode = state.focus ? nodeById.get(state.focus) : undefined;
   const view = (state.view ?? defaultState.view) as View;
 
   useEffect(() => {
@@ -169,12 +136,12 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // The map no longer removes anything, so a bare node count would read "14
   // pages" forever. Matches-of-total is what carries the responsiveness a
   // filter owes the reader once it has stopped changing the picture's size.
-  const mapMatchCount = emphasizedIds.size;
+  const mapMatchCount = mapMatchIds.size;
   const countLabel =
     view === "map"
       ? hasSelection
-        ? `${mapMatchCount} of ${visibleGraph.nodes.length} pages`
-        : `${visibleGraph.nodes.length} pages`
+        ? `${mapMatchCount} of ${graph.nodes.length} pages`
+        : `${graph.nodes.length} pages`
       : view === "topics"
       ? `${topicsEntries.length} pages`
       : `${listEntries.length} pages`;
@@ -218,19 +185,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
             <div className="graph-canvas-bar">
               <div className="graph-crumbs">
                 <span className="crumb">All writing</span>
-                {focusNode && (
-                  <>
-                    <span className="crumb-sep">›</span>
-                    <span className="crumb crumb--active">{focusNode.title}</span>
-                    <button
-                      type="button"
-                      aria-label="Clear focus"
-                      onClick={() => patch({ focus: undefined })}
-                    >
-                      ×
-                    </button>
-                  </>
-                )}
                 {/* A map where everything is faded looks identical to one that
                     failed to render, so the zero case has to be said in words
                     rather than shown. */}
@@ -242,7 +196,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                     type="button"
                     className="graph-crumbs__reset"
                     onClick={() =>
-                      patch({ query: undefined, types: undefined, tags: undefined, focus: undefined })
+                      patch({ query: undefined, types: undefined, tags: undefined })
                     }
                   >
                     Reset
@@ -287,29 +241,22 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
             </div>
             <div className="graph-canvas">
               <GraphCanvas
-                graph={visibleGraph}
+                graph={graph}
                 height={narrow ? CANVAS_HEIGHT_NARROW : CANVAS_HEIGHT}
                 selected={state.selected}
                 selectedStyle="soft-glow"
-                emphasized={hasSelection ? emphasizedIds : undefined}
-                focusRegion={FOCUS_MODE === "dim" ? focusIds : undefined}
+                emphasized={hasSelection ? mapMatchIds : undefined}
                 drag={graphConfig.interaction.drag}
                 hubLayout={graphConfig.layout.hubs}
                 labelMode={graphConfig.layout.labels}
                 labelSide={graphConfig.layout.labelSide}
-                onSelect={(id) => {
-                  // A hub is a place, not merely an entry: clicking one both
-                  // selects it and toggles the topic focus. The map's own
-                  // glyphs are the largest, always-labelled things on screen,
-                  // so they carry the navigation a separate topic list used to
-                  // duplicate in text beside them.
-                  const node = nodeById.get(id);
-                  if (node && isHubType(node.type)) {
-                    patch({ selected: id, focus: state.focus === id ? undefined : id });
-                  } else {
-                    patch({ selected: id });
-                  }
-                }}
+                // One meaning for every node, hubs included. Clicking a hub
+                // used to also dim the map down to its immediate neighbours,
+                // which made the same gesture carry two very different
+                // consequences with nothing in the glyph to say so — and
+                // "immediate neighbours" was the wrong set anyway, since a
+                // hub's entries can sit a further hop down a nested hub.
+                onSelect={(id) => patch({ selected: id })}
               />
             </div>
           </div>
@@ -536,7 +483,7 @@ function Preview({
 }
 
 // Only the active view round-trips through the URL. All other state —
-// selection, query, types, tags, focus — is session-only by design so the
+// selection, query, types and tags — is session-only by design so the
 // URL stays clean and shareable without dragging along ephemeral UI state.
 function readStateFromUrl(): WritingBrowserState {
   if (typeof window === "undefined") return defaultState;

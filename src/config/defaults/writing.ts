@@ -22,10 +22,6 @@ export const defaultWritingConfig = {
     excludeTypes: []
   },
   browser: {
-    focus: {
-      mode: "dim",
-      depth: 1
-    },
     topics: {
       showHubSummaries: true,
       density: "comfortable",

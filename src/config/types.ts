@@ -107,10 +107,6 @@ export type WritingConfig = {
     excludeTypes: readonly EntryType[];
   };
   browser: {
-    focus: {
-      mode: "dim" | "filter";
-      depth: 1 | 2;
-    };
     topics: TopicsConfig;
     list: ListConfig;
   };

@@ -68,7 +68,6 @@ export type GraphBuildResult = {
 
 export type WritingBrowserState = {
   view: "map" | "topics" | "list";
-  focus?: string;
   selected?: string;
   query?: string;
   types?: EntryType[];

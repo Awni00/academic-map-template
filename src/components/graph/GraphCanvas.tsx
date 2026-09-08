@@ -34,27 +34,15 @@ type GraphCanvasProps = {
   height?: number;
   selected?: string;
   /**
-   * Nodes to paint at full strength; every other node drops to a single
-   * faded tier. `undefined` means nothing is selected and all nodes paint
-   * full.
+   * Nodes to paint at full strength; every other node drops to a single faded
+   * tier. `undefined` means nothing is selected and all nodes paint full.
    *
-   * One tier, not one per mechanism: a node that misses both the type filter
-   * and the focused region is faded once, not twice. Three depths of ink are
-   * not legible as a ranking — they just read as "some of this is broken".
+   * Nodes only — the edges underneath keep their weight. A type or tag
+   * selection is a claim about node properties, not about structure, and
+   * fading the skeleton beneath one would leave a few lit nodes floating in
+   * nothing, saying nothing about where they live.
    */
   emphasized?: Set<string>;
-  /**
-   * The focused region, which governs *edges*: an edge fades unless both of
-   * its ends are inside. `undefined` leaves every edge at full strength.
-   *
-   * Deliberately separate from `emphasized`, because the two answer different
-   * questions. A region focus is a claim about structure, so the structure
-   * inside it is part of the claim. A type or tag selection is a claim about
-   * node properties, and fading the skeleton underneath one would recreate
-   * exactly the emptiness that emphasis replaced — three lit nodes floating
-   * in nothing, telling you nothing about where they live.
-   */
-  focusRegion?: Set<string>;
   selectedStyle?: SelectedStyle;
   /**
    * The node this view is *about* — the page you are on. Marked persistently
@@ -101,11 +89,6 @@ type GraphCanvasProps = {
  */
 const FADE_ALPHA = 0.42;
 /**
- * Edges outside a focused region. Deeper than the node fade because an edge is
- * a thin shape: at the node's 0.42 it still reads as a full-strength line.
- */
-const FADED_EDGE_ALPHA = 0.08;
-/**
  * Labels are wayfinding, not type membership. Fading a hub's glyph is fine;
  * fading its name off the map costs the reader the only text anchors they
  * have, exactly when a filter has made everything else less familiar.
@@ -126,7 +109,6 @@ export default function GraphCanvas({
   height = 520,
   selected,
   emphasized,
-  focusRegion,
   selectedStyle = "outline",
   anchor,
   drag = "none",
@@ -612,6 +594,7 @@ export default function GraphCanvas({
       };
 
       ctx.save();
+      ctx.globalAlpha = opacity;
       for (const edge of drawnEdges) {
         const source = liveNodeById.get(edge.source);
         const target = liveNodeById.get(edge.target);
@@ -628,11 +611,6 @@ export default function GraphCanvas({
         });
         if (!shaft && heads.length === 0) continue;
 
-        const faded = focusRegion
-          ? !(focusRegion.has(edge.source) && focusRegion.has(edge.target))
-          : false;
-        ctx.globalAlpha = faded ? FADED_EDGE_ALPHA : opacity;
-
         const body = new Path2D();
         if (shaft) ring(body, shaft);
         if (headsShareShaft) for (const head of heads) ring(body, head);
@@ -648,7 +626,7 @@ export default function GraphCanvas({
       }
       ctx.restore();
     },
-    [drawnEdges, liveNodeById, focusRegion]
+    [drawnEdges, liveNodeById]
   );
 
   const frame = (duration: number) => {

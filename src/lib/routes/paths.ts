@@ -29,10 +29,6 @@ export function writingEntryUrl(entryPath: string, route: string = writingConfig
   return joinUrl(route, entryPath);
 }
 
-export function writingFocusUrl(entryPath: string, route: string = writingConfig.route): string {
-  return `${normalizeRoute(route)}?focus=${encodeURIComponent(entryPath)}`;
-}
-
 export function rssRoute(): string {
   return normalizeRoute(writingConfig.rss.route);
 }

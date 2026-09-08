@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import type { EntryType, GraphIndex, EntryNode } from "../../lib/graph/types";
-import { writingFocusUrl } from "../../lib/routes/paths";
+import { writingEntryUrl } from "../../lib/routes/paths";
 import GraphCanvas from "./GraphCanvas";
 
 /**
@@ -122,7 +122,7 @@ export default function WritingPreview({
       {needsCards && (
         <div className="writing-preview__cards">
           {graph.hubs.map((hub) => (
-            <a className="topic-card" href={writingFocusUrl(hub.id)} key={hub.id}>
+            <a className="topic-card" href={writingEntryUrl(hub.id)} key={hub.id}>
               <strong>{hub.title}</strong>
               {hub.summary && <p className="muted">{hub.summary}</p>}
             </a>
