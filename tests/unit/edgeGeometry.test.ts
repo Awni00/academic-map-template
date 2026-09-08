@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { edgeGeometry, type EdgeGeometryOptions } from "../../src/lib/graph/edgeGeometry";
+import {
+  edgeGeometry,
+  signedArea,
+  type EdgeGeometryOptions,
+  type Point
+} from "../../src/lib/graph/edgeGeometry";
 
 const arrow = { length: 5, width: 1.5, relPos: 1 };
 
@@ -8,6 +13,7 @@ function options(overrides: Partial<EdgeGeometryOptions> = {}): EdgeGeometryOpti
   return {
     sourceRadius: 5,
     targetRadius: 9,
+    width: 1,
     directed: true,
     bidirectional: false,
     arrow,
@@ -15,114 +21,116 @@ function options(overrides: Partial<EdgeGeometryOptions> = {}): EdgeGeometryOpti
   };
 }
 
-/** Distance of a point from the source, along a horizontal edge from (0, 0). */
-const along = (p: { x: number }) => p.x;
+const rings = (geometry: { shaft: Point[] | null; heads: Point[][] }) =>
+  [...(geometry.shaft ? [geometry.shaft] : []), ...geometry.heads];
 
 describe("edgeGeometry", () => {
-  it("runs the shaft between the glyph edges, stopping at the arrowhead", () => {
-    const { shafts, heads } = edgeGeometry({ x: 0, y: 0 }, { x: 100, y: 0 }, options());
-    expect(shafts).toHaveLength(1);
-    expect(heads).toHaveLength(1);
-    // Starts at the source glyph's edge, not its centre.
-    expect(along(shafts[0].from)).toBe(5);
-    // Stops at the head's base: target boundary (100 - 9) less the head length.
-    expect(along(shafts[0].to)).toBe(86);
-    expect(along(heads[0].tip)).toBe(91);
-  });
-
-  it("never lets a shaft overlap a head", () => {
-    // The property the single-composite rendering depends on: if these two
-    // overlapped, stroking all shafts and filling all heads as separate canvas
-    // operations would double the alpha where they met.
+  it("winds every ring the same direction", () => {
+    // The invariant the single-fill rendering rests on. Two rings wound
+    // opposite ways cancel to winding zero under a non-zero fill and punch a
+    // hole where they overlap — which is what mirrored arrowheads used to do
+    // wherever two of them met.
     const cases: EdgeGeometryOptions[] = [
       options(),
       options({ bidirectional: true }),
-      options({ arrow: { ...arrow, relPos: 0.5 } }),
-      options({ bidirectional: true, arrow: { ...arrow, relPos: 0.6 } }),
+      options({ bidirectional: true, arrow: { ...arrow, relPos: 0.4 } }),
       options({ sourceRadius: 18, targetRadius: 18 }),
-      options({ arrow: { ...arrow, length: 12 } })
+      options({ arrow: { ...arrow, length: 12, width: 6 } })
+    ];
+    const directions: Point[] = [
+      { x: 100, y: 0 },
+      { x: -100, y: 0 },
+      { x: 0, y: 100 },
+      { x: 0, y: -100 },
+      { x: 60, y: 80 },
+      { x: -60, y: -80 }
     ];
     for (const config of cases) {
-      const { shafts, heads } = edgeGeometry({ x: 0, y: 0 }, { x: 100, y: 0 }, config);
-      for (const shaft of shafts) {
-        for (const head of heads) {
-          const headLow = Math.min(along(head.tip), along(head.left));
-          const headHigh = Math.max(along(head.tip), along(head.left));
-          const shaftLow = Math.min(along(shaft.from), along(shaft.to));
-          const shaftHigh = Math.max(along(shaft.from), along(shaft.to));
-          expect(shaftHigh <= headLow || shaftLow >= headHigh).toBe(true);
-        }
+      for (const target of directions) {
+        const geometry = edgeGeometry({ x: 0, y: 0 }, target, config);
+        const signs = rings(geometry).map((ring) => Math.sign(signedArea(ring)));
+        expect(signs.every((sign) => sign !== 0)).toBe(true);
+        expect(new Set(signs).size).toBe(1);
       }
     }
   });
 
-  it("gives a reciprocal edge one shaft with a head at each end", () => {
-    const { shafts, heads } = edgeGeometry(
+  it("runs the shaft between the glyph edges, not between the centres", () => {
+    const { shaft } = edgeGeometry({ x: 0, y: 0 }, { x: 100, y: 0 }, options());
+    const xs = shaft!.map((point) => point.x);
+    // Source glyph edge at 5, target glyph edge at 100 - 9.
+    expect(Math.min(...xs)).toBe(5);
+    expect(Math.max(...xs)).toBe(91);
+    // Centred on the axis, `width` across.
+    const ys = shaft!.map((point) => point.y);
+    expect(Math.min(...ys)).toBe(-0.5);
+    expect(Math.max(...ys)).toBe(0.5);
+  });
+
+  it("overlaps the head onto the shaft rather than butting them together", () => {
+    // Filled as one path, so overlap is free — while a gap would show as a
+    // seam once antialiasing rounded the two boundaries apart.
+    const { shaft, heads } = edgeGeometry({ x: 0, y: 0 }, { x: 100, y: 0 }, options());
+    const shaftMax = Math.max(...shaft!.map((point) => point.x));
+    const headMin = Math.min(...heads[0].map((point) => point.x));
+    expect(headMin).toBeLessThan(shaftMax);
+  });
+
+  it("gives a reciprocal edge one shaft and a head at each end", () => {
+    const { shaft, heads } = edgeGeometry(
       { x: 0, y: 0 },
       { x: 100, y: 0 },
       options({ bidirectional: true })
     );
+    expect(shaft).not.toBeNull();
     expect(heads).toHaveLength(2);
-    expect(shafts).toHaveLength(1);
-    // Tips point outward, at each glyph edge.
-    expect(heads.map((head) => along(head.tip)).sort((a, b) => a - b)).toEqual([5, 91]);
-    // The shaft spans the gap between the two bases.
-    expect(along(shafts[0].from)).toBe(10);
-    expect(along(shafts[0].to)).toBe(86);
+    // Tips point outward, one at each glyph edge.
+    const tips = heads.map((head) => head[0].x).sort((a, b) => a - b);
+    expect(tips).toEqual([5, 91]);
   });
 
-  it("splits the shaft around a head placed mid-edge", () => {
-    const { shafts, heads } = edgeGeometry(
+  it("places a head mid-edge when relPos is below 1", () => {
+    const { heads } = edgeGeometry(
       { x: 0, y: 0 },
       { x: 100, y: 0 },
       options({ arrow: { ...arrow, relPos: 0.5 } })
     );
-    // Span is 5..91, so the tip lands halfway at 48.
-    expect(along(heads[0].tip)).toBe(48);
-    expect(shafts).toHaveLength(2);
-    expect(shafts.map((s) => [along(s.from), along(s.to)])).toEqual([
-      [5, 43],
-      [48, 91]
-    ]);
+    // Halfway along the 5..91 span between the glyph edges.
+    expect(heads[0][0].x).toBe(48);
   });
 
   it("draws a plain line when the graph is undirected", () => {
-    const { shafts, heads } = edgeGeometry(
+    const { shaft, heads } = edgeGeometry(
       { x: 0, y: 0 },
       { x: 100, y: 0 },
       options({ directed: false })
     );
     expect(heads).toHaveLength(0);
-    expect(shafts).toHaveLength(1);
-    expect([along(shafts[0].from), along(shafts[0].to)]).toEqual([5, 91]);
+    expect(shaft).not.toBeNull();
   });
 
   it("draws nothing when the glyphs meet or coincide", () => {
-    // Overlapping glyphs leave no span between their edges.
     expect(edgeGeometry({ x: 0, y: 0 }, { x: 10, y: 0 }, options())).toEqual({
-      shafts: [],
+      shaft: null,
       heads: []
     });
-    // Same position: no direction to draw along.
     expect(edgeGeometry({ x: 7, y: 7 }, { x: 7, y: 7 }, options())).toEqual({
-      shafts: [],
+      shaft: null,
       heads: []
     });
   });
 
-  it("keeps the head's base square to the edge on a diagonal", () => {
+  it("keeps the head square to the edge on a diagonal", () => {
     const { heads } = edgeGeometry(
       { x: 0, y: 0 },
       { x: 60, y: 80 },
       options({ sourceRadius: 0, targetRadius: 0 })
     );
-    const [head] = heads;
-    // Base corners sit symmetrically about the axis, `width` out on each side.
-    const midX = (head.left.x + head.right.x) / 2;
-    const midY = (head.left.y + head.right.y) / 2;
-    expect(Math.hypot(head.left.x - midX, head.left.y - midY)).toBeCloseTo(arrow.width, 10);
-    expect(Math.hypot(head.right.x - midX, head.right.y - midY)).toBeCloseTo(arrow.width, 10);
-    // ...and the base is `length` back from the tip.
-    expect(Math.hypot(head.tip.x - midX, head.tip.y - midY)).toBeCloseTo(arrow.length, 10);
+    const [tip, left, right] = heads[0];
+    const midX = (left.x + right.x) / 2;
+    const midY = (left.y + right.y) / 2;
+    expect(Math.hypot(left.x - midX, left.y - midY)).toBeCloseTo(arrow.width, 10);
+    expect(Math.hypot(right.x - midX, right.y - midY)).toBeCloseTo(arrow.width, 10);
+    expect(Math.hypot(tip.x - midX, tip.y - midY)).toBeCloseTo(arrow.length, 10);
   });
 });

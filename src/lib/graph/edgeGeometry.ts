@@ -1,17 +1,27 @@
 export type Point = { x: number; y: number };
 
-/** A straight run of the edge's line, between glyph edges and arrowheads. */
-export type EdgeShaft = { from: Point; to: Point };
-
-/** A filled triangle. `left`/`right` are the base corners, either side of the axis. */
-export type EdgeHead = { tip: Point; left: Point; right: Point };
-
-export type EdgeGeometry = { shafts: EdgeShaft[]; heads: EdgeHead[] };
+/**
+ * The rings making up one edge: a quad along its length, plus a triangle per
+ * arrowhead.
+ *
+ * Every ring winds the same direction, which is the property that lets a caller
+ * fill them as a single path. Under non-zero winding, same-wound overlaps union
+ * (winding 2, still inside) while opposite-wound overlaps cancel to zero and
+ * punch a hole — so the arrowheads on a reciprocal edge must not be mirror
+ * images of each other, however natural that construction looks.
+ */
+export type EdgeGeometry = {
+  /** `null` when the glyphs leave no room between them. */
+  shaft: Point[] | null;
+  heads: Point[][];
+};
 
 export type EdgeGeometryOptions = {
   /** Painted radius of each glyph, so no part of an edge hides under a node. */
   sourceRadius: number;
   targetRadius: number;
+  /** Full width of the line, centred on the axis. */
+  width: number;
   directed: boolean;
   /** Reciprocal edges are drawn once, with a head at each end. */
   bidirectional: boolean;
@@ -21,32 +31,42 @@ export type EdgeGeometryOptions = {
     /** Out to each side, so a head is `2 * width` across. */
     width: number;
     /**
-     * Where the tip sits on the span between the two glyph edges: 1 puts it
-     * at the target's boundary, lower values slide it back along the edge.
+     * Where the tip sits on the span between the two glyph edges: 1 puts it at
+     * the target's boundary, lower values slide it back along the edge.
      */
     relPos: number;
   };
 };
 
+/** Twice the enclosed area, signed: positive is counter-clockwise. */
+export function signedArea(ring: Point[]): number {
+  let total = 0;
+  for (let i = 0; i < ring.length; i += 1) {
+    const a = ring[i];
+    const b = ring[(i + 1) % ring.length];
+    total += a.x * b.y - b.x * a.y;
+  }
+  return total;
+}
+
 /**
- * Where to put the line segments and arrowheads for one edge.
+ * The filled outline of one edge.
  *
- * Split out from the canvas so it can be tested without one, and so the
- * drawing code is only path commands.
- *
- * The shafts it returns never overlap the heads: an arrowhead's footprint is
- * subtracted from the line, leaving segments either side of it. That is what
- * lets the caller stroke every shaft in one operation and fill every head in
- * another without the two darkening each other where they meet — canvas
- * composites each operation separately, so overlapping them under a
- * translucent alpha would land at 1 - (1 - alpha)^2 and read as a seam.
+ * Shaft and heads deliberately overlap. They are meant to be filled together as
+ * one path, where overlap costs nothing and a gap between them would show as a
+ * seam once antialiasing rounds the two boundaries apart. What must not happen
+ * is filling them as separate operations under a translucent alpha: canvas
+ * composites each operation on its own, so the shared region would land at
+ * 1 - (1 - alpha)^2 and the arrow would read as two stacked objects rather than
+ * one. Overlap between *different* edges is a separate matter, and is meant to
+ * darken — that is what makes a dense region look dense.
  */
 export function edgeGeometry(
   source: Point,
   target: Point,
   options: EdgeGeometryOptions
 ): EdgeGeometry {
-  const empty: EdgeGeometry = { shafts: [], heads: [] };
+  const empty: EdgeGeometry = { shaft: null, heads: [] };
   const dx = target.x - source.x;
   const dy = target.y - source.y;
   const length = Math.hypot(dx, dy);
@@ -54,51 +74,40 @@ export function edgeGeometry(
 
   const ux = dx / length;
   const uy = dy / length;
-  // Unit normal, for the head's base corners.
-  const px = -uy;
-  const py = ux;
 
   const from = options.sourceRadius;
   const to = length - options.targetRadius;
   // Glyphs meeting or overlapping leave no edge to draw.
   if (to <= from) return empty;
 
-  const at = (distance: number): Point => ({
-    x: source.x + ux * distance,
-    y: source.y + uy * distance
+  const at = (distance: number, offset = 0): Point => ({
+    // `offset` steps along the normal, which is the axis turned a quarter turn.
+    x: source.x + ux * distance - uy * offset,
+    y: source.y + uy * distance + ux * offset
   });
 
-  const heads: EdgeHead[] = [];
-  // Spans the shaft has to leave clear, in distance along the axis.
-  const blocked: Array<[number, number]> = [];
+  const half = options.width / 2;
+  // Wound to match the heads below: down one side, back along the other.
+  const shaft = [at(from, -half), at(to, -half), at(to, half), at(from, half)];
 
-  const addHead = (tipDistance: number, sign: 1 | -1) => {
-    const baseDistance = tipDistance - sign * options.arrow.length;
-    const base = at(baseDistance);
-    heads.push({
-      tip: at(tipDistance),
-      left: { x: base.x + px * options.arrow.width, y: base.y + py * options.arrow.width },
-      right: { x: base.x - px * options.arrow.width, y: base.y - py * options.arrow.width }
-    });
-    blocked.push(
-      baseDistance < tipDistance ? [baseDistance, tipDistance] : [tipDistance, baseDistance]
-    );
-  };
-
+  const heads: Point[][] = [];
   if (options.directed) {
     const span = to - from;
+    const addHead = (tipDistance: number, sign: 1 | -1) => {
+      const base = tipDistance - sign * options.arrow.length;
+      // Offsets are signed by the head's own direction, not the edge's, and
+      // ordered to match the shaft's winding above. Both matter: a head
+      // pointing back down the edge would otherwise mirror the forward one and
+      // cancel it to a hole wherever the two met.
+      heads.push([
+        at(tipDistance),
+        at(base, sign * options.arrow.width),
+        at(base, -sign * options.arrow.width)
+      ]);
+    };
     addHead(from + span * options.arrow.relPos, 1);
     if (options.bidirectional) addHead(to - span * options.arrow.relPos, -1);
   }
 
-  blocked.sort((a, b) => a[0] - b[0]);
-  const shafts: EdgeShaft[] = [];
-  let cursor = from;
-  for (const [low, high] of blocked) {
-    if (low > cursor) shafts.push({ from: at(cursor), to: at(Math.min(low, to)) });
-    cursor = Math.max(cursor, high);
-  }
-  if (cursor < to) shafts.push({ from: at(cursor), to: at(to) });
-
-  return { shafts, heads };
+  return { shaft, heads };
 }

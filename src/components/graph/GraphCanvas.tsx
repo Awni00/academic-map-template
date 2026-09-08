@@ -580,79 +580,73 @@ export default function GraphCanvas({
   );
 
   /**
-   * Paint every edge in a fixed number of canvas operations rather than a pair
-   * per edge.
+   * Paint the edges, one composited object per edge.
    *
-   * Canvas composites each drawing operation on its own, so anything covered
-   * twice under a translucent alpha lands at 1 − (1−α)² instead of α. Drawn one
-   * edge at a time that showed up everywhere: the shaft darkened the arrowhead
-   * it passed through, crossings darkened each other, and arrowheads converging
-   * on a hub stacked into a blot. Collected into one path per shape, overlaps
-   * rasterise to a single coverage mask and the whole map holds one density.
+   * The unit of compositing is the edge. Canvas composites each drawing
+   * operation separately, so anything drawn twice under a translucent alpha
+   * lands at 1 - (1 - alpha)^2 rather than alpha. Within one arrow that reads
+   * as a fault — the line and its head are one thing, and a darker wedge where
+   * they meet makes them look like two stacked objects. Between two different
+   * edges the same effect is the point: crossings should darken, because that
+   * is what makes a dense part of the map look dense.
    *
-   * Shafts and heads stay separate operations because a shaft quad and a head
-   * triangle, built the natural way, wind in opposite directions — a single
-   * non-zero fill would punch holes where they meet. `edgeGeometry` keeps the
-   * two from overlapping instead, so the seam between the operations is
-   * invisible.
+   * So each edge's shaft and heads go into one path and are filled once, and
+   * separate edges get separate fills. `edgeGeometry` winds every ring the same
+   * direction so that single fill unions them rather than punching a hole where
+   * they overlap.
    */
   const drawEdges = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      const { width: linkWidth, opacity, directed, arrow } = graphConfig.links;
+      const { width, opacity, directed, arrow } = graphConfig.links;
       const edgeColor = resolveColor(graphConfig.links.color);
       const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
+      // Heads only join the shaft's path when they share its colour. Given a
+      // colour of their own they are a separate mark and belong on top, where
+      // compositing over the line is the intent rather than an artefact.
+      const headsShareShaft = headColor === edgeColor;
 
-      for (const faded of [false, true]) {
-        const shafts = new Path2D();
-        const heads = new Path2D();
-        let painted = false;
+      const ring = (path: Path2D, points: { x: number; y: number }[]) => {
+        path.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i += 1) path.lineTo(points[i].x, points[i].y);
+        path.closePath();
+      };
 
-        for (const edge of drawnEdges) {
-          if (focusRegion) {
-            const inRegion = focusRegion.has(edge.source) && focusRegion.has(edge.target);
-            if (inRegion === faded) continue;
-          } else if (faded) {
-            continue;
-          }
+      ctx.save();
+      for (const edge of drawnEdges) {
+        const source = liveNodeById.get(edge.source);
+        const target = liveNodeById.get(edge.target);
+        if (!source || !target) continue;
+        if (typeof source.x !== "number" || typeof target.x !== "number") continue;
 
-          const source = liveNodeById.get(edge.source);
-          const target = liveNodeById.get(edge.target);
-          if (!source || !target) continue;
-          if (typeof source.x !== "number" || typeof target.x !== "number") continue;
+        const { shaft, heads } = edgeGeometry(source, target, {
+          sourceRadius: nodePaintedRadius(source),
+          targetRadius: nodePaintedRadius(target),
+          width,
+          directed,
+          bidirectional: edge.bidirectional,
+          arrow
+        });
+        if (!shaft && heads.length === 0) continue;
 
-          const { shafts: runs, heads: tips } = edgeGeometry(source, target, {
-            sourceRadius: nodePaintedRadius(source),
-            targetRadius: nodePaintedRadius(target),
-            directed,
-            bidirectional: edge.bidirectional,
-            arrow
-          });
-
-          for (const run of runs) {
-            shafts.moveTo(run.from.x, run.from.y);
-            shafts.lineTo(run.to.x, run.to.y);
-            painted = true;
-          }
-          for (const tip of tips) {
-            heads.moveTo(tip.tip.x, tip.tip.y);
-            heads.lineTo(tip.left.x, tip.left.y);
-            heads.lineTo(tip.right.x, tip.right.y);
-            heads.closePath();
-            painted = true;
-          }
-        }
-
-        if (!painted) continue;
-        ctx.save();
+        const faded = focusRegion
+          ? !(focusRegion.has(edge.source) && focusRegion.has(edge.target))
+          : false;
         ctx.globalAlpha = faded ? FADED_EDGE_ALPHA : opacity;
-        ctx.strokeStyle = edgeColor;
-        ctx.lineWidth = linkWidth;
-        ctx.lineCap = "butt";
-        ctx.stroke(shafts);
-        ctx.fillStyle = headColor;
-        ctx.fill(heads);
-        ctx.restore();
+
+        const body = new Path2D();
+        if (shaft) ring(body, shaft);
+        if (headsShareShaft) for (const head of heads) ring(body, head);
+        ctx.fillStyle = edgeColor;
+        ctx.fill(body);
+
+        if (!headsShareShaft && heads.length > 0) {
+          const tips = new Path2D();
+          for (const head of heads) ring(tips, head);
+          ctx.fillStyle = headColor;
+          ctx.fill(tips);
+        }
       }
+      ctx.restore();
     },
     [drawnEdges, liveNodeById, focusRegion]
   );
