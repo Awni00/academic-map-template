@@ -229,6 +229,11 @@
   line-height: 1;
 }
 
+.graph-button__icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
 /* Segmented control (focus / view) */
 .graph-seg {
   display: inline-flex;

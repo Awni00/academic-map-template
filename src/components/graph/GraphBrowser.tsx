@@ -336,6 +336,7 @@ function TagFilter({
         aria-pressed={active.length > 0}
         onClick={() => setOpen((current) => !current)}
       >
+        <TagIcon />
         tags
         {active.length > 0 && <span className="graph-button__count">{active.length}</span>}
         <span className="graph-button__caret" aria-hidden="true">
@@ -549,6 +550,31 @@ function DirectionIcon({ direction }: { direction: Direction }) {
         </svg>
       );
   }
+}
+
+/**
+ * Marks the tag filter, which is the one chip in the bar whose label is not
+ * accompanied by the glyph its subject is drawn with. Outlined rather than
+ * filled, so it reads as a control next to the solid node glyphs beside it.
+ */
+function TagIcon() {
+  return (
+    <svg
+      width={12}
+      height={12}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="graph-button__icon"
+    >
+      <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z" />
+      <circle cx={7} cy={7} r={1.3} fill="currentColor" stroke="none" />
+    </svg>
+  );
 }
 
 type NodeShape = "square" | "circle" | "diamond" | "hexagon";
