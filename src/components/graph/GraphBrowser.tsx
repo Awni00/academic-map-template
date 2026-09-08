@@ -553,7 +553,7 @@ function DirectionIcon({ direction }: { direction: Direction }) {
     viewBox: "0 0 16 12",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.9,
+    strokeWidth: 1.6,
     strokeLinecap: "round",
     strokeLinejoin: "round",
     "aria-hidden": true,

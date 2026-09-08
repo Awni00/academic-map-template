@@ -580,7 +580,10 @@
 .connection-dir {
   flex: 0 0 auto;
   display: block;
-  color: var(--color-fg-soft);
+  /* The same token the canvas draws edges with: a row's marker *is* an edge,
+     so it should be the colour of one. Full opacity rather than the canvas's
+     0.35, which would leave a 1.6px stroke invisible. */
+  color: var(--graph-edge);
 }
 
 .preview-link:hover .connection-dir {
