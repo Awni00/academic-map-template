@@ -97,6 +97,7 @@ export default function GraphCanvas({
   // could let the canvas render wider than its slot for one frame.
   const [width, setWidth] = useState<number | null>(null);
   const [ForceGraph, setForceGraph] = useState<ForceGraphComponent | null>(null);
+  const [visibility, setVisibility] = useState({ active: false, started: false });
   // Node under the cursor, plus the pointer position (container px) used to
   // place the floating label. `null` when the pointer is over empty canvas.
   const [hover, setHover] = useState<{ node: any; x: number; y: number } | null>(null);
@@ -140,6 +141,40 @@ export default function GraphCanvas({
       active = false;
     };
   }, []);
+
+  // Hydration can happen below the fold or in a background tab. Wait until
+  // both the slot and document are visible before mounting the simulation,
+  // then retain it and pause/resume so scrolling never resets its layout.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    let intersects = false;
+    const update = () => {
+      const active = intersects && document.visibilityState === "visible";
+      setVisibility((previous) =>
+        previous.active === active
+          ? previous
+          : { active, started: previous.started || active }
+      );
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      intersects = entry.isIntersecting;
+      update();
+    });
+    observer.observe(container);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const fg = fgRef.current;
+    if (!fg) return;
+    if (visibility.active) fg.resumeAnimation();
+    else fg.pauseAnimation();
+  }, [ForceGraph, width, visibility]);
 
   // Measure synchronously before the browser paints so the first render
   // already has the correct width — avoids a flash of overshoot while the
@@ -542,17 +577,9 @@ export default function GraphCanvas({
     // force gives the neighbourhood a real minimum spacing.
     fg.d3Force?.("anchorCollide", roomy ? collideForce(ANCHOR_RING.minGap) : null);
     fg.d3ReheatSimulation?.();
-    // After the simulation settles, re-frame so pinned hubs + satellites
-    // all sit comfortably inside the viewport. Without this the initial
-    // auto-fit can clip nodes that the simulation flung outward early on.
-    //
-    // The fixed model waits for `onEngineStop` instead of a delay: it reports
-    // the radius the layout reached, and a guessed delay reports whatever the
-    // nodes were passing through at the time.
-    if (anchor) return;
-    const timer = window.setTimeout(() => frame(400), 600);
-    return () => window.clearTimeout(timer);
-  }, [ForceGraph, graphData, height, anchor, anchorGeometry]);
+    // Frame onEngineStop: a wall-clock delay can fire while paused, before
+    // the layout has reached its final bounds.
+  }, [ForceGraph, graphData, height, anchor, anchorGeometry, visibility.started]);
 
   // Re-frame when the slot changes width. The fit above runs once the
   // simulation settles and is never revisited, so a canvas that gets narrower
@@ -565,7 +592,7 @@ export default function GraphCanvas({
     if (!fg || width == null) return;
     const timer = window.setTimeout(() => frame(300), 250);
     return () => window.clearTimeout(timer);
-  }, [ForceGraph, width, height, anchor, anchorGeometry]);
+  }, [ForceGraph, width, height, anchor, anchorGeometry, visibility.started]);
 
   return (
     <div
@@ -590,7 +617,7 @@ export default function GraphCanvas({
       onLostPointerCapture={(event) => endDrag(event, true)}
       onClick={handleClick}
     >
-      {ForceGraph && width != null ? (
+      {ForceGraph && width != null && visibility.started ? (
         <ForceGraph
           ref={fgRef}
           width={width}
@@ -626,6 +653,9 @@ export default function GraphCanvas({
           // An anchored view has a radius to *reach*, not merely to settle
           // near, so it is given room to get there.
           cooldownTicks={anchor ? 300 : 80}
+          // The default 15s wall-clock deadline expires even while animation
+          // frames are suspended. Only actual simulation ticks should count.
+          cooldownTime={Infinity}
           onEngineStop={() => {
             // A drag's reheat runs the full cooldown and then lands here.
             // Re-framing on that would re-centre and re-zoom the view seconds
@@ -634,7 +664,7 @@ export default function GraphCanvas({
               skipReframeRef.current = false;
               return;
             }
-            if (anchor) frame(400);
+            frame(400);
           }}
           linkDirectionalParticles={0}
           linkColor={() => cssVar("--graph-edge")}
