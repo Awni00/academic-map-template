@@ -69,14 +69,14 @@ const asidesEffective = isAbstract
   ? "inline"
   : effectiveAsides(asidesRequested, placement.toc.where);
 
-const outgoing = graph.outgoing[node.id] ?? [];
-const backlinkIds = graph.backlinks[node.id] ?? [];
-const relatedIds = [...new Set([...outgoing, ...backlinkIds])].slice(0, 6);
+const linksTo = graph.linksTo[node.id] ?? [];
+const linkedFromIds = graph.linkedFrom[node.id] ?? [];
+const relatedIds = [...new Set([...linksTo, ...linkedFromIds])].slice(0, 6);
 const toLinkedItem = (id: string) => {
   const item = byId.get(id);
   return item ? { id, title: item.title, url: item.url } : null;
 };
-const backlinks = backlinkIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const linkedFrom = linkedFromIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
 const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
@@ -120,29 +120,29 @@ const dateRows = displayDateRows?.length
     : [];
 
 // Slot derivation. The TOC lives in either the left or right grid
-// column; backlinks/related can also live there if explicitly placed.
+// column; linkedFrom/related can also live there if explicitly placed.
 // An abstract has no heading structure to outline, so the TOC is
-// suppressed regardless of placement config. Backlinks, related, and
+// suppressed regardless of placement config. Linked-from, related, and
 // the local graph stay put — graph context is the point of these pages.
 const tocSide: "left" | "right" | "none" =
   isAbstract || placement.toc.where === "none" ? "none" : placement.toc.where;
-const backlinksSide = placement.backlinks.where;
+const linkedFromSide = placement.linkedFrom.where;
 const relatedSide = placement.related.where;
 const localGraphInHeader = placement.localGraph.where === "header";
 const localGraphInFooter = placement.localGraph.where === "footer";
-const backlinksInFooter = backlinksSide === "footer";
+const linkedFromInFooter = linkedFromSide === "footer";
 const relatedInFooter = relatedSide === "footer";
 
 const sideHasContent = (side: "left" | "right"): boolean =>
   (tocSide === side && tocHeadings.length > 0) ||
-  (backlinksSide === side && backlinks.length > 0) ||
+  (linkedFromSide === side && linkedFrom.length > 0) ||
   (relatedSide === side && related.length > 0);
 
 const renderLeft = sideHasContent("left");
 const renderRight = sideHasContent("right");
 
 const renderFooter =
-  localGraphInFooter || backlinksInFooter || relatedInFooter;
+  localGraphInFooter || linkedFromInFooter || relatedInFooter;
 
 const components = {
   Aside,
@@ -169,7 +169,7 @@ const components = {
 
 const renderSide = (side: "left" | "right") => ({
   toc: tocSide === side && tocHeadings.length > 0,
-  backlinks: backlinksSide === side && backlinks.length > 0,
+  linkedFrom: linkedFromSide === side && linkedFrom.length > 0,
   related: relatedSide === side && related.length > 0
 });
 const left = renderSide("left");
@@ -297,11 +297,11 @@ const right = renderSide("right");
                 <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
               </section>
             )}
-            {left.backlinks && (
+            {left.linkedFrom && (
               <section class="sidebar-section">
-                <h2>Backlinks</h2>
+                <h2>Linked from</h2>
                 <ul>
-                  {backlinks.map((item) => (
+                  {linkedFrom.map((item) => (
                     <li><a href={item.url}>{item.title}</a></li>
                   ))}
                 </ul>
@@ -370,11 +370,11 @@ const right = renderSide("right");
                 <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
               </section>
             )}
-            {right.backlinks && (
+            {right.linkedFrom && (
               <section class="sidebar-section">
-                <h2>Backlinks</h2>
+                <h2>Linked from</h2>
                 <ul>
-                  {backlinks.map((item) => (
+                  {linkedFrom.map((item) => (
                     <li><a href={item.url}>{item.title}</a></li>
                   ))}
                 </ul>
@@ -401,7 +401,7 @@ const right = renderSide("right");
         tocConfig={tocConfig}
         tocInFoot={false}
         showLocalGraph={localGraphInFooter}
-        backlinks={backlinksInFooter ? backlinks : []}
+        linkedFrom={linkedFromInFooter ? linkedFrom : []}
         related={relatedInFooter ? related : []}
         bibtex={(entry.data as { bibtex?: string }).bibtex}
       />

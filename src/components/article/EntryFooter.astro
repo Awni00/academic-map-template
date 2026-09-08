@@ -20,7 +20,7 @@ type Props = {
   tocConfig?: TocConfig;
   tocInFoot?: boolean;
   showLocalGraph?: boolean;
-  backlinks?: LinkedItem[];
+  linkedFrom?: LinkedItem[];
   related?: LinkedItem[];
   bibtex?: string;
 };
@@ -32,20 +32,20 @@ const {
   tocConfig = DEFAULT_TOC_CONFIG,
   tocInFoot = false,
   showLocalGraph = false,
-  backlinks = [],
+  linkedFrom = [],
   related = [],
   bibtex
 } = Astro.props;
 
 const tocHeadings = tocInFoot ? filterHeadingsForToc(headings, tocConfig) : [];
-// Backlinks and related lists are suppressed when the map is shown: it already
-// draws those relationships, and `related` is the union of outgoing links and
-// backlinks, so the two lists also duplicated each other.
+// The linked-from and related lists are suppressed when the map is shown: it already
+// draws those relationships, and `related` is the union of linksTo links and
+// linkedFrom, so the two lists also duplicated each other.
 const showLinkLists = !showLocalGraph;
 const hasAny =
   (tocInFoot && tocHeadings.length > 0) ||
   showLocalGraph ||
-  (showLinkLists && (backlinks.length > 0 || related.length > 0)) ||
+  (showLinkLists && (linkedFrom.length > 0 || related.length > 0)) ||
   Boolean(bibtex);
 ---
 
@@ -80,12 +80,12 @@ const hasAny =
           </div>
         </div>
       )}
-      {showLinkLists && backlinks.length > 0 && (
+      {showLinkLists && linkedFrom.length > 0 && (
         <div class="entry-foot-section">
-          <div class="entry-foot-label">Backlinks</div>
+          <div class="entry-foot-label">Linked from</div>
           <div class="entry-foot-content">
             <ul>
-              {backlinks.map((item) => (
+              {linkedFrom.map((item) => (
                 <li>
                   <a href={item.url}>{item.title}</a>
                 </li>

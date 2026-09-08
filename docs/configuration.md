@@ -161,7 +161,7 @@ Common fields:
   sites leave this at the default and opt in per entry with `article.mode` in
   frontmatter; set it here only for a type that is always abstract-only. See
   [Abstract-Only Entries](using-the-template.md#abstract-only-entries).
-- `article.placement`: type-level TOC, local graph, backlinks, and related-entry
+- `article.placement`: type-level TOC, local graph, linked-from, and related-entry
   placement. To hide the local map for a type, set
   `placement.localGraph.where` to `"none"` — that is the only switch; there is
   no separate boolean.

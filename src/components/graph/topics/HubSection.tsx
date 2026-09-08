@@ -20,7 +20,7 @@ type HubSectionProps = {
 
 function linkedEntriesFor(hub: EntryNode, graph: GraphIndex): string[] {
   return [
-    ...new Set([...(graph.backlinks[hub.id] ?? []), ...(graph.outgoing[hub.id] ?? [])])
+    ...new Set([...(graph.linkedFrom[hub.id] ?? []), ...(graph.linksTo[hub.id] ?? [])])
   ].filter((id) => id !== hub.id);
 }
 

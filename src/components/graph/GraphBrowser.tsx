@@ -297,7 +297,11 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
           </div>
 
           <aside className="graph-panel graph-panel--right preview-pane">
-            {selected ? <Preview node={selected} graph={graph} /> : <p className="muted">Select a node.</p>}
+            {selected ? (
+              <Preview node={selected} graph={graph} onSelect={(id) => patch({ selected: id })} />
+            ) : (
+              <p className="muted">Select a node.</p>
+            )}
           </aside>
         </div>
       ) : view === "topics" ? (
@@ -394,9 +398,26 @@ function TagFilter({
   );
 }
 
-function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
-  const backlinks = graph.backlinks[node.id] ?? [];
-  const outgoing = graph.outgoing[node.id] ?? [];
+/**
+ * Panel describing whatever node is selected on the map.
+ *
+ * Its link rows *select*, they do not navigate — the same division of labour
+ * LocalGraphMap already documents. A reader following a chain of connections
+ * is inspecting the graph, not leaving it, and a list row that silently
+ * changes the page costs them the map they were reading. Navigation stays the
+ * one explicit action: "Open page".
+ */
+function Preview({
+  node,
+  graph,
+  onSelect
+}: {
+  node: EntryNode;
+  graph: GraphIndex;
+  onSelect: (id: string) => void;
+}) {
+  const linkedFrom = graph.linkedFrom[node.id] ?? [];
+  const linksTo = graph.linksTo[node.id] ?? [];
   const byId = new Map(graph.nodes.map((item) => [item.id, item]));
   const entryType = getEntryType(node.type);
   return (
@@ -407,7 +428,12 @@ function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
         </span>
         {node.date && <span className="preview-date">{node.date}</span>}
       </div>
-      <h2>{node.title}</h2>
+      {/*
+        Not a heading: this is a panel label that changes on every click, not
+        page structure, and promoting it would put the same title in the
+        document outline twice. Same reasoning as LocalGraphMap's title.
+      */}
+      <p className="preview-title">{node.title}</p>
       {node.summary && <p className="preview-summary">{node.summary}</p>}
       {node.tags.length > 0 && (
         <div className="tag-list">
@@ -419,49 +445,45 @@ function Preview({ node, graph }: { node: EntryNode; graph: GraphIndex }) {
       <a className="open-btn" href={node.url}>
         Open page →
       </a>
-      {outgoing.length > 0 && (
-        <div className="sidebar-section">
-          <h2>Outgoing</h2>
-          <ul>
-            {outgoing.map((id) => {
-              const item = byId.get(id);
-              return (
-                <li key={id}>
-                  {item ? (
-                    <a href={item.url} style={{ color: "inherit", textDecoration: "none" }}>
-                      {item.title}
-                    </a>
-                  ) : (
-                    id
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-      {backlinks.length > 0 && (
-        <div className="sidebar-section">
-          <h2>Backlinks</h2>
-          <ul>
-            {backlinks.map((id) => {
-              const item = byId.get(id);
-              return (
-                <li key={id}>
-                  {item ? (
-                    <a href={item.url} style={{ color: "inherit", textDecoration: "none" }}>
-                      {item.title}
-                    </a>
-                  ) : (
-                    id
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+      <LinkSection label="Links to" ids={linksTo} byId={byId} onSelect={onSelect} />
+      <LinkSection label="Linked from" ids={linkedFrom} byId={byId} onSelect={onSelect} />
     </>
+  );
+}
+
+function LinkSection({
+  label,
+  ids,
+  byId,
+  onSelect
+}: {
+  label: string;
+  ids: string[];
+  byId: Map<string, EntryNode>;
+  onSelect: (id: string) => void;
+}) {
+  if (ids.length === 0) return null;
+  return (
+    <div className="sidebar-section">
+      {/* A label, not an <h2> — see the note on the title above. */}
+      <p className="sidebar-section__label">{label}</p>
+      <ul>
+        {ids.map((id) => {
+          const item = byId.get(id);
+          return (
+            <li key={id}>
+              {item ? (
+                <button type="button" className="preview-link" onClick={() => onSelect(id)}>
+                  {item.title}
+                </button>
+              ) : (
+                id
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

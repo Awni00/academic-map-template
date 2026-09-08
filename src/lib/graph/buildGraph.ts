@@ -105,15 +105,15 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
   }
 
   const nodes = records.map((record) => record.node);
-  const backlinks: Record<string, string[]> = Object.fromEntries(nodes.map((node) => [node.id, []]));
-  const outgoing: Record<string, string[]> = Object.fromEntries(nodes.map((node) => [node.id, []]));
+  const linkedFrom: Record<string, string[]> = Object.fromEntries(nodes.map((node) => [node.id, []]));
+  const linksTo: Record<string, string[]> = Object.fromEntries(nodes.map((node) => [node.id, []]));
   for (const edge of edges) {
-    outgoing[edge.source].push(edge.target);
-    backlinks[edge.target].push(edge.source);
+    linksTo[edge.source].push(edge.target);
+    linkedFrom[edge.target].push(edge.source);
   }
   for (const node of nodes) {
-    outgoing[node.id] = dedupeSorted(outgoing[node.id]);
-    backlinks[node.id] = dedupeSorted(backlinks[node.id]);
+    linksTo[node.id] = dedupeSorted(linksTo[node.id]);
+    linkedFrom[node.id] = dedupeSorted(linkedFrom[node.id]);
   }
 
   if (nodes.length > 0 && edges.length === 0) {
@@ -127,8 +127,8 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
     index: {
       nodes,
       edges,
-      backlinks,
-      outgoing,
+      linkedFrom,
+      linksTo,
       hubs: nodes.filter((node) => isHubType(node.type))
     },
     warnings: options.collectWarnings === false ? [] : warnings

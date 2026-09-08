@@ -25,8 +25,8 @@ export type GraphEdge = {
 export type GraphIndex = {
   nodes: EntryNode[];
   edges: GraphEdge[];
-  backlinks: Record<string, string[]>;
-  outgoing: Record<string, string[]>;
+  linkedFrom: Record<string, string[]>;
+  linksTo: Record<string, string[]>;
   hubs: EntryNode[];
 };
 
@@ -131,7 +131,7 @@ export type WritingEntryLike = {
       placement?: {
         toc?: { where?: "left" | "right" | "sidebar" | "none" };
         localGraph?: { where?: "header" | "footer" | "none" };
-        backlinks?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
+        linkedFrom?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
         related?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
       };
     };

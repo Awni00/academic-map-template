@@ -133,7 +133,7 @@ const writing = defineCollection({
             localGraph: z
               .object({ where: z.enum(["header", "footer", "none"]).optional() })
               .optional(),
-            backlinks: z
+            linkedFrom: z
               .object({ where: z.enum(["left", "right", "footer", "sidebar", "none"]).optional() })
               .optional(),
             related: z

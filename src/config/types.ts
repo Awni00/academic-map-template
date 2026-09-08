@@ -25,7 +25,7 @@ export type TocConfigOverride = Partial<TocConfig>;
 export type PlacementSpec = {
   toc: { where: PlacementToc };
   localGraph: { where: PlacementGraph };
-  backlinks: { where: PlacementNav };
+  linkedFrom: { where: PlacementNav };
   related: { where: PlacementNav };
 };
 

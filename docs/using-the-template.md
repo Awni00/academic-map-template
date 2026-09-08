@@ -183,7 +183,7 @@ article:
 
 Mode is presentation only. Keep `type: "paper"` (or whichever type fits) so the
 entry keeps its usual graph shape and colour, its RSS inclusion, and its place
-in topic lists. An abstract entry is a full graph citizen: backlinks, related
+in topic lists. An abstract entry is a full graph citizen: inbound links, related
 entries, and the local graph all render in the footer as usual.
 
 Because the body is the abstract, the article table of contents is suppressed

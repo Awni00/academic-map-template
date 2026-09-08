@@ -462,7 +462,7 @@
   color: var(--color-muted);
 }
 
-.preview-pane h2 {
+.preview-title {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 22px;
@@ -520,7 +520,7 @@
   margin-bottom: 18px;
 }
 
-.preview-pane .sidebar-section h2 {
+.preview-pane .sidebar-section__label {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
@@ -528,9 +528,6 @@
   text-transform: uppercase;
   color: var(--color-muted);
   margin: 0 0 8px;
-  border-bottom: 0;
-  padding-bottom: 0;
-  display: block;
 }
 
 .preview-pane .sidebar-section ul {
@@ -549,6 +546,32 @@
 
 .preview-pane .sidebar-section li + li {
   border-top: 0;
+}
+
+/* A row selects the node rather than navigating to it, so it is a button —
+   and it has to stop looking like the link it used to be, or the underline
+   promises a page change that no longer happens. */
+.preview-link {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+.preview-link:hover {
+  color: var(--color-accent);
+}
+
+.preview-link:focus-visible {
+  outline: 2px solid var(--color-accent-line);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .open-btn {

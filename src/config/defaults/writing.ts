@@ -67,7 +67,7 @@ export const defaultWritingConfig = {
       default: {
         toc: { where: "left" },
         localGraph: { where: "footer" },
-        backlinks: { where: "footer" },
+        linkedFrom: { where: "footer" },
         related: { where: "footer" }
       },
       byType: {}

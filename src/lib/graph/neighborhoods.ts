@@ -41,17 +41,17 @@ export function graphNeighborhood(index: GraphIndex, id: string, depth: 1 | 2 = 
   const nodes = ordered.slice(0, maxNodes);
   const allowed = new Set(nodes.map((node) => node.id));
   const edges = index.edges.filter((edge) => allowed.has(edge.source) && allowed.has(edge.target));
-  const backlinks: Record<string, string[]> = {};
-  const outgoing: Record<string, string[]> = {};
+  const linkedFrom: Record<string, string[]> = {};
+  const linksTo: Record<string, string[]> = {};
   for (const node of nodes) {
-    backlinks[node.id] = index.backlinks[node.id]?.filter((source) => allowed.has(source)) ?? [];
-    outgoing[node.id] = index.outgoing[node.id]?.filter((target) => allowed.has(target)) ?? [];
+    linkedFrom[node.id] = index.linkedFrom[node.id]?.filter((source) => allowed.has(source)) ?? [];
+    linksTo[node.id] = index.linksTo[node.id]?.filter((target) => allowed.has(target)) ?? [];
   }
   return {
     nodes,
     edges,
-    backlinks,
-    outgoing,
+    linkedFrom,
+    linksTo,
     hubs: nodes.filter((node) => isHubType(node.type))
   };
 }

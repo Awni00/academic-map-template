@@ -17,7 +17,7 @@ import type { WritingEntryLike } from "../graph/types";
 export type ResolvedPlacement = {
   toc: { where: PlacementToc };
   localGraph: { where: PlacementGraph };
-  backlinks: { where: PlacementNav };
+  linkedFrom: { where: PlacementNav };
   related: { where: PlacementNav };
 };
 
@@ -62,11 +62,11 @@ export function resolvePlacement(entry: WritingEntryLike): ResolvedPlacement {
         fromDefault.localGraph?.where ??
         "footer"
     },
-    backlinks: {
+    linkedFrom: {
       where:
-        normalizeNav(fromFrontmatter.backlinks?.where) ??
-        fromType.backlinks?.where ??
-        fromDefault.backlinks?.where ??
+        normalizeNav(fromFrontmatter.linkedFrom?.where) ??
+        fromType.linkedFrom?.where ??
+        fromDefault.linkedFrom?.where ??
         "footer"
     },
     related: {

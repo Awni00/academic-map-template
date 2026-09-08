@@ -73,9 +73,9 @@ describe("graph utilities", () => {
     expect(index.edges).toContainEqual({ source: "learning/paper-one", target: "learning/note-one" });
   });
 
-  it("derives backlinks and neighborhoods", () => {
+  it("derives linkedFrom and neighborhoods", () => {
     const { index } = buildGraphIndex(entries);
-    expect(index.backlinks["learning"]).toEqual(["learning/paper-one"]);
+    expect(index.linkedFrom["learning"]).toEqual(["learning/paper-one"]);
     expect(graphNeighborhood(index, "learning", 1).nodes.map((node) => node.id).sort()).toEqual([
       "learning",
       "learning/note-one",
