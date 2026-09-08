@@ -98,7 +98,7 @@ type GraphCanvasProps = {
  * that the graph's skeleton survives — the whole point of fading rather than
  * removing is that the unselected nodes keep holding the structure up.
  */
-const FADE_ALPHA = 0.32;
+const FADE_ALPHA = 0.42;
 /**
  * Labels are wayfinding, not type membership. Fading a hub's glyph is fine;
  * fading its name off the map costs the reader the only text anchors they
