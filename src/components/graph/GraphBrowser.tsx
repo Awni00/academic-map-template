@@ -36,10 +36,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // in a mount effect instead — same shape as ThemeToggle.
   const [state, setState] = useState<WritingBrowserState>(defaultState);
   const [urlApplied, setUrlApplied] = useState(false);
-  // Where selection has been, so a reader who followed a chain of connections
-  // can retrace it. Rows select rather than navigate, so the browser's own
-  // Back button is not this — it would leave the page entirely.
-  const [history, setHistory] = useState<string[]>([]);
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
   const typeCounts = useMemo(() => {
@@ -128,24 +124,6 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
 
   function patch(patchState: Partial<WritingBrowserState>) {
     setState((current) => ({ ...current, ...patchState }));
-  }
-
-  /** Every deliberate move of the selection, from the canvas or from a row. */
-  function selectNode(id: string, extra?: Partial<WritingBrowserState>) {
-    const current = state.selected ?? selected?.id;
-    if (current && current !== id) {
-      // Capped: a reader clicking around the canvas for a few minutes should
-      // not accumulate an unbounded trail.
-      setHistory((previous) => [...previous, current].slice(-50));
-    }
-    patch({ selected: id, ...extra });
-  }
-
-  function goBack() {
-    const previous = history[history.length - 1];
-    if (!previous) return;
-    setHistory((current) => current.slice(0, -1));
-    patch({ selected: previous });
   }
 
   function toggleType(type: EntryType) {
@@ -256,7 +234,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
               <div className="graph-filters">
                 {/* Doubles as the canvas legend. Each chip carries the glyph
                     its type is actually drawn with, so the vocabulary and the
-                    filter are one control rather than two that drift apart â
+                    filter are one control rather than two that drift apart —
                     and it sits in the chrome instead of overlaying the map. */}
                 <div className="graph-typefilter" role="group" aria-label="Filter by type">
                   {writingConfig.entryTypes
@@ -309,9 +287,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                   // duplicate in text beside them.
                   const node = nodeById.get(id);
                   if (node && isHubType(node.type)) {
-                    selectNode(id, { focus: state.focus === id ? undefined : id });
+                    patch({ selected: id, focus: state.focus === id ? undefined : id });
                   } else {
-                    selectNode(id);
+                    patch({ selected: id });
                   }
                 }}
               />
@@ -324,9 +302,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 node={selected}
                 graph={graph}
                 nodeById={nodeById}
-                onSelect={selectNode}
-                back={history.length > 0 ? nodeById.get(history[history.length - 1]) : undefined}
-                onBack={goBack}
+                onSelect={(id) => patch({ selected: id })}
               />
             ) : (
               <p className="muted">Select a node.</p>
@@ -349,8 +325,8 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
 
 /**
  * Tags behind a disclosure rather than spread across a permanent column.
- * They are the weakest of the three filters â the search field already matches
- * on tags â so they earn a button of chrome, not a third of the viewport.
+ * They are the weakest of the three filters — the search field already matches
+ * on tags — so they earn a button of chrome, not a third of the viewport.
  */
 function TagFilter({
   tags,
@@ -437,13 +413,13 @@ const DIRECTION_TEXT: Record<Direction, string> = {
 };
 // Reciprocal first: two pages that link to each other have the strongest
 // relationship on offer, and splitting the list by direction was precisely
-// what hid it â you had to notice the same title twice to see it at all.
+// what hid it — you had to notice the same title twice to see it at all.
 const DIRECTION_RANK: Record<Direction, number> = { both: 0, out: 1, in: 2 };
 
 /**
  * Panel describing whatever node is selected on the map.
  *
- * Its rows *select*, they do not navigate â the same division of labour
+ * Its rows *select*, they do not navigate — the same division of labour
  * LocalGraphMap already documents. A reader following a chain of connections
  * is inspecting the graph, not leaving it, and a row that silently changes
  * the page costs them the map they were reading. Navigation stays the one
@@ -453,23 +429,19 @@ function Preview({
   node,
   graph,
   nodeById,
-  onSelect,
-  back,
-  onBack
+  onSelect
 }: {
   node: EntryNode;
   graph: GraphIndex;
   nodeById: Map<string, EntryNode>;
   onSelect: (id: string) => void;
-  back?: EntryNode;
-  onBack: () => void;
 }) {
   const entryType = getEntryType(node.type);
   const connections = useMemo(() => {
     const linksTo = new Set(graph.linksTo[node.id] ?? []);
     const linkedFrom = new Set(graph.linkedFrom[node.id] ?? []);
     // One row per connected page, not one per direction. A reciprocal link
-    // used to print twice â for the most connected entry in this corpus that
+    // used to print twice — for the most connected entry in this corpus that
     // meant ten rows carrying five relationships.
     return [...new Set([...linksTo, ...linkedFrom])]
       .map((id) => {
@@ -489,11 +461,6 @@ function Preview({
 
   return (
     <>
-      {back && (
-        <button type="button" className="preview-back" onClick={onBack}>
-          <span aria-hidden="true">←</span> {back.title}
-        </button>
-      )}
       <div className="preview-header">
         <span className="pill" style={{ ["--pill-color" as any]: entryType.graph.color }}>
           {entryType.label}
