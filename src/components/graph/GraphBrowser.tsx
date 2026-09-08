@@ -487,19 +487,6 @@ function Preview({
       );
   }, [graph, node.id, nodeById]);
 
-  // Content is folder-structured and ids are paths, so a page's ancestors are
-  // just its path prefixes. "Where does this sit?" is the map's central
-  // question and the panel could not previously answer it.
-  const trail = useMemo(() => {
-    const parts = node.id.split("/");
-    const out: EntryNode[] = [];
-    for (let i = 1; i < parts.length; i += 1) {
-      const ancestor = nodeById.get(parts.slice(0, i).join("/"));
-      if (ancestor) out.push(ancestor);
-    }
-    return out;
-  }, [node.id, nodeById]);
-
   return (
     <>
       {back && (
@@ -519,18 +506,6 @@ function Preview({
         document outline twice. Same reasoning as LocalGraphMap's title.
       */}
       <p className="preview-title">{node.title}</p>
-      {trail.length > 0 && (
-        <p className="preview-trail">
-          {trail.map((ancestor, index) => (
-            <span key={ancestor.id}>
-              {index > 0 && <span aria-hidden="true"> › </span>}
-              <button type="button" className="preview-trail__link" onClick={() => onSelect(ancestor.id)}>
-                {ancestor.title}
-              </button>
-            </span>
-          ))}
-        </p>
-      )}
       {node.summary && <p className="preview-summary">{node.summary}</p>}
       {node.tags.length > 0 && (
         <div className="tag-list">

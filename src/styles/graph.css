@@ -577,9 +577,9 @@
    down the list, not row by row. */
 .connection-dir {
   flex: 0 0 auto;
-  width: 11px;
+  width: 14px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1;
   color: var(--color-muted-2);
   text-align: center;
@@ -627,28 +627,6 @@
   color: var(--color-fg);
 }
 
-/* Where the page sits in the corpus, derived from its path. */
-.preview-trail {
-  margin: 0 0 10px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-muted);
-  line-height: 1.5;
-}
-
-.preview-trail__link {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  transition: color var(--dur-fast) var(--ease-quiet);
-}
-
-.preview-trail__link:hover {
-  color: var(--color-accent);
-}
 
 .preview-link:hover {
   color: var(--color-accent);
