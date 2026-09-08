@@ -22,6 +22,7 @@ import {
   type DragMode,
   type Grab
 } from "../../lib/graph/nodeDrag";
+import { edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
 
 type HubLayout = "circle" | "row" | "force";
@@ -99,6 +100,11 @@ type GraphCanvasProps = {
  * removing is that the unselected nodes keep holding the structure up.
  */
 const FADE_ALPHA = 0.42;
+/**
+ * Edges outside a focused region. Deeper than the node fade because an edge is
+ * a thin shape: at the node's 0.42 it still reads as a full-strength line.
+ */
+const FADED_EDGE_ALPHA = 0.08;
 /**
  * Labels are wayfinding, not type membership. Fading a hub's glyph is fine;
  * fading its name off the map costs the reader the only text anchors they
@@ -240,6 +246,34 @@ export default function GraphCanvas({
     // "circle": upper-half hubs go above, lower-half hubs go below.
     return yPos != null && yPos > 0 ? "bottom" : "top";
   };
+
+  /**
+   * The edges actually painted, with reciprocal pairs collapsed into one.
+   *
+   * `A→B` and `B→A` are separate entries in the index and used to be stroked
+   * on top of each other — in this template that was 22 of 35 edges drawn
+   * twice, so most of the map rendered at 1 − (1−α)² and the rest at α. That
+   * read as two tiers of edge darkness encoding reciprocity by accident.
+   * Merged, a reciprocal edge is one shaft with an arrowhead at each end,
+   * which states the same fact deliberately.
+   */
+  const drawnEdges = useMemo(() => {
+    const key = (a: string, b: string) => `${a}\u0000${b}`;
+    const present = new Set(graph.edges.map((edge) => key(edge.source, edge.target)));
+    const done = new Set<string>();
+    const out: Array<{ source: string; target: string; bidirectional: boolean }> = [];
+    for (const edge of graph.edges) {
+      if (edge.source === edge.target) continue;
+      if (done.has(key(edge.source, edge.target)) || done.has(key(edge.target, edge.source))) continue;
+      done.add(key(edge.source, edge.target));
+      out.push({
+        source: edge.source,
+        target: edge.target,
+        bidirectional: present.has(key(edge.target, edge.source))
+      });
+    }
+    return out;
+  }, [graph]);
 
   const graphData = useMemo(() => {
     const w = width ?? 800;
@@ -538,6 +572,91 @@ export default function GraphCanvas({
    * layout and scaling it to fill would hand the neighbour count control of
    * how big a node is painted, which is the one thing this view must not do.
    */
+  const liveNodeById = useMemo(
+    // The simulation mutates x/y on these objects in place, so the map stays
+    // valid for the life of a `graphData` and never needs rebuilding per frame.
+    () => new Map((graphData.nodes as Array<{ id: string }>).map((node) => [node.id, node as any])),
+    [graphData]
+  );
+
+  /**
+   * Paint every edge in a fixed number of canvas operations rather than a pair
+   * per edge.
+   *
+   * Canvas composites each drawing operation on its own, so anything covered
+   * twice under a translucent alpha lands at 1 − (1−α)² instead of α. Drawn one
+   * edge at a time that showed up everywhere: the shaft darkened the arrowhead
+   * it passed through, crossings darkened each other, and arrowheads converging
+   * on a hub stacked into a blot. Collected into one path per shape, overlaps
+   * rasterise to a single coverage mask and the whole map holds one density.
+   *
+   * Shafts and heads stay separate operations because a shaft quad and a head
+   * triangle, built the natural way, wind in opposite directions — a single
+   * non-zero fill would punch holes where they meet. `edgeGeometry` keeps the
+   * two from overlapping instead, so the seam between the operations is
+   * invisible.
+   */
+  const drawEdges = useCallback(
+    (ctx: CanvasRenderingContext2D) => {
+      const { width: linkWidth, opacity, directed, arrow } = graphConfig.links;
+      const edgeColor = resolveColor(graphConfig.links.color);
+      const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
+
+      for (const faded of [false, true]) {
+        const shafts = new Path2D();
+        const heads = new Path2D();
+        let painted = false;
+
+        for (const edge of drawnEdges) {
+          if (focusRegion) {
+            const inRegion = focusRegion.has(edge.source) && focusRegion.has(edge.target);
+            if (inRegion === faded) continue;
+          } else if (faded) {
+            continue;
+          }
+
+          const source = liveNodeById.get(edge.source);
+          const target = liveNodeById.get(edge.target);
+          if (!source || !target) continue;
+          if (typeof source.x !== "number" || typeof target.x !== "number") continue;
+
+          const { shafts: runs, heads: tips } = edgeGeometry(source, target, {
+            sourceRadius: nodePaintedRadius(source),
+            targetRadius: nodePaintedRadius(target),
+            directed,
+            bidirectional: edge.bidirectional,
+            arrow
+          });
+
+          for (const run of runs) {
+            shafts.moveTo(run.from.x, run.from.y);
+            shafts.lineTo(run.to.x, run.to.y);
+            painted = true;
+          }
+          for (const tip of tips) {
+            heads.moveTo(tip.tip.x, tip.tip.y);
+            heads.lineTo(tip.left.x, tip.left.y);
+            heads.lineTo(tip.right.x, tip.right.y);
+            heads.closePath();
+            painted = true;
+          }
+        }
+
+        if (!painted) continue;
+        ctx.save();
+        ctx.globalAlpha = faded ? FADED_EDGE_ALPHA : opacity;
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = linkWidth;
+        ctx.lineCap = "butt";
+        ctx.stroke(shafts);
+        ctx.fillStyle = headColor;
+        ctx.fill(heads);
+        ctx.restore();
+      }
+    },
+    [drawnEdges, liveNodeById, focusRegion]
+  );
+
   const frame = (duration: number) => {
     const fg = fgRef.current;
     if (!fg || width == null) return;
@@ -724,55 +843,20 @@ export default function GraphCanvas({
             frame(400);
           }}
           linkDirectionalParticles={0}
-          linkColor={() => cssVar("--graph-edge")}
-          linkWidth={() => 1}
+          // Edges are painted as a batch in `onRenderFramePost`, not one at a
+          // time — see `drawEdges`. `linkColor` and `linkWidth` would be dead
+          // props under "replace" mode, so the config they used to duplicate is
+          // read in that one place instead.
           linkCanvasObjectMode={() => "replace"}
-          linkCanvasObject={(link: any, ctx: CanvasRenderingContext2D) => {
-            const source = link.source;
-            const target = link.target;
-            if (!source || !target) return;
-            // An edge belongs to the focused region only when both of its
-            // ends do. Note this reads `focusRegion`, never `emphasized`: a
-            // type or tag selection must leave the skeleton alone.
-            const faded = focusRegion
-              ? !(focusRegion.has(source.id) && focusRegion.has(target.id))
-              : false;
+          linkCanvasObject={() => {}}
+          // Post, not pre: the frame's simulation tick runs between the two, so
+          // drawing beforehand would place edges at the previous tick's
+          // positions and let them trail visibly behind a dragged node.
+          // `destination-over` puts them back underneath the glyphs.
+          onRenderFramePost={(ctx: CanvasRenderingContext2D) => {
             ctx.save();
-            ctx.globalAlpha = faded ? 0.08 : 0.35;
-            ctx.strokeStyle = cssVar("--graph-edge");
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(source.x, source.y);
-            ctx.lineTo(target.x, target.y);
-            ctx.stroke();
-            if (graphConfig.links.directed) {
-              const dx = target.x - source.x;
-              const dy = target.y - source.y;
-              const len = Math.hypot(dx, dy);
-              if (len > 0) {
-                const ux = dx / len;
-                const uy = dy / len;
-                const radius = nodePaintedRadius(target);
-                const { length: aLen, width: aWidth, relPos, color: aColor } = graphConfig.links.arrow;
-                const boundaryDist = len - radius;
-                if (boundaryDist > 0) {
-                  const tipDistFromSource = boundaryDist * relPos;
-                  const tipX = source.x + ux * tipDistFromSource;
-                  const tipY = source.y + uy * tipDistFromSource;
-                  const baseX = tipX - ux * aLen;
-                  const baseY = tipY - uy * aLen;
-                  const px = -uy;
-                  const py = ux;
-                  ctx.beginPath();
-                  ctx.moveTo(tipX, tipY);
-                  ctx.lineTo(baseX + px * aWidth, baseY + py * aWidth);
-                  ctx.lineTo(baseX - px * aWidth, baseY - py * aWidth);
-                  ctx.closePath();
-                  ctx.fillStyle = aColor === "edge" ? cssVar("--graph-edge") : aColor;
-                  ctx.fill();
-                }
-              }
-            }
+            ctx.globalCompositeOperation = "destination-over";
+            drawEdges(ctx);
             ctx.restore();
           }}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -1059,7 +1143,11 @@ function polygon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: nu
 }
 
 function nodeColor(type: string): string {
-  const color = getEntryType(type).graph.color;
+  return resolveColor(getEntryType(type).graph.color);
+}
+
+/** Canvas cannot resolve `var(--x)`, so config colours are looked up here. */
+function resolveColor(color: string): string {
   const cssVariable = color.match(/^var\((--[^),\s]+)/)?.[1];
   return cssVariable ? cssVar(cssVariable) : color;
 }
