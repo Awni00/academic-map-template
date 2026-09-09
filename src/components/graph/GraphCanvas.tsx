@@ -5,7 +5,10 @@ import {
   isTypeInteractive,
   labelVisibilityFor,
   nodeAtPoint,
-  nodePaintedRadius
+  nodePaintedRadius,
+  resolveLabelSide,
+  type HubLayout,
+  type LabelSide
 } from "../../lib/graph/nodeInteraction";
 import {
   ANCHOR_RING,
@@ -25,9 +28,7 @@ import {
 import { edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
 
-type HubLayout = "circle" | "row" | "force";
 type LabelMode = "config" | "all" | "none";
-type LabelSide = "top" | "bottom" | "auto";
 type SelectedStyle = "outline" | "soft-glow";
 type GraphCanvasProps = {
   graph: GraphIndex;
@@ -218,16 +219,7 @@ export default function GraphCanvas({
     return () => observer.disconnect();
   }, []);
 
-  // Resolve the side a label should appear on, using the prop-or-config
-  // override when explicit, otherwise deriving from the hub layout.
-  const resolveSide = (yPos: number | null): "top" | "bottom" => {
-    if (labelSide === "top") return "top";
-    if (labelSide === "bottom") return "bottom";
-    // "auto"
-    if (hubLayout === "row" || hubLayout === "force") return "top";
-    // "circle": upper-half hubs go above, lower-half hubs go below.
-    return yPos != null && yPos > 0 ? "bottom" : "top";
-  };
+  const resolveSide = (yPos: number | null) => resolveLabelSide(yPos, { labelSide, hubLayout });
 
   /**
    * The edges actually painted, with reciprocal pairs collapsed into one.

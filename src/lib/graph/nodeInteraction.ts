@@ -23,6 +23,17 @@ const MIN_HIT_RADIUS = 8;
 /** Grab room beyond the painted glyph, in graph units. */
 const HIT_PADDING = 3;
 
+/**
+ * How close to the horizontal axis counts as *on* it, in graph units. Far
+ * above the ~1e-14 that trigonometry leaves behind, far below any placement a
+ * layout means.
+ */
+const AXIS_EPSILON = 1e-6;
+
+export type HubLayout = "circle" | "row" | "force";
+export type LabelSide = "top" | "bottom" | "auto";
+export type LabelPlacement = "top" | "bottom";
+
 /** Just the fields these helpers read; the real nodes carry much more. */
 export type PositionedNode = {
   type?: EntryType;
@@ -67,6 +78,29 @@ export function nodeAtPoint<T extends PositionedNode>(
 }
 
 /** Per-type label visibility, treating unknown types as "hover". */
+/**
+ * Which side of a node its painted label sits on.
+ *
+ * `AXIS_EPSILON` is the point of the comparison. Under the circle layout a hub
+ * is pinned at `radius * Math.sin(angle)`, and `Math.sin(Math.PI)` is
+ * 1.2246e-16 rather than 0 — so on an even-numbered circle the left-hand hub
+ * tested as *below* centre by roughly 1e-14 graph units while the right-hand
+ * one, whose sine is exactly 0, tested as above. Two hubs on the same
+ * horizontal line ended up with their labels on opposite sides, decided
+ * entirely by rounding. Anything within the epsilon of the axis is treated as
+ * on it, and takes the same "top" default as every other undecided case.
+ */
+export function resolveLabelSide(
+  yPos: number | null,
+  options: { labelSide: LabelSide; hubLayout: HubLayout }
+): LabelPlacement {
+  if (options.labelSide === "top") return "top";
+  if (options.labelSide === "bottom") return "bottom";
+  // "auto": only the circle layout has an above/below to derive from.
+  if (options.hubLayout === "row" || options.hubLayout === "force") return "top";
+  return yPos != null && yPos > AXIS_EPSILON ? "bottom" : "top";
+}
+
 export function labelVisibilityFor(type?: EntryType): LabelVisibility {
   const cfg = (graphConfig.nodeTypes as Record<string, { labelVisibility?: LabelVisibility }>)[
     type as string

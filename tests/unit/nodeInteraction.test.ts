@@ -6,7 +6,8 @@ import {
   labelVisibilityFor,
   nodeAtPoint,
   nodeHitRadius,
-  nodePaintedRadius
+  nodePaintedRadius,
+  resolveLabelSide
 } from "../../src/lib/graph/nodeInteraction";
 
 const hub = { id: "learning", type: "hub", x: 0, y: 0 };
@@ -69,5 +70,55 @@ describe("config-driven behaviour", () => {
 
   it("treats every type as clickable unless it opts out", () => {
     for (const type of entryTypeIds) expect(isTypeInteractive(type)).toBe(true);
+  });
+});
+
+describe("resolveLabelSide", () => {
+  const auto = { labelSide: "auto", hubLayout: "circle" } as const;
+
+  /** The y a hub is pinned at, exactly as the circle layout computes it. */
+  const circleY = (index: number, count: number, radius = 145) =>
+    Math.sin((2 * Math.PI * index) / count - Math.PI / 2) * radius;
+
+  it("puts hubs on the horizontal axis on the same side", () => {
+    // A hub lands on the axis only when the count divides by 4 — that is where
+    // the circle puts one at 0 degrees and another at 180.
+    for (const count of [4, 8, 12]) {
+      const axis = [count / 4, (3 * count) / 4].map((index) => circleY(index, count));
+      expect(axis.every((y) => Math.abs(y) < 1e-6)).toBe(true);
+      expect(new Set(axis.map((y) => resolveLabelSide(y, auto))).size).toBe(1);
+    }
+  });
+
+  it("does not let trigonometric noise decide a side", () => {
+    // The bug this epsilon exists for. Both hubs are meant to sit exactly on
+    // the axis, but Math.sin(Math.PI) is 1.2246e-16 rather than 0, so the
+    // left-hand one tests as strictly below centre — by about 1e-14 units.
+    const right = circleY(1, 4);
+    const left = circleY(3, 4);
+    expect(right).toBe(0);
+    expect(left).toBeGreaterThan(0);
+    expect(left).toBeLessThan(1e-6);
+    expect(resolveLabelSide(left, auto)).toBe(resolveLabelSide(right, auto));
+  });
+
+  it("still splits hubs that are genuinely above or below centre", () => {
+    expect(resolveLabelSide(circleY(0, 4), auto)).toBe("top");
+    expect(resolveLabelSide(circleY(2, 4), auto)).toBe("bottom");
+  });
+
+  it("honours an explicit side over the layout", () => {
+    expect(resolveLabelSide(500, { labelSide: "top", hubLayout: "circle" })).toBe("top");
+    expect(resolveLabelSide(-500, { labelSide: "bottom", hubLayout: "circle" })).toBe("bottom");
+  });
+
+  it("keeps labels above the node in layouts with no vertical order", () => {
+    for (const hubLayout of ["row", "force"] as const) {
+      expect(resolveLabelSide(500, { labelSide: "auto", hubLayout })).toBe("top");
+    }
+  });
+
+  it("defaults to top for a node with no position yet", () => {
+    expect(resolveLabelSide(null, auto)).toBe("top");
   });
 });
