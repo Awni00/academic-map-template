@@ -10,8 +10,11 @@ export {
   isHubType,
   isSectionType,
   publicationsConfig,
+  lightTheme,
+  darkTheme,
   siteConfig,
   themeConfig,
+  themeRegistry,
   writingConfig
 } from "./resolve";
 export type {
@@ -36,7 +39,12 @@ export type {
   PublicationsConfig,
   SiteConfig,
   SiteConfigOverrides,
+  Theme,
+  ThemeAppearance,
+  ThemeColors,
   ThemeConfig,
+  ThemeInput,
+  ThemeShadows,
   TopicsConfig,
   TopicsDensity,
   TopicsPaginationMode,

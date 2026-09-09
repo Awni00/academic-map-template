@@ -1,0 +1,272 @@
+---
+/**
+ * Every registered theme rendered side by side on one page.
+ *
+ * Exists so the choice of `theme.light` / `theme.dark` can be made against
+ * real type and real components rather than a row of swatches. Each card
+ * scopes one theme's tokens to itself via `themeToCss(theme, selector)` — the
+ * reason that function takes a selector at all — so ten palettes coexist in
+ * one document without any of them touching `:root`.
+ *
+ * Dev-only, routed through `src/pages/fixtures/[fixture].astro`.
+ */
+import { themeRegistry } from "../config/theme";
+import { CONTRAST_TARGETS, checkTheme } from "../lib/theme/checkTheme";
+import { contrastRatio, isCheckable } from "../lib/theme/contrast";
+import { themeToCss } from "../lib/theme/themeCss";
+
+const themes = [...themeRegistry.values()].sort((a, b) =>
+  a.appearance === b.appearance ? a.id.localeCompare(b.id) : a.appearance.localeCompare(b.appearance)
+);
+
+const css = themes
+  .map((theme) => themeToCss(theme, `[data-theme-preview="${theme.id}"]`))
+  .join("\n\n");
+
+/** The tokens worth showing as a strip, in the order they read as a palette. */
+const SWATCHES = [
+  "accent",
+  "danger",
+  "warning",
+  "success",
+  "info",
+  "example",
+  "graph-hub",
+  "graph-paper",
+  "graph-post",
+  "graph-teaching",
+  "graph-project",
+  "graph-edge"
+] as const;
+
+/** Roles whose measured ratio is worth printing under each card. */
+const MEASURED = ["fg", "fg-soft", "muted", "muted-2", "accent"] as const;
+
+const cards = themes.map((theme) => {
+  const report = checkTheme(theme);
+  const measurements = MEASURED.map((token) => {
+    const value = theme.colors[token];
+    return {
+      token,
+      value,
+      ratio: isCheckable(value) ? contrastRatio(value, theme.colors.bg) : null,
+      target: CONTRAST_TARGETS[token]
+    };
+  });
+  return { theme, report, measurements };
+});
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Theme gallery</title>
+    <style is:global set:html={css}></style>
+    <style is:global>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #6b6b6b;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      .gallery {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+        margin: 0 auto;
+        max-width: 1800px;
+      }
+      .card {
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--color-bg);
+        color: var(--color-fg);
+        box-shadow: var(--shadow-md);
+      }
+      .card__bar {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 18px;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-soft);
+      }
+      .card__id {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .card__meta {
+        color: var(--color-muted);
+        font-size: 11px;
+        font-family: ui-monospace, monospace;
+      }
+      .card__body {
+        padding: 18px;
+      }
+      .card__body h2 {
+        margin: 0 0 6px;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+      }
+      .card__prose {
+        margin: 0 0 12px;
+        font-family: ui-serif, Georgia, serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--color-fg-soft);
+      }
+      .card__prose a {
+        color: var(--color-accent);
+      }
+      .card__muted {
+        margin: 0 0 14px;
+        color: var(--color-muted);
+        font-size: 12.5px;
+      }
+      .pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .pill {
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        padding: 3px 10px;
+        color: var(--color-muted);
+        font-size: 11px;
+        background: var(--color-bg-soft);
+      }
+      .callout {
+        border-left: 3px solid var(--color-warning);
+        border-radius: 0 6px 6px 0;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        background: var(--color-bg-soft);
+      }
+      .callout__title {
+        color: var(--color-warning-text);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .callout__text {
+        color: var(--color-fg-soft);
+        font-size: 13px;
+      }
+      .code {
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        background: var(--color-bg-soft);
+        color: var(--color-fg-soft);
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .swatches {
+        display: flex;
+        gap: 3px;
+        margin-bottom: 12px;
+      }
+      .swatch {
+        flex: 1;
+        height: 26px;
+        border-radius: 3px;
+      }
+      .ratios {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--color-muted);
+      }
+      .ratios td {
+        padding: 2px 0;
+        border-top: 1px solid var(--color-border-soft);
+      }
+      .ratios td:last-child {
+        text-align: right;
+      }
+      .status {
+        padding: 8px 18px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        border-top: 1px solid var(--color-border);
+      }
+      .status--ok {
+        color: var(--color-success-text);
+      }
+      .status--bad {
+        color: var(--color-danger-text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="gallery">
+      {
+        cards.map(({ theme, report, measurements }) => (
+          <article class="card" data-theme-preview={theme.id}>
+            <div class="card__bar">
+              <span class="card__id">{theme.id}</span>
+              <span class="card__meta">
+                {theme.appearance} · code: {theme.shiki}
+              </span>
+            </div>
+            <div class="card__body">
+              <h2>{theme.label}</h2>
+              <p class="card__prose">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. This page belongs to{" "}
+                <a href="#">Hub 1</a> and links to <a href="#">Hub 2</a>.
+              </p>
+              <p class="card__muted">Secondary text — captions, bylines, dates.</p>
+              <div class="pills">
+                <span class="pill">example</span>
+                <span class="pill">sample</span>
+                <span class="pill">paper</span>
+              </div>
+              <div class="callout">
+                <div class="callout__title">Example summary</div>
+                <div class="callout__text">A callout rule and its title colour.</div>
+              </div>
+              <div class="code">{`const theme = "${theme.id}";`}</div>
+              <div class="swatches">
+                {SWATCHES.map((token) => (
+                  <span
+                    class="swatch"
+                    title={`${token}: ${theme.colors[token]}`}
+                    style={`background: ${theme.colors[token]}`}
+                  />
+                ))}
+              </div>
+              <table class="ratios">
+                {measurements.map((m) => (
+                  <tr>
+                    <td>{m.token}</td>
+                    <td>{m.value}</td>
+                    <td>
+                      {m.ratio === null ? "derived" : `${m.ratio.toFixed(2)}:1 / ${m.target}`}
+                    </td>
+                  </tr>
+                ))}
+              </table>
+            </div>
+            <div
+              class:list={["status", report.errors.length === 0 ? "status--ok" : "status--bad"]}
+            >
+              {report.errors.length === 0
+                ? `passes · ${report.warnings.length} warning(s)`
+                : report.errors.map((e) => `${e.token}: ${e.message}`).join(" · ")}
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </body>
+</html>

@@ -66,17 +66,22 @@ const renderedPdf = isPdfSource(src)
 
 {
   lightSrc && darkSrc ? (
-    <picture class={fullClassName} style={layoutStyle}>
-      <source srcset={darkSrc} media="(prefers-color-scheme: dark)" />
-      <img
-        class:list={{ "invert-in-dark": invertInDarkMode }}
-        src={lightSrc}
-        alt={alt}
-        loading={loading}
-        decoding={decoding}
-        fetchpriority={fetchpriority}
-      />
-    </picture>
+    // Art-directed pair. The swap is driven by `data-theme` from
+    // `window.__applyTheme` (see BaseLayout) rather than a
+    // `media="(prefers-color-scheme: dark)"` source, because that media query
+    // tracks the operating system and would ignore the site's own toggle.
+    // Only one of the two is ever fetched, unlike a CSS show/hide pair.
+    <img
+      class={fullClassName}
+      style={layoutStyle}
+      src={lightSrc}
+      data-light-src={lightSrc}
+      data-dark-src={darkSrc}
+      alt={alt}
+      loading={loading}
+      decoding={decoding}
+      fetchpriority={fetchpriority}
+    />
   ) : renderedPdf ? (
     <img
       class={fullClassName}

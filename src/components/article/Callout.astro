@@ -36,33 +36,65 @@ type Props = {
   accent?: string;
 };
 
+/**
+ * Callout accents come from the active theme, not from fixed hues.
+ *
+ * Each entry names a semantic role; the theme supplies the colour. Roles come
+ * in pairs — the bare token paints the left rule and the icon (graphic
+ * elements, 3:1) and the `-text` token paints the title (text, 4.5:1) — because
+ * one value tuned to satisfy both turns every palette's gold into brown.
+ *
+ * The seven roles here are the seven distinct colours the previous hardcoded
+ * table used, so the grouping of the thirteen types is unchanged.
+ */
 const calloutTypes = {
-  note: { accent: "rgb(8, 109, 221)", Icon: Pencil },
-  abstract: { accent: "rgb(83, 223, 221)", Icon: ClipboardList },
-  info: { accent: "rgb(8, 109, 221)", Icon: Info },
-  todo: { accent: "rgb(8, 109, 221)", Icon: CircleCheck },
-  tip: { accent: "rgb(83, 223, 221)", Icon: Flame },
-  success: { accent: "rgb(68, 207, 110)", Icon: Check },
-  question: { accent: "rgb(233, 151, 63)", Icon: CircleQuestionMark },
-  warning: { accent: "rgb(233, 151, 63)", Icon: TriangleAlert },
-  failure: { accent: "rgb(251, 70, 76)", Icon: X },
-  danger: { accent: "rgb(251, 70, 76)", Icon: Zap },
-  bug: { accent: "rgb(251, 70, 76)", Icon: Bug },
-  example: { accent: "rgb(120, 82, 238)", Icon: List },
-  quote: { accent: "rgb(158, 158, 158)", Icon: Quote }
-} satisfies Record<CalloutType, { accent: string; Icon: typeof Info }>;
+  note: { role: "accent", Icon: Pencil },
+  abstract: { role: "info", Icon: ClipboardList },
+  info: { role: "accent", Icon: Info },
+  todo: { role: "accent", Icon: CircleCheck },
+  tip: { role: "info", Icon: Flame },
+  success: { role: "success", Icon: Check },
+  question: { role: "warning", Icon: CircleQuestionMark },
+  warning: { role: "warning", Icon: TriangleAlert },
+  failure: { role: "danger", Icon: X },
+  danger: { role: "danger", Icon: Zap },
+  bug: { role: "danger", Icon: Bug },
+  example: { role: "example", Icon: List },
+  quote: { role: "quote", Icon: Quote }
+} satisfies Record<CalloutType, { role: CalloutRole; Icon: typeof Info }>;
 
+type CalloutRole = "accent" | "info" | "success" | "warning" | "danger" | "example" | "quote";
+
+/** Shorthands an author can pass to the `accent` prop, alongside any CSS colour. */
 const accentTokens: Record<string, string> = {
   accent: "var(--color-accent)",
   fg: "var(--color-fg)",
   muted: "var(--color-muted)"
 };
 
+/**
+ * `quote` is deliberately the same in both slots: it is a neutral grey that
+ * already clears the text threshold, so it has no separate `-text` token.
+ */
+function roleColors(role: CalloutRole): { accent: string; text: string } {
+  return {
+    accent: `var(--color-${role})`,
+    text: role === "quote" ? "var(--color-quote)" : `var(--color-${role}-text)`
+  };
+}
+
 const { type, title, accent } = Astro.props;
 const normalizedType = type && type in calloutTypes ? (type as CalloutType) : undefined;
 const config = normalizedType ? calloutTypes[normalizedType] : undefined;
-const resolvedAccent = accent ? (accentTokens[accent] ?? accent) : config?.accent;
-const accentStyle = resolvedAccent ? `--callout-accent: ${resolvedAccent};` : undefined;
+const roleColor = config ? roleColors(config.role) : undefined;
+// An explicit `accent` prop overrides the type's role, and drives both slots:
+// a caller passing one colour means it for the rule and the title alike.
+const overrideAccent = accent ? (accentTokens[accent] ?? accent) : undefined;
+const resolvedAccent = overrideAccent ?? roleColor?.accent;
+const resolvedAccentText = overrideAccent ?? roleColor?.text;
+const accentStyle = resolvedAccent
+  ? `--callout-accent: ${resolvedAccent}; --callout-accent-text: ${resolvedAccentText};`
+  : undefined;
 const Icon = config?.Icon;
 const className = normalizedType ? `callout callout--${normalizedType}` : "callout";
 ---

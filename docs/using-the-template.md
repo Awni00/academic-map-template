@@ -425,6 +425,29 @@ use Markdown tables, `Figure`, `FigureGrid`, `TwoColumns`, `Callout`,
 `Statement`, and `Box` so the
 template owns the visual language.
 
+## Theming
+
+The site's colours come from a pair of named themes — one light, one dark. Ten
+ship with the template (Rosé Pine, Everforest, Catppuccin, GitHub, and the
+template's own Paper/Ink); pick two in `src/site/config.ts`:
+
+```ts
+theme: {
+  light: "dawn",
+  dark: "rose-pine",
+  defaultMode: "system",
+  allowToggle: true
+}
+```
+
+Run the dev server and open `/fixtures/themes` to see all ten against real
+type before choosing. To define your own, add it to `src/site/themes.ts` — only
+`bg`, `fg` and `accent` are required, and `npm run validate` checks whatever you
+write for contrast.
+
+[Theming](theming.md) covers the full token list, custom themes, the contrast
+rules, and code-block highlighting.
+
 ## Article Typography
 
 Article typography is controlled by semantic `--article-*` CSS custom
@@ -452,5 +475,6 @@ npm run validate
 
 Validation catches missing titles, invalid entry types, invalid dates, duplicate
 writing paths, duplicate aliases, reserved writing paths, malformed or colliding
-short URLs, unresolved wikilinks, unresolved frontmatter links, and BibTeX parse
+short URLs, unreadable or malformed theme colours, unresolved wikilinks,
+unresolved frontmatter links, and BibTeX parse
 failures.

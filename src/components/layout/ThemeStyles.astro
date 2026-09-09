@@ -1,0 +1,21 @@
+---
+import { darkTheme, lightTheme, themeConfig } from "../../config/theme";
+import { siteThemeCss, typographyCss } from "../../lib/theme/themeCss";
+
+/**
+ * The site's colour tokens, emitted inline in <head>.
+ *
+ * Inline rather than in `tokens.css` because which two palettes these are is a
+ * config decision, and inline rather than a generated file because a generated
+ * file in the repo is one more thing to keep in sync when pulling template
+ * updates. Only the two selected themes are emitted, so this stays under 2 KB.
+ *
+ * It must come before any stylesheet that consumes the tokens, and before the
+ * first paint, or the page flashes unstyled colour.
+ */
+const css = [typographyCss(themeConfig.typography), siteThemeCss(lightTheme, darkTheme)].join(
+  "\n\n"
+);
+---
+
+<style is:global set:html={css}></style>

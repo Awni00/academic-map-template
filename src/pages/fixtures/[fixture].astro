@@ -18,17 +18,19 @@
  * publishes the fixtures.
  */
 import MediaLayoutControls from "../../fixtures/MediaLayoutControls.astro";
+import ThemeGallery from "../../fixtures/ThemeGallery.astro";
 
 export function getStaticPaths() {
   if (import.meta.env.PROD) return [];
   // Astro hoists getStaticPaths out of this scope, so it cannot read `FIXTURES`
   // below — the names live here and the components live there. Adding a fixture
   // means adding it in both places.
-  return [{ params: { fixture: "media-layout-controls" } }];
+  return [{ params: { fixture: "media-layout-controls" } }, { params: { fixture: "themes" } }];
 }
 
 const FIXTURES = {
-  "media-layout-controls": MediaLayoutControls
+  "media-layout-controls": MediaLayoutControls,
+  themes: ThemeGallery
 } as const;
 
 const { fixture } = Astro.params;

@@ -4,43 +4,13 @@
   --font-sans: var(--font-sans-loaded);
   --font-mono: var(--font-mono-loaded);
 
-  --font-body: var(--font-serif);
-  --font-ui: var(--font-sans);
+  /* --font-body / --font-ui / --font-code come from `theme.typography`,
+     emitted by ThemeStyles.astro. */
 
-  /* Palette — warm white, near-black, soft borders */
-  --color-bg: #ffffff;
-  --color-bg-soft: #faf9f6;
-  --color-bg-soft-2: #f5f4ef;
-  --color-fg: #15161a;
-  --color-fg-soft: #2b2c30;
-  --color-muted: #6b6d72;
-  --color-muted-2: #8e9095;
-  --color-border: #e8e6e0;
-  --color-border-soft: #f0eee8;
-  --color-rule: #d8d6d0;
-  --color-surface: var(--color-bg-soft);
-  --color-surface-strong: var(--color-bg-soft-2);
-
-  --color-accent: #2c5cc5;
-  --color-accent-soft: #eaf0fd;
-  --color-accent-line: #c8d6f3;
-  --color-danger: #b91c1c;
-  --color-warning: #b45309;
-  --color-success: #15803d;
-
-  /* Graph palette (mirrors --accent via fallback) */
-  --graph-hub: #15161a;
-  --graph-sub-hub: #7a808a;
-  --graph-paper: var(--color-accent);
-  --graph-post: #64748b;
-  --graph-note: #94a3b8;
-  --graph-teaching: #15803d;
-  --graph-project: #9333ea;
-  --graph-edge: #b8b6b0;
-
-  /* Placeholder fill (striped profile etc.) */
-  --placeholder-a: #efece5;
-  --placeholder-b: #e6e3dc;
+  /* Colour tokens (--color-*, --graph-*, --placeholder-*) and the shadow
+     stack are emitted per theme by ThemeStyles.astro, from the two themes
+     named in `theme.light` / `theme.dark`. See src/config/defaults/themes.ts
+     and docs/theming.md. */
 
   /* Layout widths */
   --content-narrow: 720px;
@@ -84,43 +54,7 @@
   --radius-sm: 4px;
   --radius-pill: 999px;
 
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
-  --shadow-md: 0 6px 24px rgb(0 0 0 / 0.06);
-  --shadow-soft: 0 20px 60px rgb(0 0 0 / 0.08);
-
   --ease-quiet: cubic-bezier(0.2, 0.6, 0.2, 1);
   --dur-fast: 120ms;
   --dur-base: 200ms;
-}
-
-[data-theme="dark"] {
-  --color-bg: #0c0d10;
-  --color-bg-soft: #131418;
-  --color-bg-soft-2: #1a1c21;
-  --color-fg: #f1f0ec;
-  --color-fg-soft: #d8d6d0;
-  --color-muted: #9a9b9f;
-  --color-muted-2: #74757a;
-  --color-border: #2a2b30;
-  --color-border-soft: #1f2024;
-  --color-rule: #35363b;
-  --color-surface: var(--color-bg-soft);
-  --color-surface-strong: var(--color-bg-soft-2);
-
-  --color-accent: #8ea7ff;
-  --color-accent-soft: #1c2440;
-  --color-accent-line: #2e3a66;
-  --color-warning: #d6a14a;
-  --color-success: #4ade80;
-
-  --graph-hub: #f1f0ec;
-  --graph-sub-hub: #a1a1aa;
-  --graph-edge: #4a4b50;
-
-  --placeholder-a: #1f2024;
-  --placeholder-b: #25262b;
-
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 6px 24px rgb(0 0 0 / 0.4);
-  --shadow-soft: 0 20px 60px rgb(0 0 0 / 0.5);
 }

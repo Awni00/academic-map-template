@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
 import { siteConfig } from "./src/config/site";
+import { darkTheme, lightTheme } from "./src/config/theme";
 import { writingConfig } from "./src/config/writing";
 import { defaultMathMacros } from "./src/lib/math/macros";
 import { rehypeKatexWithMacros } from "./src/lib/math/rehypeKatexWithMacros";
@@ -93,7 +94,16 @@ export default defineConfig({
     remarkPlugins,
     rehypePlugins,
     shikiConfig: {
-      theme: "github-light"
+      // One theme per site theme, picked by the two ids in `theme.light` /
+      // `theme.dark`. `defaultColor: false` makes Shiki emit `--shiki-light`
+      // and `--shiki-dark` custom properties on each token instead of a
+      // literal `style="color:#..."`, which is what lets a code block follow
+      // `data-theme` at all — see the mapping in src/styles/article.css.
+      themes: {
+        light: lightTheme.shiki,
+        dark: darkTheme.shiki
+      },
+      defaultColor: false
     }
   },
   vite: {

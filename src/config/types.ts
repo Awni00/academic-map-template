@@ -1,3 +1,5 @@
+import type { BundledTheme } from "shiki";
+
 export type EntryType = string;
 
 export type EntryTypeRole = "hub" | "section" | "entry";
@@ -199,7 +201,92 @@ export type SiteConfig = {
   };
 };
 
+export type ThemeAppearance = "light" | "dark";
+
+/**
+ * Every colour token a theme supplies, without the `--color-` / `--graph-`
+ * prefixes those become in CSS. Values may be any CSS colour; `defineTheme`
+ * fills omitted ones with `color-mix()` expressions derived from the core.
+ *
+ * The semantic colours come in pairs. The bare token (`warning`) is the
+ * palette's real hue and is only used for graphic elements — callout rules,
+ * icons, graph nodes — where WCAG asks for 3:1. The `-text` variant is
+ * darkened (or lightened) to clear 4.5:1 for the same colour used as text,
+ * such as a callout's title. Tuning a single value to satisfy both turns
+ * every gold in every palette into brown.
+ */
+export type ThemeColors = {
+  bg: string;
+  "bg-soft": string;
+  "bg-soft-2": string;
+  fg: string;
+  "fg-soft": string;
+  muted: string;
+  "muted-2": string;
+  border: string;
+  "border-soft": string;
+  rule: string;
+  accent: string;
+  "accent-soft": string;
+  "accent-line": string;
+  danger: string;
+  "danger-text": string;
+  warning: string;
+  "warning-text": string;
+  success: string;
+  "success-text": string;
+  info: string;
+  "info-text": string;
+  example: string;
+  "example-text": string;
+  quote: string;
+  "graph-hub": string;
+  "graph-sub-hub": string;
+  "graph-paper": string;
+  "graph-post": string;
+  "graph-note": string;
+  "graph-teaching": string;
+  "graph-project": string;
+  "graph-edge": string;
+  "placeholder-a": string;
+  "placeholder-b": string;
+};
+
+/** The shadow stack, which differs between light and dark themes. */
+export type ThemeShadows = {
+  sm: string;
+  md: string;
+  soft: string;
+};
+
+export type Theme = {
+  id: string;
+  label: string;
+  appearance: ThemeAppearance;
+  /**
+   * Theme used for fenced code blocks. Shiki ships with Astro, so any of its
+   * bundled theme ids works — the type gives you the full list on autocomplete.
+   */
+  shiki: BundledTheme;
+  colors: ThemeColors;
+  shadows: ThemeShadows;
+};
+
+/** What a site author writes: the core three, plus anything else they want. */
+export type ThemeInput = {
+  id: string;
+  label: string;
+  appearance: ThemeAppearance;
+  shiki?: BundledTheme;
+  colors: Pick<ThemeColors, "bg" | "fg" | "accent"> & Partial<ThemeColors>;
+  shadows?: Partial<ThemeShadows>;
+};
+
 export type ThemeConfig = {
+  /** Theme id used when the resolved mode is light. */
+  light: string;
+  /** Theme id used when the resolved mode is dark. */
+  dark: string;
   defaultMode: "light" | "dark" | "system";
   allowToggle: boolean;
   typography: {

@@ -1,4 +1,37 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+async function themeToggle(page: Page) {
+  await page.waitForFunction(
+    () =>
+      !document.querySelector('astro-island[component-url*="ThemeToggle"][ssr]'),
+  );
+  return page.getByRole("button", { name: /Theme:/ });
+}
+
+/**
+ * Click the toggle until it reports `preference`.
+ *
+ * Clicking a fixed number of times would assume where the cycle starts, which
+ * depends on the emulated OS scheme once defaultMode is "system". Three clicks
+ * is a full cycle, so this always terminates.
+ */
+async function setThemePreference(
+  page: Page,
+  preference: "light" | "dark" | "system",
+) {
+  const toggle = await themeToggle(page);
+  for (let click = 0; click < 3; click += 1) {
+    const current = await page
+      .locator("html")
+      .getAttribute("data-theme-preference");
+    if (current === preference) break;
+    await toggle.click();
+  }
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-theme-preference",
+    preference,
+  );
+}
 
 async function firstTextLineRect(locator: Locator) {
   return locator.evaluate((element) => {
@@ -380,13 +413,86 @@ test("media layout controls size figures and embeds", async ({ page }) => {
   await expect(page.locator(".fixture-image-comparison")).toBeVisible();
 });
 
-test("theme toggle changes preference", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: /Theme:/ }).click();
-  await expect(page.locator("html")).toHaveAttribute(
-    "data-theme-preference",
-    /light|dark|system/,
-  );
+/*
+ * The default mode is "system", so where the toggle starts depends on the
+ * emulated OS scheme. Pin it, and drive the toggle by target state rather than
+ * by a fixed number of clicks.
+ */
+test.describe("theming", () => {
+  test.use({ colorScheme: "light" });
+
+  test("theme toggle cycles light, dark and system, and repaints the page", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const html = page.locator("html");
+    const toggle = await themeToggle(page);
+
+    await expect(html).toHaveAttribute("data-theme-preference", "system");
+    await expect(html).toHaveAttribute("data-theme", "light");
+
+    await setThemePreference(page, "light");
+    const lightBackground = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
+
+    await toggle.click();
+    await expect(html).toHaveAttribute("data-theme-preference", "dark");
+    await expect(html).toHaveAttribute("data-theme", "dark");
+    const darkBackground = await page.evaluate(
+      () => getComputedStyle(document.body).backgroundColor,
+    );
+    // The original version of this test only checked that the attribute matched
+    // /light|dark|system/, which passed even when nothing changed at all.
+    expect(darkBackground).not.toBe(lightBackground);
+
+    // "system" is reachable only because the toggle cycles through it.
+    await toggle.click();
+    await expect(html).toHaveAttribute("data-theme-preference", "system");
+    await expect(html).toHaveAttribute("data-theme", "light");
+
+    // The choice has to survive a navigation, or the toggle is decorative.
+    await setThemePreference(page, "dark");
+    await page.goto("/writing");
+    await expect(html).toHaveAttribute("data-theme-preference", "dark");
+    await expect(html).toHaveAttribute("data-theme", "dark");
+  });
+
+  test("code blocks recolour with the theme", async ({ page }) => {
+    await page.goto("/writing/hub-1/entry-1");
+    const token = page.locator(".astro-code span").first();
+    await expect(token).toBeVisible();
+
+    await setThemePreference(page, "light");
+    const lightColor = await token.evaluate(
+      (node) => getComputedStyle(node).color,
+    );
+    await setThemePreference(page, "dark");
+    const darkColor = await token.evaluate(
+      (node) => getComputedStyle(node).color,
+    );
+
+    // Shiki runs in `defaultColor: false` mode; if that regresses to a single
+    // baked theme these two are identical and code stays light-on-dark.
+    expect(darkColor).not.toBe(lightColor);
+  });
+
+  test("callout accents come from the theme", async ({ page }) => {
+    await page.goto("/writing/hub-1/entry-1");
+    const callout = page.locator(".callout").first();
+    await expect(callout).toBeVisible();
+
+    await setThemePreference(page, "light");
+    const light = await callout.evaluate(
+      (node) => getComputedStyle(node).borderLeftColor,
+    );
+    await setThemePreference(page, "dark");
+    const dark = await callout.evaluate(
+      (node) => getComputedStyle(node).borderLeftColor,
+    );
+
+    expect(dark).not.toBe(light);
+  });
 });
 
 test("shortUrl redirects to the entry's canonical URL", async ({ page }) => {

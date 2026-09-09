@@ -5,8 +5,9 @@ import "../styles/globals.css";
 
 import Footer from "../components/layout/Footer.astro";
 import Header from "../components/layout/Header.astro";
+import ThemeStyles from "../components/layout/ThemeStyles.astro";
 import { siteConfig } from "../config/site";
-import { themeConfig } from "../config/theme";
+import { darkTheme, lightTheme, themeConfig } from "../config/theme";
 import { siteFontCssVariables } from "../site/fonts";
 
 type Props = {
@@ -26,16 +27,71 @@ const {
 const pageTitle = title === siteConfig.title ? title : `${title} | ${siteConfig.name}`;
 const canonical = new URL(Astro.url.pathname, siteConfig.url).toString();
 const resolvedImage = new URL(image, siteConfig.url).toString();
+/**
+ * The pre-paint theme bootstrap.
+ *
+ * Inline and un-bundled so it runs before the first paint — a module import
+ * would arrive too late and the page would flash the wrong palette. It also
+ * publishes `window.__applyTheme` so `ThemeToggle` and anything else that
+ * changes the theme go through one code path rather than each re-deriving
+ * what "system" means.
+ *
+ * Three jobs: resolve a preference to light/dark, stamp both attributes, and
+ * swap any art-directed images. That last one is why the image swap is here
+ * rather than in a `<picture media="(prefers-color-scheme: dark)">` — that
+ * media query follows the *operating system*, so a reader on a light OS who
+ * switched the site to dark kept getting the light image.
+ */
 const themeScript = `
 (function () {
   var override = ${JSON.stringify(theme)};
   var defaultMode = ${JSON.stringify(themeConfig.defaultMode)};
-  var stored = localStorage.getItem("theme");
-  var storedExplicit = stored === "light" || stored === "dark" ? stored : null;
-  var requested = override && override !== "global" ? override : (storedExplicit || defaultMode);
-  var resolved = requested === "system" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : requested;
-  document.documentElement.dataset.theme = resolved;
-  document.documentElement.dataset.themePreference = requested;
+
+  function resolve(preference) {
+    if (preference === "system") {
+      return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return preference === "dark" ? "dark" : "light";
+  }
+
+  function swapImages(resolved) {
+    if (!document.body) return;
+    var images = document.querySelectorAll("img[data-dark-src]");
+    for (var i = 0; i < images.length; i += 1) {
+      var image = images[i];
+      var wanted = resolved === "dark" ? image.dataset.darkSrc : image.dataset.lightSrc;
+      if (wanted && image.getAttribute("src") !== wanted) image.setAttribute("src", wanted);
+    }
+  }
+
+  function apply(preference, persist) {
+    var resolved = resolve(preference);
+    document.documentElement.dataset.theme = resolved;
+    document.documentElement.dataset.themePreference = preference;
+    if (persist) {
+      try { localStorage.setItem("theme", preference); } catch (error) { /* private mode */ }
+    }
+    swapImages(resolved);
+    return resolved;
+  }
+
+  window.__applyTheme = apply;
+
+  var stored = null;
+  try { stored = localStorage.getItem("theme"); } catch (error) { /* private mode */ }
+  var storedValid = stored === "light" || stored === "dark" || stored === "system" ? stored : null;
+  // A per-page \`theme\` prop outranks the reader's stored choice.
+  apply(override && override !== "global" ? override : (storedValid || defaultMode), false);
+
+  // Images are not in the DOM yet when this runs in <head>.
+  document.addEventListener("DOMContentLoaded", function () {
+    swapImages(document.documentElement.dataset.theme);
+  });
+
+  // Keep "system" honest when the OS flips while the page is open.
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+    if (document.documentElement.dataset.themePreference === "system") apply("system", false);
+  });
 })();
 `;
 ---
@@ -45,6 +101,7 @@ const themeScript = `
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <ThemeStyles />
     <script is:inline set:html={themeScript}></script>
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
@@ -54,6 +111,8 @@ const themeScript = `
     <meta property="og:image" content={resolvedImage} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content={lightTheme.colors.bg} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={darkTheme.colors.bg} media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" />
     <Font cssVariable={siteFontCssVariables.serif} />
     <Font cssVariable={siteFontCssVariables.sans} />

@@ -668,7 +668,11 @@
 /* ── Callout ────────────────────────────────────────────────────────── */
 
 .callout {
+  /* Two slots: the rule and icon take the palette's real hue (a graphic
+     element, 3:1), the title takes the darkened text variant (4.5:1).
+     Callout.astro sets both from the type's semantic role. */
   --callout-accent: var(--color-muted);
+  --callout-accent-text: var(--callout-accent);
   border-left: 3px solid var(--callout-accent);
   padding: 4px 0 4px 20px;
   margin: 28px 0;
@@ -687,7 +691,7 @@
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: 0;
-  color: var(--callout-accent);
+  color: var(--callout-accent-text);
 }
 
 .callout__icon {
@@ -1122,7 +1126,7 @@
   background: var(--color-bg);
   color: var(--color-fg);
   font-weight: 500;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-figure__panels {
@@ -1553,4 +1557,36 @@
   .figure-grid[data-columns="4"] .figure-grid__items {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* ── Code blocks ────────────────────────────────────────────────────── */
+
+/*
+ * Shiki runs in `defaultColor: false` mode (see astro.config.ts), so every
+ * token carries `--shiki-light` / `--shiki-dark` rather than a baked colour.
+ * These two rules are what turn those into the active theme's colours; without
+ * them code blocks render unstyled.
+ */
+[data-theme="light"] .astro-code,
+[data-theme="light"] .astro-code span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+[data-theme="dark"] .astro-code,
+[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+/* The theme's own editor background tends to fight the page; keep the
+   template's surface and let only the tokens carry the theme's colour. */
+.astro-code {
+  background-color: var(--color-bg-soft) !important;
 }

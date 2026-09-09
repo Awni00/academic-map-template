@@ -82,6 +82,20 @@ Substitute the definition of $c$ and cancel identical terms. Proof blocks visual
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.
 </Aside>
 
+Fenced code blocks are highlighted by Shiki, using the theme paired with each
+of the site's two themes, so they recolour with the rest of the page:
+
+```python
+def cumulative(values: list[float]) -> list[float]:
+    """Running total, used in the example figure below."""
+    total = 0.0
+    out = []
+    for value in values:
+        total += value
+        out.append(total)
+    return out
+```
+
 ## Example figures
 
 <FigureGrid columns={2} caption="Two example figures arranged in a responsive grid.">

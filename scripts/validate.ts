@@ -2,7 +2,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 
-import { publicationsConfig, siteConfig, writingConfig, type EntryType } from "../src/config";
+import {
+  publicationsConfig,
+  siteConfig,
+  themeConfig,
+  themeRegistry,
+  writingConfig,
+  type EntryType
+} from "../src/config";
 import { findPlotlyFigureReferences, plotlyHtmlNeedsMathJax } from "../src/lib/article/plotlyValidation";
 import { resolveTocConfig } from "../src/lib/article/toc";
 import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGraph";
@@ -10,6 +17,7 @@ import type { WritingEntryLike } from "../src/lib/graph/types";
 import { parseBibtex } from "../src/lib/publications/parseBibtex";
 import { stripSlashes } from "../src/lib/routes/paths";
 import { collectShortLinks } from "../src/lib/routes/shortLinksSource";
+import { checkThemes } from "../src/lib/theme/checkTheme";
 
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -26,6 +34,7 @@ for (const warning of graphResult.warnings) {
 
 validateRoutes();
 validateShortLinks();
+validateThemes();
 await validatePublications();
 await validatePlotlyFigures(["src/content/writing", "src/content/pages"]);
 
@@ -103,6 +112,41 @@ function validateEntries(entries: WritingEntryLike[]): void {
     } catch (error) {
       errors.push(`${entry.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+}
+
+/**
+ * Check every registered theme — built-ins and anything in `src/site/themes.ts`
+ * — for structure and readability.
+ *
+ * This runs over the whole registry rather than only the two themes in use, so
+ * a site that switches `theme.dark` later does not discover the problem then.
+ * Contrast failures are errors: a token below its threshold is unreadable for
+ * some readers, which is a defect, not a preference. Tokens whose value is a
+ * derived `color-mix()` cannot be measured here and surface as warnings.
+ */
+function validateThemes() {
+  const themes = [...themeRegistry.values()];
+
+  for (const slot of ["light", "dark"] as const) {
+    const id = themeConfig[slot];
+    const theme = themeRegistry.get(id);
+    if (!theme) {
+      errors.push(
+        `theme.${slot} is "${id}", which is not a registered theme ` +
+          `(available: ${[...themeRegistry.keys()].sort().join(", ")}).`
+      );
+    } else if (theme.appearance !== slot) {
+      errors.push(`theme.${slot} is "${id}", but that theme declares appearance "${theme.appearance}".`);
+    }
+  }
+
+  const report = checkThemes(themes);
+  for (const issue of report.errors) {
+    errors.push(`Theme "${issue.theme}" token "${issue.token}": ${issue.message}`);
+  }
+  for (const issue of report.warnings) {
+    warnings.push(`Theme "${issue.theme}" token "${issue.token}": ${issue.message}`);
   }
 }
 

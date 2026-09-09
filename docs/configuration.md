@@ -50,7 +50,8 @@ export const siteConfigOverrides = {
 Supported top-level sections:
 
 - `site`: identity, metadata, links, navigation, homepage sections.
-- `theme`: default color mode, toggle behavior, typography choices.
+- `theme`: which light and dark theme the site uses, default color mode,
+  toggle behavior, typography choices. See [Theming](theming.md).
 - `publications`: BibTeX source, grouping, author highlighting, previews.
 - `graph`: global graph link, layout, and interaction settings.
 - `writing`: writing route, browser behavior, validation behavior.
