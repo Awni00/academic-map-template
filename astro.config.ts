@@ -15,6 +15,7 @@ import { siteConfig } from "./src/config/site";
 import { writingConfig } from "./src/config/writing";
 import { defaultMathMacros } from "./src/lib/math/macros";
 import { rehypeKatexWithMacros } from "./src/lib/math/rehypeKatexWithMacros";
+import { collectShortLinks } from "./src/lib/routes/shortLinksSource";
 import { remarkWikilinks } from "./src/lib/wikilinks/remarkWikilinks";
 import { siteFonts } from "./src/site/fonts";
 import { globalMathMacros, mathMacroPacks } from "./src/site/math";
@@ -31,6 +32,16 @@ import { globalMathMacros, mathMacroPacks } from "./src/site/math";
 const packageRoot = path.dirname(
   path.dirname(createRequire(import.meta.url).resolve("astro/package.json"))
 );
+
+// `shortUrl` frontmatter, collected here because Astro needs `redirects` before
+// the build starts. A conflicting short link is dropped with a warning rather
+// than thrown, so a typo does not take the dev server down mid-edit;
+// `npm run validate` reports the same issue as a hard error.
+const shortLinks = collectShortLinks();
+for (const issue of shortLinks.issues) {
+  console.warn(`[shortUrl] ${issue.message}`);
+}
+const shortLinkPaths = new Set(Object.keys(shortLinks.redirects));
 
 const remarkPlugins: any[] = [
   remarkGfm,
@@ -61,6 +72,7 @@ const rehypePlugins: any[] = [
 export default defineConfig({
   site: siteConfig.url,
   output: "static",
+  redirects: shortLinks.redirects,
   fonts: siteFonts,
   devToolbar: {
     enabled: false
@@ -71,7 +83,11 @@ export default defineConfig({
       rehypePlugins
     }),
     react(),
-    sitemap()
+    // Redirect stubs point at a canonical URL that is itself indexed, so
+    // keeping them out of the sitemap avoids advertising duplicate content.
+    sitemap({
+      filter: (page) => !shortLinkPaths.has(new URL(page).pathname.replace(/\/$/, "") || "/")
+    })
   ],
   markdown: {
     remarkPlugins,

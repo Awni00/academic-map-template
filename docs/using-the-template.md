@@ -68,6 +68,7 @@ Common optional frontmatter:
 ```yaml
 aliases:
   - Alternative Name
+shortUrl: "/project-name"
 date: "2026-05-24"
 displayDates:
   - label: "Page"
@@ -93,6 +94,18 @@ article:
     minDepth: 2
     maxDepth: 4
 ```
+
+`shortUrl` claims a second, shareable path that redirects to the entry. With
+`shortUrl: "/project-name"` on an entry at `src/content/writing/hub-1/project-name.mdx`,
+`yoursite.com/project-name` redirects to `/writing/hub-1/project-name`. Because
+the short URL lives in the entry's own frontmatter, it follows the file if you
+later reorganize the hub tree. Any lowercase, hyphen-separated path works, so
+`shortUrl: "/p/project-name"` is available if you would rather namespace short
+links than spend paths at the site root. A short URL that collides with another
+entry's, with a custom page, or with a built-in route is rejected — `npm run
+validate` fails and names the conflict, and the dev server drops that one link
+with a warning. Short URLs are read when the dev server starts, so restart it
+after adding or changing one.
 
 The `article` block holds per-entry presentation overrides and mirrors the
 `article` block in the entry type registry, so the same keys mean the same
@@ -438,5 +451,6 @@ npm run validate
 ```
 
 Validation catches missing titles, invalid entry types, invalid dates, duplicate
-writing paths, duplicate aliases, reserved writing paths, unresolved wikilinks,
-unresolved frontmatter links, and BibTeX parse failures.
+writing paths, duplicate aliases, reserved writing paths, malformed or colliding
+short URLs, unresolved wikilinks, unresolved frontmatter links, and BibTeX parse
+failures.

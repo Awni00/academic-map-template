@@ -388,3 +388,9 @@ test("theme toggle changes preference", async ({ page }) => {
     /light|dark|system/,
   );
 });
+
+test("shortUrl redirects to the entry's canonical URL", async ({ page }) => {
+  await page.goto("/hub-one");
+  await expect(page).toHaveURL(/\/writing\/hub-1\/?$/);
+  await expect(page.getByRole("heading", { name: "Hub 1" })).toBeVisible();
+});

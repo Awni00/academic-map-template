@@ -9,6 +9,7 @@ import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGra
 import type { WritingEntryLike } from "../src/lib/graph/types";
 import { parseBibtex } from "../src/lib/publications/parseBibtex";
 import { stripSlashes } from "../src/lib/routes/paths";
+import { collectShortLinks } from "../src/lib/routes/shortLinksSource";
 
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -24,6 +25,7 @@ for (const warning of graphResult.warnings) {
 }
 
 validateRoutes();
+validateShortLinks();
 await validatePublications();
 await validatePlotlyFigures(["src/content/writing", "src/content/pages"]);
 
@@ -111,6 +113,10 @@ function validateRoutes(): void {
   for (const item of siteConfig.nav) {
     if (!item.label || !item.href) errors.push("Navigation items require label and href.");
   }
+}
+
+function validateShortLinks(): void {
+  for (const issue of collectShortLinks().issues) errors.push(issue.message);
 }
 
 async function validatePublications(): Promise<void> {

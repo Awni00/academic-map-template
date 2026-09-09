@@ -2,6 +2,7 @@ import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 
 import { entryTypeIds } from "./config";
+import { SHORT_URL_FORMAT_MESSAGE, SHORT_URL_PATTERN } from "./lib/routes/shortLinks";
 
 const entryTypes = entryTypeIds as [string, ...string[]];
 
@@ -70,6 +71,11 @@ const writing = defineCollection({
     title: z.string(),
     type: z.enum(entryTypes),
     slug: z.string().optional(),
+    // Optional second path that redirects to this entry's canonical URL, for
+    // sharing something like /project-name instead of /writing/hub/project-name.
+    // Collected at Astro config load, so a dev server restart is needed after
+    // adding or changing one.
+    shortUrl: z.string().regex(SHORT_URL_PATTERN, SHORT_URL_FORMAT_MESSAGE).optional(),
     aliases: z.array(z.string()).default([]),
     date: dateString,
     displayDates: z.array(displayDate).min(1).optional(),
