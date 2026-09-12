@@ -1,5 +1,5 @@
 import { writingEntryUrl } from "../routes/paths";
-import type { EntryNode, EntryRecord, ResolvedReference, WikilinkMatch, WritingEntryLike } from "./types";
+import type { EntryNode, EntryRecord, ResolvedReference, WritingEntryLike } from "./types";
 
 const INDEX_SEGMENT = "index";
 
@@ -72,20 +72,6 @@ export function entryToRecord<TEntry extends WritingEntryLike>(
       draft: entry.data.draft
     }
   };
-}
-
-export function extractWikilinks(body: string): WikilinkMatch[] {
-  const matches: WikilinkMatch[] = [];
-  const pattern = /\[\[([^\]\n]+)\]\]/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(body))) {
-    const raw = match[0];
-    const [targetPart, labelPart] = match[1].split("|");
-    const target = targetPart.trim();
-    const label = (labelPart ?? targetPart).trim();
-    if (target) matches.push({ raw, target, label });
-  }
-  return matches;
 }
 
 export function createEntryResolver(records: EntryRecord[]) {

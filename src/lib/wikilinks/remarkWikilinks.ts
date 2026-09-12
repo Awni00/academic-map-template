@@ -9,6 +9,7 @@ import {
 } from "../graph/resolveLinks";
 import { writingEntryUrl } from "../routes/paths";
 import type { ResolvedReference, WritingEntryLike } from "../graph/types";
+import { splitWikilink, transformWikilinkText, wikilinkPattern } from "./wikilinks";
 
 type RemarkWikilinksOptions = {
   contentDir: string;
@@ -76,33 +77,21 @@ function listMdxFiles(root: string): string[] {
   return files;
 }
 
+// Which text is eligible is decided in ./wikilinks, shared with the graph, so
+// a link the page renders and an edge the map draws always agree.
 function replaceWikilinkText(node: Node, resolve: FileResolver, writingRoute: string, sourcePath?: string): void {
-  if (!node.children) return;
-  if (["link", "linkReference", "code", "inlineCode", "html"].includes(node.type)) return;
-
-  const nextChildren: Node[] = [];
-  for (const child of node.children) {
-    if (child.type === "text" && typeof child.value === "string") {
-      nextChildren.push(...splitWikilinkText(child.value, resolve, writingRoute, sourcePath));
-    } else {
-      replaceWikilinkText(child, resolve, writingRoute, sourcePath);
-      nextChildren.push(child);
-    }
-  }
-  node.children = nextChildren;
+  transformWikilinkText(node, (value) => splitWikilinkText(value, resolve, writingRoute, sourcePath));
 }
 
 function splitWikilinkText(value: string, resolve: FileResolver, writingRoute: string, sourcePath?: string): Node[] {
   const nodes: Node[] = [];
-  const pattern = /\[\[([^\]\n]+)\]\]/g;
+  const pattern = wikilinkPattern();
   let cursor = 0;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(value))) {
     if (match.index > cursor) nodes.push({ type: "text", value: value.slice(cursor, match.index) });
-    const [targetPart, labelPart] = match[1].split("|");
-    const target = targetPart.trim();
-    const label = (labelPart ?? targetPart).trim();
+    const { target, label } = splitWikilink(match[1]);
     const resolved = resolve(target, sourcePath);
     if (resolved.target) {
       nodes.push({

@@ -4,9 +4,9 @@ import {
   canonicalizeWritingPath,
   dedupeSorted,
   createEntryResolver,
-  entryToRecord,
-  extractWikilinks
+  entryToRecord
 } from "./resolveLinks";
+import { extractWikilinks, isMdxPath } from "../wikilinks/wikilinks";
 import type { EntryRecord, GraphBuildResult, GraphEdge, GraphWarning, WritingEntryLike } from "./types";
 
 export function buildEntryRecords<TEntry extends WritingEntryLike>(
@@ -80,7 +80,7 @@ export function buildGraphIndex<TEntry extends WritingEntryLike>(
       addEdge(edgeKeys, edges, record.node.id, resolved.target.id);
     }
 
-    for (const wikilink of extractWikilinks(record.body)) {
+    for (const wikilink of entryWikilinks(record)) {
       const resolved = resolve(wikilink.target, record.node.path);
       if (!resolved.target) {
         if (resolved.reason === "ambiguous") {
@@ -246,4 +246,14 @@ function reservedWritingPaths(): Set<string> {
 
 function stripSlashes(value: string): string {
   return value.replace(/^\/+|\/+$/g, "");
+}
+
+/** The wikilinks an entry's page will render, naming the entry if it fails to parse. */
+function entryWikilinks(record: EntryRecord) {
+  try {
+    return extractWikilinks(record.body, { mdx: isMdxPath(record.entry.filePath) });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`Could not parse "${record.entry.id}" to find its wikilinks: ${reason}`);
+  }
 }

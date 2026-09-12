@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { buildGraphIndex } from "../../src/lib/graph/buildGraph";
 import {
   canonicalizeWritingPath,
-  extractWikilinks,
   normalizeKey,
   referencePath,
   slugForEntry
 } from "../../src/lib/graph/resolveLinks";
 import { graphNeighborhood } from "../../src/lib/graph/neighborhoods";
+import { extractWikilinks } from "../../src/lib/wikilinks/wikilinks";
 import type { WritingEntryLike } from "../../src/lib/graph/types";
 import { searchWriting, toSearchDocuments } from "../../src/lib/search/writingSearch";
 

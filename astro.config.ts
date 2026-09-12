@@ -8,8 +8,6 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
 
 import { siteConfig } from "./src/config/site";
 import { darkTheme, lightTheme } from "./src/config/theme";
@@ -18,6 +16,7 @@ import { defaultMathMacros } from "./src/lib/math/macros";
 import { rehypeKatexWithMacros } from "./src/lib/math/rehypeKatexWithMacros";
 import { collectShortLinks } from "./src/lib/routes/shortLinksSource";
 import { remarkWikilinks } from "./src/lib/wikilinks/remarkWikilinks";
+import { markdownSyntaxPlugins } from "./src/lib/wikilinks/wikilinks";
 import { siteFonts } from "./src/site/fonts";
 import { globalMathMacros, mathMacroPacks } from "./src/site/math";
 
@@ -44,9 +43,10 @@ for (const issue of shortLinks.issues) {
 }
 const shortLinkPaths = new Set(Object.keys(shortLinks.redirects));
 
+// The syntax plugins come from the same list the writing graph parses with, so
+// what renders as a wikilink and what draws an edge on the map cannot drift.
 const remarkPlugins: any[] = [
-  remarkGfm,
-  remarkMath,
+  ...markdownSyntaxPlugins,
   [remarkWikilinks, { contentDir: "src/content/writing", writingRoute: writingConfig.route }]
 ];
 

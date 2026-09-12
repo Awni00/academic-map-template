@@ -57,6 +57,7 @@ async function readWritingEntries(root: string): Promise<WritingEntryLike[]> {
         const parsed = matter(source);
         return {
           id: path.relative(root, file).replace(/\.[^.]+$/, ""),
+          filePath: file,
           body: parsed.content,
           data: {
             title: parsed.data.title,
