@@ -53,6 +53,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#9333ea",
       "example-text": "#9333ea",
       quote: "#8e9095",
+      "quote-text": "#6b6d72",
 
       "graph-hub": "#15161a",
       "graph-sub-hub": "#7a808a",
@@ -101,6 +102,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#c084fc",
       "example-text": "#c084fc",
       quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
 
       "graph-hub": "#f1f0ec",
       "graph-sub-hub": "#a1a1aa",
@@ -149,6 +151,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#907aa9",
       "example-text": "#7f659c", // tuned from #907aa9
       quote: "#918b9f", // tuned from #9893a5
+      "quote-text": "#716d8c",
 
       "graph-hub": "#575279",
       "graph-sub-hub": "#918b9f", // tuned from #9893a5
@@ -197,6 +200,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#c4a7e7",
       "example-text": "#c4a7e7",
       quote: "#908caa",
+      "quote-text": "#908caa",
 
       "graph-hub": "#e0def4",
       "graph-sub-hub": "#908caa",
@@ -245,6 +249,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#dd61b7", // tuned from #df69ba
       "example-text": "#ca2b99", // tuned from #df69ba
       quote: "#859283", // tuned from #939f91
+      "quote-text": "#677567",
 
       "graph-hub": "#5c6a72",
       "graph-sub-hub": "#859283", // tuned from #939f91
@@ -293,6 +298,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#d699b6",
       "example-text": "#d699b6",
       quote: "#9da9a0",
+      "quote-text": "#9da9a0",
 
       "graph-hub": "#d3c6aa",
       "graph-sub-hub": "#9da9a0",
@@ -341,6 +347,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#8839ef",
       "example-text": "#8839ef",
       quote: "#878a9d", // tuned from #8c8fa1
+      "quote-text": "#6a6d82",
 
       "graph-hub": "#4c4f69",
       "graph-sub-hub": "#878a9d", // tuned from #8c8fa1
@@ -389,6 +396,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#cba6f7",
       "example-text": "#cba6f7",
       quote: "#a6adc8",
+      "quote-text": "#a6adc8",
 
       "graph-hub": "#cdd6f4",
       "graph-sub-hub": "#9399b2",
@@ -437,6 +445,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#8250df",
       "example-text": "#8250df",
       quote: "#818b98",
+      "quote-text": "#59636e",
 
       "graph-hub": "#1f2328",
       "graph-sub-hub": "#818b98",
@@ -485,6 +494,7 @@ export const builtInThemes: readonly Theme[] = [
       example: "#bc8cff",
       "example-text": "#bc8cff",
       quote: "#9198a1",
+      "quote-text": "#9198a1",
 
       "graph-hub": "#e6edf3",
       "graph-sub-hub": "#8b949e",

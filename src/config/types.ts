@@ -240,6 +240,7 @@ export type ThemeColors = {
   example: string;
   "example-text": string;
   quote: string;
+  "quote-text": string;
   "graph-hub": string;
   "graph-sub-hub": string;
   "graph-paper": string;

@@ -15,6 +15,8 @@ import {
   Zap
 } from "@lucide/astro";
 
+import { CALLOUT_ROLE_COLORS, type CalloutRole } from "./calloutRoles";
+
 type CalloutType =
   | "note"
   | "abstract"
@@ -45,7 +47,8 @@ type Props = {
  * one value tuned to satisfy both turns every palette's gold into brown.
  *
  * The seven roles here are the seven distinct colours the previous hardcoded
- * table used, so the grouping of the thirteen types is unchanged.
+ * table used, so the grouping of the thirteen types is unchanged. The tokens
+ * behind each role live in `calloutRoles.ts`.
  */
 const calloutTypes = {
   note: { role: "accent", Icon: Pencil },
@@ -63,8 +66,6 @@ const calloutTypes = {
   quote: { role: "quote", Icon: Quote }
 } satisfies Record<CalloutType, { role: CalloutRole; Icon: typeof Info }>;
 
-type CalloutRole = "accent" | "info" | "success" | "warning" | "danger" | "example" | "quote";
-
 /** Shorthands an author can pass to the `accent` prop, alongside any CSS colour. */
 const accentTokens: Record<string, string> = {
   accent: "var(--color-accent)",
@@ -72,21 +73,10 @@ const accentTokens: Record<string, string> = {
   muted: "var(--color-muted)"
 };
 
-/**
- * `quote` is deliberately the same in both slots: it is a neutral grey that
- * already clears the text threshold, so it has no separate `-text` token.
- */
-function roleColors(role: CalloutRole): { accent: string; text: string } {
-  return {
-    accent: `var(--color-${role})`,
-    text: role === "quote" ? "var(--color-quote)" : `var(--color-${role}-text)`
-  };
-}
-
 const { type, title, accent } = Astro.props;
 const normalizedType = type && type in calloutTypes ? (type as CalloutType) : undefined;
 const config = normalizedType ? calloutTypes[normalizedType] : undefined;
-const roleColor = config ? roleColors(config.role) : undefined;
+const roleColor = config ? CALLOUT_ROLE_COLORS[config.role] : undefined;
 // An explicit `accent` prop overrides the type's role, and drives both slots:
 // a caller passing one colour means it for the rule and the title alike.
 const overrideAccent = accent ? (accentTokens[accent] ?? accent) : undefined;

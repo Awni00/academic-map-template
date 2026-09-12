@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { CALLOUT_ROLE_COLORS } from "../../src/components/article/calloutRoles";
 import { builtInThemes } from "../../src/config/defaults/themes";
 import { darkTheme, lightTheme, themeConfig, themeRegistry } from "../../src/config/resolve";
 import { CONTRAST_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
@@ -11,7 +12,7 @@ describe("contrast", () => {
   it("measures the WCAG reference pairs", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
     expect(contrastRatio("#ffffff", "#ffffff")).toBeCloseTo(1, 5);
-    // Order must not matter.
+    // For two opaque colours, order must not matter.
     expect(contrastRatio("#777777", "#ffffff")).toBeCloseTo(
       contrastRatio("#ffffff", "#777777"),
       10
@@ -19,14 +20,26 @@ describe("contrast", () => {
   });
 
   it("parses the colour syntaxes a theme may use", () => {
-    expect(parseColor("#fff")).toEqual({ r: 255, g: 255, b: 255 });
-    expect(parseColor("#1E66F5")).toEqual({ r: 30, g: 102, b: 245 });
-    expect(parseColor("rgb(8, 109, 221)")).toEqual({ r: 8, g: 109, b: 221 });
-    expect(parseColor("rgb(8 109 221 / 0.5)")).toEqual({
-      r: 8,
-      g: 109,
-      b: 221
-    });
+    expect(parseColor("#fff")).toEqual({ r: 255, g: 255, b: 255, alpha: 1 });
+    expect(parseColor("#1E66F5")).toEqual({ r: 30, g: 102, b: 245, alpha: 1 });
+    expect(parseColor("rgb(8, 109, 221)")).toEqual({ r: 8, g: 109, b: 221, alpha: 1 });
+    expect(parseColor("rgb(8 109 221 / 0.5)")).toEqual({ r: 8, g: 109, b: 221, alpha: 0.5 });
+    expect(parseColor("rgba(8, 109, 221, 25%)")).toEqual({ r: 8, g: 109, b: 221, alpha: 0.25 });
+    expect(parseColor("#0000")?.alpha).toBe(0);
+    expect(parseColor("#00000080")?.alpha).toBeCloseTo(128 / 255, 10);
+  });
+
+  // The regression: alpha used to be dropped, so this measured 18.42:1 and
+  // passed every threshold while rendering close to invisible.
+  it("measures a translucent foreground as it is actually seen", () => {
+    const seen = contrastRatio("rgba(20, 20, 20, 0.15)", "#ffffff");
+    expect(seen).toBeLessThan(1.5);
+    expect(seen).toBeCloseTo(contrastRatio("#dcdcdc", "#ffffff"), 1);
+    expect(contrastRatio("rgb(0 0 0 / 0)", "#ffffff")).toBeCloseTo(1, 5);
+  });
+
+  it("refuses to measure against a translucent background", () => {
+    expect(() => contrastRatio("#000000", "rgba(255, 255, 255, 0.5)")).toThrow(/translucent/);
   });
 
   it("reports derived and malformed values as unmeasurable rather than throwing", () => {
@@ -73,6 +86,59 @@ describe("built-in themes", () => {
   });
 });
 
+describe("checkTheme", () => {
+  const base = builtInThemes.find((candidate) => candidate.id === "paper")!;
+
+  it("fails a translucent token that would render unreadably", () => {
+    const report = checkTheme({
+      ...base,
+      colors: { ...base.colors, muted: "rgba(20, 20, 20, 0.15)" }
+    });
+    expect(report.errors.map((issue) => issue.token)).toContain("muted");
+  });
+
+  it("rejects a translucent background instead of throwing", () => {
+    const report = checkTheme({
+      ...base,
+      colors: { ...base.colors, bg: "rgba(255, 255, 255, 0.5)" }
+    });
+    expect(report.errors).toEqual([
+      expect.objectContaining({ token: "bg", message: expect.stringMatching(/opaque/) })
+    ]);
+  });
+});
+
+describe("callout roles", () => {
+  const referenced = (value: string) => value.match(/^var\((--[a-z0-9-]+)\)$/)?.[1];
+
+  // Callout.astro once built `var(--color-${role}-text)`, which pointed three
+  // callout types at a token no theme defines. Every variable a role names
+  // must exist in every theme's emitted CSS.
+  it.each(builtInThemes.map((theme) => [theme.id, theme] as const))(
+    "%s defines every token a callout role uses",
+    (_id, theme) => {
+      const css = themeToCss(theme, ":root");
+      for (const [role, slots] of Object.entries(CALLOUT_ROLE_COLORS)) {
+        for (const value of Object.values(slots)) {
+          const name = referenced(value);
+          expect(name, `${role}: ${value}`).toBeDefined();
+          expect(css, `${role} uses ${name}`).toContain(`${name}:`);
+        }
+      }
+    }
+  );
+
+  it("paints every title with a token held to the text threshold", () => {
+    for (const [role, { text }] of Object.entries(CALLOUT_ROLE_COLORS)) {
+      const token = referenced(text)!.replace(/^--color-/, "");
+      expect(
+        CONTRAST_TARGETS[token as keyof typeof CONTRAST_TARGETS],
+        `${role} title uses ${token}`
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 describe("defineTheme", () => {
   const minimal = defineTheme({
     id: "minimal",
@@ -92,6 +158,10 @@ describe("defineTheme", () => {
     expect(isCheckable(minimal.colors.success)).toBe(true);
     // A three-colour theme must still pass validation.
     expect(checkTheme(minimal).errors).toEqual([]);
+  });
+
+  it("gives the quote title the theme's readable grey", () => {
+    expect(minimal.colors["quote-text"]).toBe(minimal.colors.muted);
   });
 
   it("keeps explicit values and picks the appearance's shadow stack", () => {

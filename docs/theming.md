@@ -100,7 +100,7 @@ Each becomes a CSS custom property: `bg` → `--color-bg`, `graph-hub` →
 | Text         | `fg`, `fg-soft`, `muted`, `muted-2`                                                                                      |
 | Lines        | `border`, `border-soft`, `rule`                                                                                          |
 | Accent       | `accent`, `accent-soft`, `accent-line`                                                                                   |
-| Semantics    | `danger`, `warning`, `success`, `info`, `example`, `quote`, each with a `-text` variant except `quote`                   |
+| Semantics    | `danger`, `warning`, `success`, `info`, `example`, `quote`, each with a `-text` variant                                  |
 | Graph        | `graph-hub`, `graph-sub-hub`, `graph-paper`, `graph-post`, `graph-note`, `graph-teaching`, `graph-project`, `graph-edge` |
 | Placeholders | `placeholder-a`, `placeholder-b`                                                                                         |
 
@@ -178,6 +178,12 @@ Error: Theme "seminar" token "muted": #c9c9c9 on #fffdf8 is 1.66:1, below the 4.
 Derived `color-mix()` values cannot be measured — only a browser can resolve
 them — so they are reported as "verify it by eye" rather than passing silently.
 If you want a token checked, state it as a literal colour.
+
+Translucent colours are fine for any token except `bg`. They are measured as
+they are actually seen, blended over `bg`, so `rgba(20, 20, 20, 0.15)` on white
+counts as the pale grey it renders as, not as near-black. `bg` itself must be
+opaque, because everything else is measured against it and whatever would
+show through it is unknowable.
 
 The ten built-ins are ports of editor themes, tuned to clear these thresholds.
 Editor palettes are designed for monospace at a comfortable zoom and several of

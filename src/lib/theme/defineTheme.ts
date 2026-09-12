@@ -32,6 +32,7 @@ export function defineTheme(input: ThemeInput): Theme {
   const success = pick("success", hues.success);
   const info = pick("info", hues.info);
   const example = pick("example", hues.example);
+  const muted = pick("muted", mix(fg, bg, 38));
 
   const resolved: ThemeColors = {
     bg,
@@ -39,7 +40,7 @@ export function defineTheme(input: ThemeInput): Theme {
     "bg-soft-2": pick("bg-soft-2", mix(bg, fg, 6)),
     fg,
     "fg-soft": pick("fg-soft", mix(fg, bg, 12)),
-    muted: pick("muted", mix(fg, bg, 38)),
+    muted,
     "muted-2": pick("muted-2", mix(fg, bg, 55)),
     border: pick("border", mix(bg, fg, 12)),
     "border-soft": pick("border-soft", mix(bg, fg, 7)),
@@ -58,6 +59,8 @@ export function defineTheme(input: ThemeInput): Theme {
     example,
     "example-text": pick("example-text", example),
     quote: pick("quote", mix(fg, bg, 45)),
+    // The quote rule is a quiet grey; its title reuses the readable one.
+    "quote-text": pick("quote-text", muted),
     "graph-hub": pick("graph-hub", fg),
     "graph-sub-hub": pick("graph-sub-hub", mix(fg, bg, 45)),
     "graph-paper": pick("graph-paper", accent),

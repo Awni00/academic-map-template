@@ -5,7 +5,6 @@ import matter from "gray-matter";
 import {
   publicationsConfig,
   siteConfig,
-  themeConfig,
   themeRegistry,
   writingConfig,
   type EntryType
@@ -126,22 +125,11 @@ function validateEntries(entries: WritingEntryLike[]): void {
  * derived `color-mix()` cannot be measured here and surface as warnings.
  */
 function validateThemes() {
-  const themes = [...themeRegistry.values()];
-
-  for (const slot of ["light", "dark"] as const) {
-    const id = themeConfig[slot];
-    const theme = themeRegistry.get(id);
-    if (!theme) {
-      errors.push(
-        `theme.${slot} is "${id}", which is not a registered theme ` +
-          `(available: ${[...themeRegistry.keys()].sort().join(", ")}).`
-      );
-    } else if (theme.appearance !== slot) {
-      errors.push(`theme.${slot} is "${id}", but that theme declares appearance "${theme.appearance}".`);
-    }
-  }
-
-  const report = checkThemes(themes);
+  // An unknown or wrong-appearance `theme.light` / `theme.dark` id never
+  // reaches here: src/config/resolve.ts rejects it when this script imports
+  // the config, the same way it rejects a bad entry type. That throw is what
+  // also stops `astro build` and the dev server, which never run this script.
+  const report = checkThemes([...themeRegistry.values()]);
   for (const issue of report.errors) {
     errors.push(`Theme "${issue.theme}" token "${issue.token}": ${issue.message}`);
   }

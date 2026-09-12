@@ -1,5 +1,5 @@
 import type { Theme, ThemeColors } from "../../config/types";
-import { contrastRatio, isCheckable, isDarkBackground } from "./contrast";
+import { contrastRatio, isCheckable, isDarkBackground, isOpaque } from "./contrast";
 
 export type ThemeIssue = { theme: string; token: string; message: string };
 export type ThemeReport = { errors: ThemeIssue[]; warnings: ThemeIssue[] };
@@ -24,6 +24,7 @@ export const CONTRAST_TARGETS = {
   "success-text": 4.5,
   "info-text": 4.5,
   "example-text": 4.5,
+  "quote-text": 4.5,
   danger: 3,
   warning: 3,
   success: 3,
@@ -74,6 +75,7 @@ const REQUIRED_TOKENS: readonly (keyof ThemeColors)[] = [
   "example",
   "example-text",
   "quote",
+  "quote-text",
   "graph-hub",
   "graph-sub-hub",
   "graph-paper",
@@ -113,6 +115,12 @@ export function checkTheme(theme: Theme): ThemeReport {
   const background = theme.colors.bg;
   if (!isCheckable(background)) {
     errors.push(at("bg", `background "${background}" must be a literal colour, not a derived one`));
+    return { errors, warnings };
+  }
+  // Every other token is measured against `bg`, and a translucent page
+  // background shows the browser canvas through it, which we cannot know.
+  if (!isOpaque(background)) {
+    errors.push(at("bg", `background "${background}" must be fully opaque`));
     return { errors, warnings };
   }
 
