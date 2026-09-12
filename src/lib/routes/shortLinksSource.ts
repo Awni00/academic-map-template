@@ -53,9 +53,13 @@ export function readShortLinkSources(dir: string): ShortLinkSource[] {
   return listContentIds(dir).map((file) => {
     const parsed = matter(fs.readFileSync(file, "utf8"));
     const shortUrl = parsed.data.shortUrl;
+    // A draft is not built, so its short URL would redirect to a 404 and
+    // publish the draft's path. Its id is still returned so its route stays
+    // reserved for when it is published.
+    const isDraft = parsed.data.draft === true;
     return {
       id: toId(dir, file),
-      data: { shortUrl: typeof shortUrl === "string" ? shortUrl : undefined }
+      data: { shortUrl: typeof shortUrl === "string" && !isDraft ? shortUrl : undefined }
     };
   });
 }

@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -6,6 +9,7 @@ import {
   resolveShortLinks,
   type ShortLinkSource
 } from "../../src/lib/routes/shortLinks";
+import { collectShortLinks } from "../../src/lib/routes/shortLinksSource";
 
 const reserved = buildReservedRoutes({
   writingIds: ["hub-1/index", "hub-1/entry-1"],
@@ -82,5 +86,23 @@ describe("short links", () => {
     );
     expect(redirects).toEqual({ "/project-name": "/writing/b" });
     expect(issues).toHaveLength(1);
+  });
+
+  it("skips a draft's short URL, since the draft's page is not built", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "short-links-"));
+    const writingDir = path.join(root, "src/content/writing/hub");
+    fs.mkdirSync(writingDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(writingDir, "draft.mdx"),
+      "---\ntitle: Draft\ntype: note\ndraft: true\nshortUrl: /draft\n---\n"
+    );
+    fs.writeFileSync(
+      path.join(writingDir, "published.mdx"),
+      "---\ntitle: Published\ntype: note\nshortUrl: /published\n---\n"
+    );
+
+    const { redirects, issues } = collectShortLinks({ root });
+    expect(redirects).toEqual({ "/published": "/writing/hub/published" });
+    expect(issues).toEqual([]);
   });
 });
