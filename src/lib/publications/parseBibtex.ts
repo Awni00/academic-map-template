@@ -41,17 +41,63 @@ const BIBTEX_FIELD_ORDER = [
   "primaryclass"
 ] as const;
 
+export type BibtexIssue = {
+  /** 1-based line in the source where the offending entry starts. */
+  line: number;
+  message: string;
+};
+
+/**
+ * Publications for the site, keeping every entry that parses.
+ *
+ * A malformed entry is skipped and reported as a build warning rather than
+ * thrown: the homepage and /publications both call this at build time, and one
+ * bad line in a bibliography should not take the whole site down with it.
+ * `npm run validate` still fails on the same problems, listing all of them.
+ */
 export async function loadPublications(source = publicationsConfig.source): Promise<Publication[]> {
   const bibtex = await fs.readFile(source, "utf8");
-  return parseBibtex(bibtex);
+  const { publications, issues } = parseBibtexWithIssues(bibtex);
+  for (const issue of issues) {
+    console.warn(`[publications] ${source}:${issue.line}: ${issue.message} This entry was skipped.`);
+  }
+  return publications;
 }
 
+/** Strict parse: throws on the first problem. */
 export function parseBibtex(input: string): Publication[] {
-  return parseRawBibtex(input).map(normalizePublication);
+  const { publications, issues } = parseBibtexWithIssues(input);
+  if (issues.length > 0) throw new Error(`Line ${issues[0].line}: ${issues[0].message}`);
+  return publications;
+}
+
+/** Parse everything that can be parsed, and report what could not. */
+export function parseBibtexWithIssues(input: string): { publications: Publication[]; issues: BibtexIssue[] } {
+  const { entries, issues } = scanBibtex(input);
+  return { publications: entries.map(normalizePublication), issues };
 }
 
 export function parseRawBibtex(input: string): RawEntry[] {
+  const { entries, issues } = scanBibtex(input);
+  if (issues.length > 0) throw new Error(`Line ${issues[0].line}: ${issues[0].message}`);
+  return entries;
+}
+
+/**
+ * Walk a .bib file entry by entry.
+ *
+ * Three block types are not publications and are handled as BibTeX does:
+ * `@string` defines an abbreviation later fields may use, and `@comment` and
+ * `@preamble` are skipped. Reference managers write all three — JabRef ends
+ * every file with an `@comment` — so treating them as entries without a key
+ * rejected ordinary bibliographies.
+ *
+ * Text between entries is a comment in BibTeX and is ignored.
+ */
+function scanBibtex(input: string): { entries: RawEntry[]; issues: BibtexIssue[] } {
   const entries: RawEntry[] = [];
+  const issues: BibtexIssue[] = [];
+  const macros = new Map<string, string>();
   let cursor = 0;
 
   while (cursor < input.length) {
@@ -64,23 +110,62 @@ export function parseRawBibtex(input: string): RawEntry[] {
     }
 
     const type = typeMatch[1].toLowerCase();
+    const line = lineAt(input, at);
     const openIndex = at + typeMatch[0].length - 1;
     const closeIndex = findClosing(input, openIndex);
     if (closeIndex === -1) {
-      throw new Error(`Malformed BibTeX entry starting at character ${at}.`);
+      issues.push({ line, message: `BibTeX @${type} is never closed.` });
+      // Everything after an unclosed entry would otherwise be swallowed by it.
+      // Resume at the next entry that starts a line, so one missing brace
+      // loses one entry instead of the rest of the file.
+      const next = /\n[ \t]*@/g;
+      next.lastIndex = at + 1;
+      const resume = next.exec(input);
+      cursor = resume ? resume.index + 1 : input.length;
+      continue;
     }
+    cursor = closeIndex + 1;
+
+    if (type === "comment" || type === "preamble") continue;
 
     const raw = input.slice(at, closeIndex + 1);
     const body = input.slice(openIndex + 1, closeIndex);
+
+    if (type === "string") {
+      try {
+        for (const [name, value] of Object.entries(parseFields(body, macros))) {
+          macros.set(name, value);
+        }
+      } catch (error) {
+        issues.push({ line, message: `BibTeX @string: ${messageOf(error)}` });
+      }
+      continue;
+    }
+
     const comma = body.indexOf(",");
-    if (comma === -1) throw new Error(`BibTeX entry "${type}" is missing a key.`);
+    if (comma === -1) {
+      issues.push({ line, message: `BibTeX @${type} entry is missing a citation key.` });
+      continue;
+    }
     const key = body.slice(0, comma).trim();
-    const fields = parseFields(body.slice(comma + 1));
-    entries.push({ type, key, fields, raw });
-    cursor = closeIndex + 1;
+    try {
+      entries.push({ type, key, fields: parseFields(body.slice(comma + 1), macros), raw });
+    } catch (error) {
+      issues.push({ line, message: `BibTeX entry "${key}": ${messageOf(error)}` });
+    }
   }
 
-  return entries;
+  return { entries, issues };
+}
+
+function lineAt(input: string, offset: number): number {
+  let line = 1;
+  for (let index = 0; index < offset; index += 1) if (input[index] === "\n") line += 1;
+  return line;
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function normalizePublication(entry: RawEntry): Publication {
@@ -120,7 +205,7 @@ function normalizePublication(entry: RawEntry): Publication {
   };
 }
 
-function parseFields(input: string): Record<string, string> {
+function parseFields(input: string, macros: ReadonlyMap<string, string>): Record<string, string> {
   const fields: Record<string, string> = {};
   let cursor = 0;
 
@@ -133,52 +218,95 @@ function parseFields(input: string): Record<string, string> {
     const name = nameMatch[0].toLowerCase();
     cursor += name.length;
     cursor = skipWhitespace(input, cursor);
-    if (input[cursor] !== "=") throw new Error(`BibTeX field "${name}" is missing "=".`);
+    if (input[cursor] !== "=") throw new Error(`field "${name}" is missing "=".`);
     cursor += 1;
     cursor = skipWhitespace(input, cursor);
 
-    const parsed = readValue(input, cursor);
-    fields[name] = parsed.value;
-    cursor = parsed.end;
+    // A value may be several parts joined with `#`: `journal = pami # " (ext.)"`.
+    let value = "";
+    for (;;) {
+      const part = readValue(input, cursor, macros);
+      value += part.value;
+      cursor = skipWhitespace(input, part.end);
+      if (input[cursor] !== "#") break;
+      cursor = skipWhitespace(input, cursor + 1);
+    }
+    fields[name] = value;
   }
 
   return fields;
 }
 
-function readValue(input: string, start: number): { value: string; end: number } {
+function readValue(
+  input: string,
+  start: number,
+  macros: ReadonlyMap<string, string>
+): { value: string; end: number } {
   const first = input[start];
   if (first === "{") {
     const close = findClosing(input, start);
-    if (close === -1) throw new Error("Unclosed braced BibTeX value.");
+    if (close === -1) throw new Error("a braced value is never closed.");
     return { value: input.slice(start + 1, close), end: close + 1 };
   }
   if (first === "\"") {
-    let cursor = start + 1;
-    let value = "";
-    while (cursor < input.length) {
+    // A quote only ends the value outside braces: `"A {"}quoted{"} word"` is
+    // one value in BibTeX, not the three-character value `A {`.
+    let depth = 0;
+    for (let cursor = start + 1; cursor < input.length; cursor += 1) {
       const char = input[cursor];
-      if (char === "\"" && input[cursor - 1] !== "\\") return { value, end: cursor + 1 };
-      value += char;
-      cursor += 1;
+      if (input[cursor - 1] === "\\") continue;
+      if (char === "{") depth += 1;
+      else if (char === "}") depth = Math.max(0, depth - 1);
+      else if (char === "\"" && depth === 0) {
+        return { value: input.slice(start + 1, cursor), end: cursor + 1 };
+      }
     }
-    throw new Error("Unclosed quoted BibTeX value.");
+    throw new Error("a quoted value is never closed.");
   }
 
-  const match = /^[^,\n\r]+/.exec(input.slice(start));
-  return { value: match?.[0].trim() ?? "", end: start + (match?.[0].length ?? 0) };
+  // A bare value is a number or the name of an @string abbreviation. Unknown
+  // names are kept as written, which is how `month = jan` stays readable.
+  const match = /^[^,#\n\r]+/.exec(input.slice(start));
+  const bare = match?.[0].trim() ?? "";
+  return {
+    value: macros.get(bare.toLowerCase()) ?? bare,
+    end: start + (match?.[0].length ?? 0)
+  };
 }
 
+/**
+ * Index of the delimiter closing the one at `openIndex`, or -1.
+ *
+ * Braces must balance everywhere inside an entry, as BibTeX requires. A
+ * parenthesised entry, `@article( ... )`, may contain an unmatched parenthesis
+ * inside a braced or quoted value — `title = {Results :)}` — so parentheses
+ * only count outside those.
+ */
 function findClosing(input: string, openIndex: number): number {
   const open = input[openIndex];
-  const close = open === "{" ? "}" : ")";
-  let depth = 0;
-  for (let index = openIndex; index < input.length; index += 1) {
-    const char = input[index];
-    if (char === open && input[index - 1] !== "\\") depth += 1;
-    if (char === close && input[index - 1] !== "\\") {
-      depth -= 1;
-      if (depth === 0) return index;
+  if (open === "{") {
+    let depth = 0;
+    for (let index = openIndex; index < input.length; index += 1) {
+      const char = input[index];
+      if (input[index - 1] === "\\") continue;
+      if (char === "{") depth += 1;
+      if (char === "}") {
+        depth -= 1;
+        if (depth === 0) return index;
+      }
     }
+    return -1;
+  }
+
+  let braces = 0;
+  let quoted = false;
+  for (let index = openIndex + 1; index < input.length; index += 1) {
+    const char = input[index];
+    if (input[index - 1] === "\\") continue;
+    if (char === "{") braces += 1;
+    else if (char === "}") braces = Math.max(0, braces - 1);
+    else if (char === "\"" && braces === 0) quoted = !quoted;
+    else if (char === ")" && braces === 0 && !quoted) return index;
   }
   return -1;
 }

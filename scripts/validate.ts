@@ -13,7 +13,7 @@ import { findPlotlyFigureReferences, plotlyHtmlNeedsMathJax } from "../src/lib/a
 import { resolveTocConfig } from "../src/lib/article/toc";
 import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../src/lib/graph/types";
-import { parseBibtex } from "../src/lib/publications/parseBibtex";
+import { parseBibtexWithIssues } from "../src/lib/publications/parseBibtex";
 import { stripSlashes } from "../src/lib/routes/paths";
 import { collectShortLinks } from "../src/lib/routes/shortLinksSource";
 import { checkThemes } from "../src/lib/theme/checkTheme";
@@ -154,13 +154,18 @@ function validateShortLinks(): void {
 async function validatePublications(): Promise<void> {
   try {
     const source = await fs.readFile(publicationsConfig.source, "utf8");
-    const publications = parseBibtex(source);
+    // The site build skips a malformed entry and keeps going; validation is
+    // where that has to fail, naming every bad entry rather than the first.
+    const { publications, issues } = parseBibtexWithIssues(source);
+    for (const issue of issues) {
+      errors.push(`BibTeX ${publicationsConfig.source}:${issue.line}: ${issue.message}`);
+    }
     if (publications.length === 0) warnings.push("No publications found.");
     if (siteConfig.homepage.selectedPublications.enabled && !publications.some((publication) => publication.selected)) {
       warnings.push("No selected publications found, but the homepage selected-publications section is enabled.");
     }
   } catch (error) {
-    errors.push(`BibTeX parse failure: ${error instanceof Error ? error.message : String(error)}`);
+    errors.push(`Could not read BibTeX ${publicationsConfig.source}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

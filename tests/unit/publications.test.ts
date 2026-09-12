@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { groupPublications } from "../../src/lib/publications/formatPublication";
-import { parseBibtex } from "../../src/lib/publications/parseBibtex";
+import { parseBibtex, parseBibtexWithIssues } from "../../src/lib/publications/parseBibtex";
 
 const bibtex = `@inproceedings{sample2026,
   title = {Sample Paper},
@@ -91,5 +91,71 @@ describe("publications", () => {
 
   it("groups by year descending", () => {
     expect(groupPublications(parseBibtex(bibtex)).map((group) => group.label)).toEqual(["2026", "2025"]);
+  });
+});
+
+describe("BibTeX that reference managers actually write", () => {
+  // These blocks used to be read as entries without a citation key, and the
+  // throw took the homepage and /publications down with it.
+  it("expands @string abbreviations, including # concatenation", () => {
+    const [publication] = parseBibtex(`@string{pami = "IEEE TPAMI"}
+@article{a, title = {T}, journal = pami # " (extended)", year = 2020}`);
+    expect(publication.venue).toBe("IEEE TPAMI (extended)");
+    expect(publication.bibtex).toContain("journal = {IEEE TPAMI (extended)}");
+  });
+
+  it("skips @comment and @preamble", () => {
+    const publications = parseBibtex(`@preamble{"\\newcommand{\\noopsort}[1]{}"}
+@article{a, title = {T}, year = 2020}
+@comment{jabref-meta: databaseType:bibtex;}`);
+    expect(publications.map((publication) => publication.id)).toEqual(["a"]);
+  });
+
+  it("leaves an unknown bare name as written", () => {
+    const [publication] = parseBibtex(`@article{a, title = {T}, month = jan, year = 2020}`);
+    expect(publication.fields.month).toBe("jan");
+  });
+
+  // Previously truncated silently to "A {", with no error at all.
+  it("does not end a quoted value at a quote inside braces", () => {
+    const [publication] = parseBibtex(`@article{a, title = "A {"}quoted{"} word", year = 2020}`);
+    expect(publication.title).toBe('A {"}quoted{"} word');
+  });
+
+  it("allows an unmatched parenthesis inside a value of a parenthesised entry", () => {
+    const [publication] = parseBibtex(`@article(a, title = {Results :)}, year = 2020)`);
+    expect(publication.title).toBe("Results :)");
+  });
+});
+
+describe("malformed BibTeX", () => {
+  const input = `@article{first, title = {First}, year = 2020}
+
+@article{nokey title = {No key}}
+
+@article{badfield, title {missing equals}, year = 2022}
+
+@article{unclosed, title = {Never closed, year = 2023
+
+@article{last, title = {Last}, year = 2024}
+`;
+
+  it("keeps every entry that parses and reports each one that does not, by line", () => {
+    const { publications, issues } = parseBibtexWithIssues(input);
+    expect(publications.map((publication) => publication.id)).toEqual(["first", "last"]);
+    expect(issues).toEqual([
+      { line: 3, message: expect.stringContaining("missing a citation key") },
+      { line: 5, message: expect.stringContaining('"badfield"') },
+      { line: 7, message: expect.stringContaining("never closed") }
+    ]);
+  });
+
+  it("still rejects unbalanced braces, which BibTeX itself does not accept", () => {
+    const { issues } = parseBibtexWithIssues(`@article{a, title = "A }weird{ title", year = 2020}`);
+    expect(issues).toHaveLength(1);
+  });
+
+  it("throws on the first problem when parsed strictly", () => {
+    expect(() => parseBibtex(input)).toThrow(/^Line 3: /);
   });
 });
