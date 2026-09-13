@@ -40,6 +40,18 @@ describe("article PDF source resolution", () => {
     expect(() => resolvePdfSource("/figures/missing.pdf", root)).toThrow(/not found/);
     expect(() => resolvePdfSource("/figures/example.png", root)).toThrow(/\.pdf/);
   });
+
+  it("names the source when a literal % makes the path undecodable", async () => {
+    const root = await makeProject();
+    const pdf = path.join(root, "public", "figures", "100%.pdf");
+    await fs.mkdir(path.dirname(pdf), { recursive: true });
+    await fs.writeFile(pdf, "%PDF-1.5\n");
+
+    expect(() => resolvePdfSource("/figures/100%.pdf", root)).toThrow(
+      'Picture PDF source is not a valid URL path: /figures/100%.pdf. Write a literal "%" as "%25".'
+    );
+    expect(resolvePdfSource("/figures/100%25.pdf", root)).toBe(pdf);
+  });
 });
 
 async function makeProject(): Promise<string> {

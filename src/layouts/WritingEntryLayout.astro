@@ -41,6 +41,7 @@ import {
   resolvePlacement
 } from "../lib/article/placement";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
+import { externalLinkHref } from "../lib/publications/identifierUrls";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
 
@@ -98,7 +99,7 @@ const external = Object.entries(entry.data.external ?? {})
   .filter(([, href]) => Boolean(href))
   .map(([key, href]) => {
     const meta = chipMeta[key] ?? { label: key, icon: LinkIcon };
-    return { key, href: href as string, label: meta.label, Icon: meta.icon };
+    return { key, href: externalLinkHref(key, href as string), label: meta.label, Icon: meta.icon };
   });
 
 const formatDate = (iso: string | undefined) => {

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 
 import { publicationsConfig } from "../../config/publications";
-import type { Publication } from "./types";
+import { UNDATED_YEAR, type Publication } from "./types";
 
 type RawEntry = {
   type: string;
@@ -181,7 +181,7 @@ function normalizePublication(entry: RawEntry): Publication {
     title: fields.title ?? entry.key,
     author,
     authors,
-    year: fields.year ?? "n.d.",
+    year: fields.year ?? UNDATED_YEAR,
     venue,
     abstract: fields.abstract,
     abbr: fields.abbr,

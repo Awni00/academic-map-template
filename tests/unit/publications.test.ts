@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { groupPublications } from "../../src/lib/publications/formatPublication";
+import { groupPublications, publicationLinks } from "../../src/lib/publications/formatPublication";
+import { arxivUrl, doiUrl, externalLinkHref } from "../../src/lib/publications/identifierUrls";
 import { parseBibtex, parseBibtexWithIssues } from "../../src/lib/publications/parseBibtex";
 
 const bibtex = `@inproceedings{sample2026,
@@ -91,6 +92,42 @@ describe("publications", () => {
 
   it("groups by year descending", () => {
     expect(groupPublications(parseBibtex(bibtex)).map((group) => group.label)).toEqual(["2026", "2025"]);
+  });
+
+  it("puts undated publications last in either order", () => {
+    const publications = parseBibtex(`${bibtex}
+@misc{undated, title = {Undated Note}, author = {Other Author}}`);
+    const labels = (order: "asc" | "desc") =>
+      groupPublications(publications, order).map((group) => group.label);
+
+    expect(labels("desc")).toEqual(["2026", "2025", "n.d."]);
+    expect(labels("asc")).toEqual(["2025", "2026", "n.d."]);
+  });
+});
+
+describe("identifier URLs", () => {
+  it("links bare DOIs and arXiv ids to their resolvers", () => {
+    expect(doiUrl("10.0000/sample")).toBe("https://doi.org/10.0000/sample");
+    expect(arxivUrl("2601.00000")).toBe("https://arxiv.org/abs/2601.00000");
+  });
+
+  it("leaves identifiers that are already URLs alone", () => {
+    expect(doiUrl("https://doi.org/10.0000/sample")).toBe("https://doi.org/10.0000/sample");
+    expect(arxivUrl("https://arxiv.org/abs/2601.00000")).toBe("https://arxiv.org/abs/2601.00000");
+  });
+
+  it("resolves a writing entry's external links by key", () => {
+    // A bare DOI used as an href resolved against the entry page and 404'd.
+    expect(externalLinkHref("doi", "10.0000/example.00001")).toBe("https://doi.org/10.0000/example.00001");
+    expect(externalLinkHref("arxiv", "0000.00000")).toBe("https://arxiv.org/abs/0000.00000");
+    expect(externalLinkHref("code", "https://github.com/example/code")).toBe("https://github.com/example/code");
+    expect(externalLinkHref("slides", "/publications/slides.pdf")).toBe("/publications/slides.pdf");
+  });
+
+  it("gives publication links the same resolver URLs", () => {
+    const links = publicationLinks(parseBibtex(bibtex)[0]);
+    expect(links).toContainEqual({ label: "DOI", href: "https://doi.org/10.0000/sample" });
+    expect(links).toContainEqual({ label: "arXiv", href: "https://arxiv.org/abs/2601.00000" });
   });
 });
 

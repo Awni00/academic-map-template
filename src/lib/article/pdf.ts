@@ -46,7 +46,15 @@ export function resolvePdfSource(src: string, root = process.cwd()): string {
   }
 
   const projectRoot = path.resolve(root);
-  const decodedSrc = decodeURIComponent(cleanSrc);
+  let decodedSrc: string;
+  try {
+    decodedSrc = decodeURIComponent(cleanSrc);
+  } catch (error) {
+    throw new Error(
+      `Picture PDF source is not a valid URL path: ${src}. Write a literal "%" as "%25".`,
+      { cause: error }
+    );
+  }
   const pdfPath = decodedSrc.startsWith("/")
     ? path.resolve(projectRoot, "public", `.${decodedSrc}`)
     : path.resolve(projectRoot, decodedSrc);

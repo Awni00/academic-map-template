@@ -1,14 +1,22 @@
 import { publicationsConfig } from "../../config/publications";
-import type { Publication, PublicationGroup } from "./types";
+import { arxivUrl, doiUrl } from "./identifierUrls";
+import { UNDATED_YEAR, type Publication, type PublicationGroup } from "./types";
 
-export function groupPublications(publications: Publication[]): PublicationGroup[] {
+export function groupPublications(
+  publications: Publication[],
+  order: "asc" | "desc" = publicationsConfig.grouping.order
+): PublicationGroup[] {
   const groups = new Map<string, Publication[]>();
   for (const publication of publications) {
     const key = publication.year;
     groups.set(key, [...(groups.get(key) ?? []), publication]);
   }
   const sorted = [...groups.entries()].sort(([a], [b]) => {
-    const order: string = publicationsConfig.grouping.order;
+    // Undated entries go last in either order. As a string, "n.d." sorts
+    // after every year, so a descending list would open with them.
+    if (a === UNDATED_YEAR || b === UNDATED_YEAR) {
+      return Number(a === UNDATED_YEAR) - Number(b === UNDATED_YEAR);
+    }
     if (order === "asc") return a.localeCompare(b);
     return b.localeCompare(a);
   });
@@ -49,14 +57,6 @@ export function publicationLinks(publication: Publication): Array<{ label: strin
   ]
     .filter(([, href]) => Boolean(href))
     .map(([label, href]) => ({ label: label!, href: href! }));
-}
-
-function arxivUrl(value: string): string {
-  return value.startsWith("http") ? value : `https://arxiv.org/abs/${value}`;
-}
-
-function doiUrl(value: string): string {
-  return value.startsWith("http") ? value : `https://doi.org/${value}`;
 }
 
 function escapeRegExp(value: string): string {

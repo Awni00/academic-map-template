@@ -1,3 +1,6 @@
+/** `year` of a publication whose BibTeX entry has none. */
+export const UNDATED_YEAR = "n.d.";
+
 export type Publication = {
   id: string;
   type: string;
