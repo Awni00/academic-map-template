@@ -8,6 +8,7 @@ import type { Publication } from "../lib/publications/types";
 import WritingPreview from "../components/graph/WritingPreview";
 import PublicationItem from "../components/publications/PublicationItem.astro";
 import { getEntryType, siteConfig } from "../config";
+import { writingRoute } from "../lib/routes/paths";
 
 type NewsItem = {
   date: string;
@@ -132,7 +133,7 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
       <section class="section">
         <div class="sect-head">
           <h2 class="h2">Recent writing</h2>
-          <a class="cta cta--small" href="/writing">All →</a>
+          <a class="cta cta--small" href={writingRoute()}>All →</a>
         </div>
         <ul class="recent">
           {recentWriting.map((entry) => (

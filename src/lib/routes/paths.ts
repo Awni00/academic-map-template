@@ -17,8 +17,8 @@ export function joinUrl(...parts: Array<string | undefined>): string {
   return `/${clean.join("/")}`;
 }
 
-export function writingRoute(): string {
-  return normalizeRoute(writingConfig.route);
+export function writingRoute(route: string = writingConfig.route): string {
+  return normalizeRoute(route);
 }
 
 export function writingRouteParam(route = writingConfig.route): string {
@@ -31,6 +31,20 @@ export function writingEntryUrl(entryPath: string, route: string = writingConfig
 
 export function rssRoute(): string {
   return normalizeRoute(writingConfig.rss.route);
+}
+
+/**
+ * The RSS feed's static path param and the href that reaches it, or undefined
+ * when `rss.enabled` is false. The page is `[...rss].xml.ts`, so the built
+ * file always ends in `.xml`; deriving the href from the param keeps links
+ * pointing at the file that is actually built.
+ */
+export function rssFeed(
+  rss: { enabled: boolean; route: string } = writingConfig.rss
+): { param: string; href: string } | undefined {
+  if (!rss.enabled) return undefined;
+  const param = stripSlashes(rss.route).replace(/\.xml$/, "");
+  return { param, href: `/${param}.xml` };
 }
 
 export function pageUrlFromId(id: string): string {

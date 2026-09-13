@@ -2,14 +2,11 @@ import { getCollection } from "astro:content";
 
 import { entryTypeIncludedInRss, siteConfig, writingConfig } from "../config";
 import { buildGraphIndex } from "../lib/graph/buildGraph";
-import { rssRoute, stripSlashes } from "../lib/routes/paths";
+import { rssFeed, writingRoute } from "../lib/routes/paths";
 
 export async function getStaticPaths() {
-  return [
-    {
-      params: { rss: stripSlashes(rssRoute()).replace(/\.xml$/, "") }
-    }
-  ];
+  const feed = rssFeed();
+  return feed ? [{ params: { rss: feed.param } }] : [];
 }
 
 export async function GET() {
@@ -27,7 +24,7 @@ export async function GET() {
 <rss version="2.0">
   <channel>
     <title>${escapeXml(siteConfig.name)} ${escapeXml(writingConfig.label)}</title>
-    <link>${siteUrl}${writingConfig.route}</link>
+    <link>${siteUrl}${writingRoute()}</link>
     <description>${escapeXml(siteConfig.description)}</description>
     ${items
       .map(

@@ -1,5 +1,8 @@
 ---
 import { siteConfig } from "../../config/site";
+import { rssFeed } from "../../lib/routes/paths";
+
+const feed = rssFeed();
 ---
 
 <footer class="site-footer">
@@ -7,8 +10,8 @@ import { siteConfig } from "../../config/site";
     <div>© {new Date().getFullYear()} · {siteConfig.name}</div>
     <div>
       Built with the <a href="https://github.com/" rel="noopener">academic-graph</a>
-      template · <a href="https://github.com/" rel="noopener">source</a> ·
-      <a href="/writing/rss.xml">RSS</a>
+      template · <a href="https://github.com/" rel="noopener">source</a>
+      {feed && <> · <a href={feed.href}>RSS</a></>}
     </div>
   </div>
 </footer>
