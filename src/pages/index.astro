@@ -1,11 +1,10 @@
 ---
-import fs from "node:fs/promises";
-import yaml from "js-yaml";
 import { getCollection, render } from "astro:content";
 
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { entryTypeIncludedInRecent, siteConfig } from "../config";
 import { buildGraphIndex } from "../lib/graph/buildGraph";
+import { loadNews } from "../lib/news/loadNews";
 import { loadPublications } from "../lib/publications/parseBibtex";
 
 const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
@@ -24,11 +23,7 @@ const recentWriting = graph.nodes
   .filter((node) => entryTypeIncludedInRecent(node.type) && node.date)
   .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
   .slice(0, siteConfig.homepage.recentWriting.maxItems);
-const newsSource = await fs.readFile("src/data/news.yaml", "utf8");
-const news = (yaml.load(newsSource) as Array<{ date: string; title: string; url?: string }>).slice(
-  0,
-  siteConfig.homepage.news.maxItems
-);
+const news = await loadNews(siteConfig.homepage.news);
 ---
 
 <HomeLayout
