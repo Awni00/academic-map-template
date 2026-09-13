@@ -24,7 +24,7 @@ const dialogId = `bib-${publication.id}`;
 <article class:list={["publication-item", compact && "publication-item--compact"]}>
   {!compact && (
     thumbHref ? (
-      <a href={thumbHref} class="publication-preview" aria-hidden="true">
+      <a href={thumbHref} class="publication-preview" aria-hidden="true" tabindex="-1">
         {publication.preview ? (
           <img src={publication.preview} alt="" loading="lazy" />
         ) : (

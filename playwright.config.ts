@@ -6,7 +6,10 @@ export default defineConfig({
   workers: 1,
   webServer: {
     command: "npm run dev -- --host 127.0.0.1",
-    url: "http://127.0.0.1:4321/writing/rss.xml",
+    // The homepage always exists; the RSS feed moves with writing.route and
+    // is not built at all when rss.enabled is false, which left the suite
+    // waiting on a 404 until the timeout.
+    url: "http://127.0.0.1:4321/",
     reuseExistingServer: true,
     timeout: 180_000
   },

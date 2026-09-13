@@ -127,7 +127,8 @@ const hasAny =
   for (const button of document.querySelectorAll<HTMLButtonElement>(".cite-body__copy")) {
     button.addEventListener("click", () => {
       const body = button.closest(".cite-body");
-      const text = body?.querySelector("code")?.textContent?.trim() ?? "";
+      const code = body?.querySelector("code");
+      const text = code?.textContent?.trim() ?? "";
       const original = button.textContent;
       const finish = (label: string) => {
         button.textContent = label;
@@ -135,10 +136,22 @@ const hasAny =
           button.textContent = original;
         }, 1200);
       };
+      // Select the citation so the "Press ⌘C" fallback has something to copy.
+      const fallBack = () => {
+        if (code) window.getSelection()?.selectAllChildren(code);
+        finish("Press ⌘C");
+      };
+      // `navigator.clipboard` is undefined outside a secure context (such as
+      // the dev server opened over a LAN address), so calling it directly
+      // would throw before the promise could reject.
+      if (!navigator.clipboard) {
+        fallBack();
+        return;
+      }
       navigator.clipboard
         .writeText(text)
         .then(() => finish("Copied"))
-        .catch(() => finish("Press ⌘C"));
+        .catch(fallBack);
     });
   }
 </script>
