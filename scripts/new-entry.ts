@@ -5,6 +5,7 @@ import { stdin as input, stdout as output } from "node:process";
 
 import { entryTypeOwnsFolder, writingConfig, type EntryType } from "../src/config";
 import { canonicalizeWritingPath } from "../src/lib/graph/resolveLinks";
+import { localDateString, newEntryFrontmatter, newEntryPath } from "./lib/new-entry";
 
 const args = parseArgs(process.argv.slice(2));
 const type = (args.type as EntryType | undefined) ?? (await promptType());
@@ -14,14 +15,14 @@ if (!writingConfig.entryTypes.includes(type)) {
   throw new Error(`Invalid type "${type}". Expected one of ${writingConfig.entryTypes.join(", ")}.`);
 }
 
-const entryPath = canonicalizeWritingPath(args.path ?? args.slug ?? title);
+const entryPath = newEntryPath({ title, path: args.path, slug: args.slug });
 if (!entryPath) throw new Error("Entry path must not be empty.");
 const ownsFolder = entryTypeOwnsFolder(type);
 const filePath = path.join("src/content/writing", ownsFolder ? entryPath : `${entryPath}.mdx`);
 const finalPath = ownsFolder ? path.join(filePath, "index.mdx") : filePath;
 await assertNoDuplicatePath(entryPath);
 await fs.mkdir(path.dirname(finalPath), { recursive: true });
-await fs.writeFile(finalPath, frontmatter(title, type), "utf8");
+await fs.writeFile(finalPath, newEntryFrontmatter(title, type, localDateString()), "utf8");
 console.log(`Created ${finalPath}`);
 
 function parseArgs(values: string[]): Record<string, string> {
@@ -56,26 +57,6 @@ async function assertNoDuplicatePath(entryPath: string): Promise<void> {
     const existingPath = canonicalizeWritingPath(path.relative("src/content/writing", file));
     if (existingPath === entryPath) throw new Error(`An entry with path "${entryPath}" already exists at ${file}.`);
   }
-}
-
-function frontmatter(title: string, type: EntryType): string {
-  const today = new Date().toISOString().slice(0, 10);
-  return `---
-title: "${escapeYaml(title)}"
-type: "${type}"
-date: "${today}"
-tags: []
-links: []
-draft: true
-theme: global
----
-
-Write the entry here.
-`;
-}
-
-function escapeYaml(value: string): string {
-  return value.replace(/"/g, '\\"');
 }
 
 async function listFiles(root: string): Promise<string[]> {
