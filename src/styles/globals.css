@@ -1068,10 +1068,13 @@ pre {
   gap: 28px;
 }
 
+/* The preview keeps the art's 4:3 shape at every width; only its width
+   steps down on narrower screens, so it stays on the same row as the text. */
 .publication-item {
+  --publication-preview-width: 120px;
   display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 18px;
+  grid-template-columns: var(--publication-preview-width) minmax(0, 1fr);
+  gap: 20px;
   border: 0;
   padding: 0;
   margin: 0;
@@ -1080,8 +1083,8 @@ pre {
 .publication-preview {
   position: relative;
   display: block;
-  width: 96px;
-  height: 72px;
+  width: var(--publication-preview-width);
+  aspect-ratio: 4 / 3;
   border-radius: 4px;
   overflow: hidden;
   background: var(--color-bg-soft-2);
@@ -1213,6 +1216,28 @@ pre {
   border-color: var(--color-rule);
 }
 
+/* Touch screens get 44px targets: a 32px pill whose hit area reaches 6px
+   above and below it, with wrapped rows 44px apart. */
+@media (pointer: coarse) {
+  .publication-links {
+    gap: 12px 8px;
+    margin-top: 12px;
+  }
+
+  .publication-link {
+    position: relative;
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+
+  .publication-link::after {
+    content: "";
+    position: absolute;
+    inset: -6px -4px;
+  }
+}
+
 /* ── Publication dialog popups ──────────────────────────────────────── */
 
 .publication-dialog {
@@ -1332,7 +1357,9 @@ pre {
   margin-bottom: 28px;
 }
 
-.publication-year .publication-item + .publication-item {
+/* `~`, not `+`: PublicationItem's <script> is rendered once, after the first
+   item on the page, so the first two items are not adjacent siblings. */
+.publication-year .publication-item ~ .publication-item {
   margin-top: 28px;
 }
 
@@ -1707,13 +1734,8 @@ pre {
   }
 
   .publication-item {
-    grid-template-columns: 1fr;
-  }
-
-  .publication-preview {
-    width: 100%;
-    height: 140px;
-    max-width: 220px;
+    --publication-preview-width: 88px;
+    gap: 14px;
   }
 }
 
@@ -1721,5 +1743,12 @@ pre {
   .news {
     grid-template-columns: 80px 1fr;
     column-gap: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .publication-item {
+    --publication-preview-width: 76px;
+    gap: 12px;
   }
 }
