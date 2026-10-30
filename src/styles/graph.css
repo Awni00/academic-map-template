@@ -48,18 +48,38 @@
   margin: 0;
 }
 
-/* Graph view slot. Height is driven by GraphCanvas's `height` prop
- * (configured via siteConfig.homepage.writingPreview.previewHeight). */
+/* Graph view slot: the framed canvas, and — when the widget is interactive —
+ * the selected-node panel beside it. A one-column grid otherwise, which lays
+ * the canvas out exactly as a block would. Canvas height is driven by
+ * GraphCanvas's `height` prop (siteConfig.homepage.writingPreview.previewHeight). */
 .writing-preview__graph {
+  --preview-pad: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.writing-preview--interactive > .writing-preview__graph {
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+}
+
+.writing-preview__canvas {
   position: relative;
+  min-width: 0;
   border: 1px solid var(--color-border-soft);
   border-radius: 6px;
   background: var(--color-bg-soft);
   overflow: hidden;
-  padding: 18px;
+  padding: var(--preview-pad);
 }
 
-.writing-preview__graph::before {
+/* Sized to the framed canvas (padding and border included), so both columns
+   end on the same line and the open action sits level with the frame's foot. */
+.writing-preview__side {
+  height: calc(var(--map-height, 360px) + 2 * var(--preview-pad) + 2px);
+}
+
+.writing-preview__canvas::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -68,7 +88,7 @@
   opacity: 0.5;
 }
 
-.writing-preview__graph > div {
+.writing-preview__canvas > div {
   width: 100%;
   height: 100%;
 }
@@ -82,17 +102,45 @@
 }
 
 /* View toggle, desktop (>680px) — keyed off `desktopMode`. */
-.writing-preview--desktop-graph        > .writing-preview__graph { display: block; }
+.writing-preview--desktop-graph        > .writing-preview__graph { display: grid;  }
 .writing-preview--desktop-graph        > .writing-preview__cards { display: none;  }
 .writing-preview--desktop-topic-cards  > .writing-preview__graph { display: none;  }
 .writing-preview--desktop-topic-cards  > .writing-preview__cards { display: grid;  }
 
 /* View toggle, mobile (≤680px) — keyed off `mobileMode`. */
 @media (max-width: 680px) {
-  .writing-preview--mobile-graph       > .writing-preview__graph { display: block; }
+  .writing-preview--mobile-graph       > .writing-preview__graph { display: grid;  }
   .writing-preview--mobile-graph       > .writing-preview__cards { display: none;  }
   .writing-preview--mobile-topic-cards > .writing-preview__graph { display: none;  }
   .writing-preview--mobile-topic-cards > .writing-preview__cards { display: grid;  }
+
+  /* Stacked, the panel follows the canvas as one object (the same treatment as
+     the stacked local map): no shared baseline to hold, so it takes its content
+     height and shows the summary whole. */
+  .writing-preview--interactive > .writing-preview__graph {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .writing-preview__graph {
+    --preview-pad: 10px;
+  }
+
+  /* Prefixed to outrank the base .node-panel rules, which come later. */
+  .writing-preview .writing-preview__side {
+    height: auto;
+    overflow: visible;
+  }
+
+  .writing-preview .writing-preview__side .node-panel__summary {
+    flex: none;
+    margin-bottom: 14px;
+    mask-image: none;
+  }
+
+  .writing-preview .writing-preview__side .node-panel__open {
+    margin-top: 0;
+  }
 }
 
 .topic-card {
@@ -694,25 +742,32 @@
 /* Sized to the framed canvas rather than the bare one, so the panel's contents
    share the full height instead of bunching at the top. */
 .local-graph-map__side {
+  height: calc(var(--map-height, 240px) + 2 * var(--map-pad));
+}
+
+/* The selected-node panel (NodeDetailPanel), shared by the local map above and
+   the homepage writing preview. Its container sets its height; it lays out what
+   fits inside. */
+.node-panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: calc(var(--map-height, 240px) + 2 * var(--map-pad));
   overflow: hidden;
   /* Coloured by the selected node's type, so the panel is visibly about a
      particular node rather than about the map in general. */
   border-left: 2px solid var(--map-accent, var(--color-border));
   padding-left: 14px;
+  font-family: var(--font-ui);
 }
 
-.local-graph-map__meta {
+.node-panel__meta {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
 }
 
-.local-graph-map__here {
+.node-panel__here {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -720,7 +775,7 @@
   color: var(--color-muted);
 }
 
-.local-graph-map__title {
+.node-panel__title {
   font-family: var(--font-body);
   font-size: 16px;
   font-weight: 600;
@@ -733,7 +788,7 @@
    ellipsis appears only when it actually truncates. The separator belongs to
    the tag that *follows* it — hung off the preceding tag it would become a
    dangling mark wherever the line runs out. */
-.local-graph-map__tags {
+.node-panel__tags {
   flex: none;
   margin-bottom: 10px;
   min-width: 0;
@@ -746,13 +801,13 @@
   color: var(--color-muted);
 }
 
-.local-graph-map__tags span + span::before {
+.node-panel__tags span + span::before {
   content: " · ";
 }
 
 /* The only element that grows, which is what pins the action to the foot and
    keeps everything above it still as the selection changes. */
-.local-graph-map__summary {
+.node-panel__summary {
   flex: 1;
   min-height: 0;
   margin: 0 0 10px;
@@ -769,7 +824,7 @@
    footer along the bottom — a hairline with no business under a filled button.
    `margin-top: auto` keeps the action at the foot even when a page has no
    summary to do the pushing. */
-.local-graph-map .local-graph-map__open {
+.node-panel .node-panel__open {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -789,16 +844,16 @@
     color 0.12s ease;
 }
 
-.local-graph-map .local-graph-map__open:hover {
+.node-panel .node-panel__open:hover {
   background: var(--color-accent);
   color: var(--color-bg);
 }
 
-.local-graph-map__open-arrow {
+.node-panel__open-arrow {
   transition: transform 0.12s ease;
 }
 
-.local-graph-map__open:hover .local-graph-map__open-arrow {
+.node-panel__open:hover .node-panel__open-arrow {
   transform: translateX(2px);
 }
 
@@ -832,14 +887,14 @@
 
   /* With no fixed height there is nothing to truncate, so the summary is shown
      whole rather than clamped behind a fade. */
-  .local-graph-map__summary {
+  .local-graph-map .node-panel__summary {
     flex: none;
     margin-bottom: 14px;
     mask-image: none;
   }
 
   /* Nothing to push the action down to; it follows the text directly. */
-  .local-graph-map .local-graph-map__open {
+  .local-graph-map .node-panel__open {
     margin-top: 0;
   }
 }

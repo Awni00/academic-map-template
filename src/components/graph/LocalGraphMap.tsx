@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getEntryType, graphConfig } from "../../config";
+import { graphConfig } from "../../config";
 import type { GraphIndex } from "../../lib/graph/types";
 import GraphCanvas from "./GraphCanvas";
+import NodeDetailPanel from "./NodeDetailPanel";
 import { useNeighborhood } from "./useNeighborhood";
 
 type LocalGraphMapProps = {
@@ -43,7 +44,6 @@ export default function LocalGraphMap({
   const byId = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph]);
   const selected = byId.get(selectedId) ?? byId.get(currentId);
   const handleSelect = useCallback((id: string) => setSelectedId(id), []);
-  const selectedType = selected ? getEntryType(selected.type) : undefined;
 
   return (
     <div className="local-graph-map" style={{ ["--map-height" as string]: `${height}px` }}>
@@ -60,48 +60,11 @@ export default function LocalGraphMap({
         />
       </div>
       {selected && (
-        <div
+        <NodeDetailPanel
+          node={selected}
+          isCurrent={selected.id === currentId}
           className="local-graph-map__side"
-          // Ties the panel to the node it describes, not merely to the map:
-          // the edge takes the selected type's colour and changes with it.
-          style={{ ["--map-accent" as string]: selectedType?.graph.color }}
-        >
-          <div className="local-graph-map__meta">
-            {selectedType && (
-              <span
-                className="pill"
-                style={{ ["--pill-color" as string]: selectedType.graph.color }}
-              >
-                {selectedType.label}
-              </span>
-            )}
-            {selected.id === currentId && <span className="local-graph-map__here">This page</span>}
-          </div>
-          {/*
-            Not a heading. Its text is the selected node's title, which starts
-            as — and often is — the page's own <h1>, so a heading here puts the
-            same title in the outline twice and makes heading navigation
-            announce it once as the document and once as a widget's state. It
-            labels a panel that changes on click, which is not page structure.
-          */}
-          <p className="local-graph-map__title">{selected.title}</p>
-          {selected.tags.length > 0 && (
-            <div className="local-graph-map__tags">
-              {selected.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
-          )}
-          {selected.summary && <p className="local-graph-map__summary">{selected.summary}</p>}
-          {selected.id !== currentId && (
-            <a className="local-graph-map__open" href={selected.url}>
-              <span>Open page</span>
-              <span className="local-graph-map__open-arrow" aria-hidden="true">
-                →
-              </span>
-            </a>
-          )}
-        </div>
+        />
       )}
     </div>
   );

@@ -76,8 +76,21 @@ dragging its nodes:
 Both draggable modes pin the node on release; a mode that handed it straight
 back to the forces would look like the drag had been refused. The setting
 applies to the writing browser and the per-entry local maps. The homepage
-preview is decorative and is never draggable. Dragging is mouse and pen only —
-on touch, a drag pans the canvas as before.
+preview is never draggable. Dragging is mouse and pen only — on touch, a drag
+pans the canvas as before.
+
+### Homepage writing map
+
+`site.homepage.writingPreview` controls the "Explore Writing" map below the
+hero. `interactive` (default `true`) makes it work like the per-entry local
+map: clicking or tapping a node selects it, and a panel beside the map shows
+its type, title, tags, and summary, with an "Open page" link. Clicking never
+navigates on its own. Set `interactive: false` for the canvas alone.
+
+`desktopMode` and `mobileMode` choose between the graph (`"graph"`) and a grid
+of topic links (`"topic-cards"`) above and below 680px. Phones default to topic
+cards; set `mobileMode: "graph"` to show the interactive map there too, with
+the panel stacked under the canvas.
 
 Low-level rendering internals should stay in template-owned code. If a visual or
 feature option should be reusable by many sites, add a documented config knob to

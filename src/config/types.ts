@@ -219,6 +219,8 @@ export type SiteConfig = {
       enabled: boolean;
       desktopMode: "graph" | "topic-cards";
       mobileMode: "graph" | "topic-cards";
+      /** Click a node to select it and describe it in a panel beside the map. */
+      interactive: boolean;
       filter:
         | { mode: "all" }
         | { mode: "types"; types?: EntryType[] }

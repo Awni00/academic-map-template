@@ -49,6 +49,7 @@ export const defaultSiteConfig = {
       enabled: true,
       desktopMode: "graph",
       mobileMode: "topic-cards",
+      interactive: true,
       filter: {
         mode: "neighborhood",
         roots: "hubs",
