@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { getEntryType } from "../../config";
 import type { EntryNode } from "../../lib/graph/types";
 
@@ -9,6 +11,15 @@ type NodeDetailPanelProps = {
    */
   isCurrent?: boolean;
   className?: string;
+  /** Show the page's date beside its type. */
+  showDate?: boolean;
+  /**
+   * "large" is the full writing map's panel: a bigger title, and the summary
+   * shown whole rather than clipped to a fixed-height slot.
+   */
+  size?: "default" | "large";
+  /** A second control beside the open action — the phone sheet's toggle. */
+  actions?: ReactNode;
 };
 
 /**
@@ -20,12 +31,22 @@ type NodeDetailPanelProps = {
  * a click on the canvas selects, and only this panel's action navigates. The
  * container owns the panel's size; the panel owns what goes in it.
  */
-export default function NodeDetailPanel({ node, isCurrent = false, className }: NodeDetailPanelProps) {
+export default function NodeDetailPanel({
+  node,
+  isCurrent = false,
+  className,
+  showDate = false,
+  size = "default",
+  actions
+}: NodeDetailPanelProps) {
   const type = getEntryType(node.type);
+  const classes = ["node-panel", size === "large" && "node-panel--large", className]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
-      className={className ? `node-panel ${className}` : "node-panel"}
+      className={classes}
       // Ties the panel to the node it describes, not merely to the map: the
       // edge takes the selected type's colour and changes with it.
       style={{ ["--map-accent" as string]: type.graph.color }}
@@ -35,6 +56,7 @@ export default function NodeDetailPanel({ node, isCurrent = false, className }: 
           {type.label}
         </span>
         {isCurrent && <span className="node-panel__here">This page</span>}
+        {showDate && node.date && <span className="node-panel__date">{node.date}</span>}
       </div>
       {/*
         Not a heading. On an entry page its text starts as — and often is — the
@@ -51,13 +73,18 @@ export default function NodeDetailPanel({ node, isCurrent = false, className }: 
         </div>
       )}
       {node.summary && <p className="node-panel__summary">{node.summary}</p>}
-      {!isCurrent && (
-        <a className="node-panel__open" href={node.url}>
-          <span>Open page</span>
-          <span className="node-panel__open-arrow" aria-hidden="true">
-            →
-          </span>
-        </a>
+      {(!isCurrent || actions) && (
+        <div className="node-panel__actions">
+          {!isCurrent && (
+            <a className="node-panel__open" href={node.url}>
+              <span>Open page</span>
+              <span className="node-panel__open-arrow" aria-hidden="true">
+                →
+              </span>
+            </a>
+          )}
+          {actions}
+        </div>
       )}
     </div>
   );

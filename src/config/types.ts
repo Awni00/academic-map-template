@@ -33,6 +33,11 @@ export type PlacementSpec = {
 
 export type EntryTypeGraphConfig = {
   shape: GraphNodeShape;
+  /**
+   * Glyph diameter in screen pixels. Constant at every zoom level, so a paper
+   * reads as the same mark on the full map, the homepage preview, and a
+   * page's local map.
+   */
   size: number;
   color: string;
   /**
@@ -92,6 +97,11 @@ export type ListConfig = {
 export type WritingConfig = {
   route: string;
   label: string;
+  /**
+   * One line under the writing page's title, and the page's meta description.
+   * Empty hides the line.
+   */
+  description?: string;
   entryTypes: readonly EntryType[];
   search: {
     writing: {
@@ -456,7 +466,7 @@ export type GraphConfigBase = {
     };
   };
   layout: {
-    hubs: "circle" | "row" | "force";
+    hubs: "cluster" | "circle" | "row" | "force";
     labels: "config" | "all" | "none";
     labelSide: "top" | "bottom" | "auto";
   };

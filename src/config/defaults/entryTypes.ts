@@ -10,7 +10,7 @@ export const defaultEntryTypes = [
     includeInRecent: false,
     graph: {
       shape: "square",
-      size: 18,
+      size: 20,
       color: "var(--graph-hub)",
       labelVisibility: "always"
     },
@@ -30,7 +30,7 @@ export const defaultEntryTypes = [
     includeInRecent: false,
     graph: {
       shape: "square",
-      size: 10,
+      size: 13,
       color: "var(--graph-sub-hub)",
       labelVisibility: "hover"
     },
@@ -49,7 +49,7 @@ export const defaultEntryTypes = [
     includeInRecent: true,
     graph: {
       shape: "circle",
-      size: 12,
+      size: 16,
       color: "var(--graph-paper)",
       labelVisibility: "hover"
     },
@@ -65,7 +65,7 @@ export const defaultEntryTypes = [
     includeInRecent: true,
     graph: {
       shape: "circle",
-      size: 10,
+      size: 14,
       color: "var(--graph-post)",
       labelVisibility: "hover"
     },
@@ -81,7 +81,7 @@ export const defaultEntryTypes = [
     includeInRecent: true,
     graph: {
       shape: "circle",
-      size: 9,
+      size: 13,
       color: "var(--graph-note)",
       labelVisibility: "hover"
     },
@@ -94,7 +94,7 @@ export const defaultEntryTypes = [
     includeInRecent: true,
     graph: {
       shape: "diamond",
-      size: 11,
+      size: 16,
       color: "var(--graph-teaching)",
       labelVisibility: "hover"
     },
@@ -113,7 +113,7 @@ export const defaultEntryTypes = [
     includeInRecent: true,
     graph: {
       shape: "hexagon",
-      size: 11,
+      size: 16,
       color: "var(--graph-project)",
       labelVisibility: "hover"
     },

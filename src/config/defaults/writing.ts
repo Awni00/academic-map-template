@@ -3,6 +3,7 @@ import type { WritingConfig } from "../types";
 export const defaultWritingConfig = {
   route: "/writing",
   label: "Writing",
+  description: "Research notes, paper explainers, and teaching materials, organised as a linked map.",
   entryTypes: [],
   search: {
     writing: {

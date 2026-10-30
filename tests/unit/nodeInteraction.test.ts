@@ -29,6 +29,20 @@ describe("nodeHitRadius", () => {
   });
 });
 
+describe("zoom scale", () => {
+  it("keeps a glyph the same size on screen at any zoom", () => {
+    // Radius in graph units times pixels per unit is constant.
+    expect(nodePaintedRadius(hub, 2) * 2).toBeCloseTo(nodePaintedRadius(hub));
+    expect(nodeHitRadius(hub, 4) * 4).toBeCloseTo(nodeHitRadius(hub));
+  });
+
+  it("hit-tests against the on-screen target when zoomed in", () => {
+    const r = nodeHitRadius(hub, 3);
+    expect(nodeAtPoint([hub], r - 0.1, 0, 3)).toBe(hub);
+    expect(nodeAtPoint([hub], r + 0.1, 0, 3)).toBeNull();
+  });
+});
+
 describe("nodeAtPoint", () => {
   it("finds a node when the point is inside its target", () => {
     expect(nodeAtPoint([hub, note], 0, 0)).toBe(hub);

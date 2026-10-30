@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  curvedEdge,
   edgeGeometry,
   signedArea,
   type EdgeGeometryOptions,
@@ -132,5 +133,32 @@ describe("edgeGeometry", () => {
     expect(Math.hypot(left.x - midX, left.y - midY)).toBeCloseTo(arrow.width, 10);
     expect(Math.hypot(right.x - midX, right.y - midY)).toBeCloseTo(arrow.width, 10);
     expect(Math.hypot(tip.x - midX, tip.y - midY)).toBeCloseTo(arrow.length, 10);
+  });
+});
+
+describe("curvedEdge", () => {
+  const radii = { sourceRadius: 5, targetRadius: 8, curvature: 0.1 };
+
+  it("starts and ends on each glyph's rim", () => {
+    const edge = curvedEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, radii)!;
+    expect(Math.hypot(edge.start.x, edge.start.y)).toBeCloseTo(5);
+    expect(Math.hypot(edge.end.x - 100, edge.end.y)).toBeCloseTo(8);
+  });
+
+  it("bows off the straight line by the curvature times the span", () => {
+    const edge = curvedEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, radii)!;
+    expect(edge.control.x).toBeCloseTo(50);
+    expect(Math.abs(edge.control.y)).toBeCloseTo(10);
+  });
+
+  it("takes its bow from the edge's direction", () => {
+    const ab = curvedEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, radii)!;
+    const ba = curvedEdge({ x: 100, y: 0 }, { x: 0, y: 0 }, radii)!;
+    // Reversing the edge flips the normal, so the two arcs mirror each other.
+    expect(ab.control.y).toBeCloseTo(-ba.control.y);
+  });
+
+  it("draws nothing when the glyphs meet", () => {
+    expect(curvedEdge({ x: 0, y: 0 }, { x: 12, y: 0 }, radii)).toBeNull();
   });
 });
