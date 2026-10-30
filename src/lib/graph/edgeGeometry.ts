@@ -111,3 +111,45 @@ export function edgeGeometry(
 
   return { shaft, heads };
 }
+
+/** A quadratic edge: start, one control point, end. */
+export type CurvedEdge = { start: Point; control: Point; end: Point };
+
+/**
+ * The bowed line drawn for an undirected edge.
+ *
+ * The control point sits off the midpoint by `curvature` times the span, on the
+ * normal turned a quarter turn from source to target. The sign therefore
+ * follows the edge's direction, so a pair of nodes linked once gets one arc, and
+ * the bow keeps parallel edges from fanning out of a hub as a single bar.
+ *
+ * Each end is pulled back along the curve's own tangent by that glyph's radius,
+ * so the line meets a node's rim rather than its centre. That matters when the
+ * node is faded: an edge running to the centre would show through it.
+ */
+export function curvedEdge(
+  source: Point,
+  target: Point,
+  options: { sourceRadius: number; targetRadius: number; curvature: number }
+): CurvedEdge | null {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const length = Math.hypot(dx, dy);
+  if (length <= options.sourceRadius + options.targetRadius) return null;
+
+  const control = {
+    x: (source.x + target.x) / 2 + dy * options.curvature,
+    y: (source.y + target.y) / 2 - dx * options.curvature
+  };
+  const toward = (from: Point, distance: number): Point => {
+    const tx = control.x - from.x;
+    const ty = control.y - from.y;
+    const t = Math.hypot(tx, ty) || 1;
+    return { x: from.x + (tx / t) * distance, y: from.y + (ty / t) * distance };
+  };
+  return {
+    start: toward(source, options.sourceRadius),
+    control,
+    end: toward(target, options.targetRadius)
+  };
+}

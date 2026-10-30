@@ -52,7 +52,6 @@ export default function LocalGraphMap({
           graph={localGraph}
           height={height}
           selected={selectedId}
-          selectedStyle="soft-glow"
           anchor={currentId}
           drag={graphConfig.interaction.drag}
           labelMode="none"

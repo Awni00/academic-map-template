@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { getEntryType } from "../../config";
+import { graphConfig } from "../../config";
+import { hubMemberCounts } from "../../lib/graph/clusterLayout";
 import type { EntryType, GraphIndex, EntryNode } from "../../lib/graph/types";
 import { writingEntryUrl } from "../../lib/routes/paths";
 import GraphCanvas from "./GraphCanvas";
+import HubList from "./HubList";
 import NodeDetailPanel from "./NodeDetailPanel";
-import NodeIcon, { type NodeShape } from "./NodeIcon";
 
 /**
  * The "Explore Writing" widget that sits on the homepage below the hero.
@@ -106,6 +107,9 @@ export default function WritingPreview({
     const shown = new Set(previewGraph.nodes.map((node) => node.id));
     return graph.hubs.filter((hub) => shown.has(hub.id));
   }, [graph, previewGraph]);
+  // Counted over the whole collection, not the preview's subset: the number
+  // says how big a topic is, which a capped preview would understate.
+  const hubCounts = useMemo(() => hubMemberCounts(graph.nodes), [graph]);
   const showPanel = interactive && previewGraph.nodes.length > 0;
 
   const needsGraph = desktopMode === "graph" || mobileMode === "graph";
@@ -143,10 +147,9 @@ export default function WritingPreview({
             <GraphCanvas
               graph={previewGraph}
               height={previewHeight}
-              hubLayout="circle"
+              hubLayout={graphConfig.layout.hubs}
               labelMode="config"
               selected={showPanel ? selected?.id : undefined}
-              selectedStyle="soft-glow"
               onSelect={showPanel ? handleSelect : undefined}
             />
           </div>
@@ -154,7 +157,7 @@ export default function WritingPreview({
             (selected ? (
               <NodeDetailPanel node={selected} className="writing-preview__side" />
             ) : (
-              <PreviewOverview hubs={previewHubs} onSelect={handleSelect} />
+              <PreviewOverview hubs={previewHubs} counts={hubCounts} onSelect={handleSelect} />
             ))}
         </div>
       )}
@@ -177,28 +180,19 @@ export default function WritingPreview({
  * The panel before anything is selected: what to do, and the hubs as a way in
  * — the same opening state as the full map's preview pane.
  */
-function PreviewOverview({ hubs, onSelect }: { hubs: EntryNode[]; onSelect: (id: string) => void }) {
+function PreviewOverview({
+  hubs,
+  counts,
+  onSelect
+}: {
+  hubs: EntryNode[];
+  counts: Map<string, number>;
+  onSelect: (id: string) => void;
+}) {
   return (
     <div className="node-panel writing-preview__side writing-preview__overview">
       <p className="preview-prompt">Select a node on the map to see its details.</p>
-      {hubs.length > 0 && (
-        <ul className="writing-preview__hubs">
-          {hubs.map((hub) => {
-            const hubType = getEntryType(hub.type);
-            return (
-              <li key={hub.id}>
-                <button type="button" className="preview-link" onClick={() => onSelect(hub.id)}>
-                  <NodeIcon
-                    shape={hubType.graph.shape as NodeShape}
-                    color={hubType.graph.color as string}
-                  />
-                  <span className="connection-title">{hub.title}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <HubList hubs={hubs} counts={counts} onSelect={onSelect} />
     </div>
   );
 }

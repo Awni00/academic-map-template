@@ -61,6 +61,24 @@ Supported top-level sections:
 - `writing`: writing route, browser behavior, validation behavior.
 - `entryTypes`: the writing entry type registry.
 
+### Graph layout and edges
+
+`graph.layout.hubs` decides how the writing map is arranged:
+
+- `cluster` (default) — every page gathers around the hub whose folder it lives
+  in, and the hubs settle where the forces put them. Topics read as groups, and
+  links between topics lean the groups toward each other.
+- `circle` — hubs pinned evenly round a circle, everything else free.
+- `row` — hubs pinned in a row across the top.
+- `force` — no pins and no grouping; links alone decide.
+
+`graph.links.directed` (default `false`) draws edges as plain curves. Direction
+is still shown where it can be read, in the selected page's connection list;
+set it to `true` for arrowheads on the canvas.
+
+Glyph sizes (`entryTypes[].graph.size`) are diameters in screen pixels, and
+hold at every zoom level.
+
 ### Graph interaction
 
 `graph.interaction.drag` decides whether readers can rearrange a graph by
@@ -290,6 +308,8 @@ a table of contents and margin asides (1340px).
 `writing.route` moves the writing browser and every entry URL, and
 `writing.label` names the section: the browser's heading, its page title and
 description, the RSS feed title, and the homepage "View all" card.
+`writing.description` is the line beneath the browser's heading, and the page's
+meta description; set it to `""` to hide the line.
 
 ```ts
 export const siteConfigOverrides = {
@@ -394,9 +414,10 @@ Common fields:
   writing.
 - `graph.shape`: one of `circle`, `square`, `diamond`, or `hexagon`.
 - `graph.color`: any CSS color, including project CSS variables.
+- `graph.size`: the glyph's diameter in screen pixels, the same at every zoom.
 - `graph.labelVisibility`: `always` paints the title on the canvas beside the
-  node permanently (used for hubs), `hover` shows a floating label beside the
-  cursor, `never` shows no label at all.
+  node permanently (used for hubs, set in the body serif), `hover` names the
+  node when it or a neighbour is hovered, `never` shows no label at all.
 - `graph.interactive`: `false` makes nodes of this type ignore clicks. Defaults
   to `true`. Whether a given graph responds to clicks at all is still decided by
   the surface — the article-page and homepage graphs are read-only.

@@ -40,6 +40,15 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
 
     updateHeaderHeight();
 
+    // On phones the nav is one line that scrolls sideways (globals.css). Start
+    // it with the current page's link in view, not wherever the list begins.
+    const links = header.querySelector(".site-nav__links");
+    const current = links?.querySelector('a[aria-current="page"]');
+    if (links && current && links.scrollWidth > links.clientWidth) {
+      links.scrollLeft +=
+        current.getBoundingClientRect().left - links.getBoundingClientRect().left - 12;
+    }
+
     if ("ResizeObserver" in window) {
       const observer = new ResizeObserver(updateHeaderHeight);
       observer.observe(header);

@@ -1739,6 +1739,56 @@ pre {
   }
 }
 
+/* Phones: the header is one row — name, the nav as a single line that scrolls
+   sideways, the theme toggle. Wrapped, the nav stood three rows deep (about
+   130px) on every page, and on the writing map that height came straight out
+   of the map. The faded edges say there is more to swipe to; Header.astro
+   scrolls the current page's link into view on load. */
+@media (max-width: 640px) {
+  .site-header__inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 0;
+  }
+
+  .site-brand {
+    flex: none;
+    font-size: 16.5px;
+  }
+
+  .site-nav {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .site-nav__links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 18px;
+    padding-inline: 10px;
+    mask-image: linear-gradient(to right, transparent 0, #000 10px, #000 calc(100% - 22px), transparent);
+  }
+
+  .site-nav__links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-nav__links a {
+    white-space: nowrap;
+  }
+
+  .theme-toggle {
+    order: 0;
+    flex: none;
+    margin: 0;
+  }
+}
+
 @media (max-width: 640px) {
   .news {
     grid-template-columns: 80px 1fr;

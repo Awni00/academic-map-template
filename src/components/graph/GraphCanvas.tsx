@@ -16,6 +16,12 @@ import {
   fitPadding
 } from "../../lib/graph/anchorLayout";
 import {
+  centerForce,
+  clusterForce,
+  parentHubs,
+  seedPositions
+} from "../../lib/graph/clusterLayout";
+import {
   DRAG_CLICK_TOLERANCE_PX,
   beginGrab,
   canDragNode,
@@ -25,11 +31,10 @@ import {
   type DragMode,
   type Grab
 } from "../../lib/graph/nodeDrag";
-import { edgeGeometry } from "../../lib/graph/edgeGeometry";
+import { curvedEdge, edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
 
 type LabelMode = "config" | "all" | "none";
-type SelectedStyle = "outline" | "soft-glow";
 type GraphCanvasProps = {
   graph: GraphIndex;
   height?: number;
@@ -44,7 +49,6 @@ type GraphCanvasProps = {
    * nothing, saying nothing about where they live.
    */
   emphasized?: Set<string>;
-  selectedStyle?: SelectedStyle;
   /**
    * The node this view is *about* — the page you are on. Marked persistently
    * and independently of `selected`, which moves as the reader inspects
@@ -75,12 +79,23 @@ type GraphCanvasProps = {
   onSelect?: (id: string) => void;
   /**
    * How hubs are positioned in the simulation.
-   *   "force"  — let the force simulation place them (default for small
-   *              neighbourhoods such as the article-page local map).
-   *   "circle" — pin hubs evenly around a circle.
-   *   "row"    — pin hubs in a horizontal row near the top.
+   *   "cluster" — entries gather round the hub whose folder they live in, and
+   *               the hubs settle where the forces put them.
+   *   "force"   — let the force simulation place them (default for small
+   *               neighbourhoods such as the article-page local map).
+   *   "circle"  — pin hubs evenly around a circle.
+   *   "row"     — pin hubs in a horizontal row near the top.
    */
   hubLayout?: HubLayout;
+  /** Screen pixels kept clear around the fitted graph. */
+  fitPad?: number;
+  /**
+   * Screen pixels along the bottom that something else covers — the phone
+   * bottom sheet — so the fit centres the graph in what stays visible.
+   */
+  bottomInset?: number;
+  /** Show +, −, and fit buttons in the corner of the canvas. */
+  zoomControls?: boolean;
 };
 
 /**
@@ -96,12 +111,36 @@ const FADE_ALPHA = 0.42;
  */
 const FADED_LABEL_ALPHA = 0.6;
 /**
- * Ceiling for the settle-time fit. `zoomToFit` derives scale from the node
- * bounding box, which degenerates to a point for a single node and to a line
- * for two — filling the viewport with one glyph. Nothing about a small graph
- * means the reader wants to be that close to it.
+ * The selection ring's opacity. Tests find the ring on the canvas by this
+ * value (tests/e2e/graph-selection.spec.ts), so nothing else may paint an arc
+ * at it.
  */
-const MAX_FIT_ZOOM = 2.5;
+const SELECTION_RING_ALPHA = 0.75;
+/**
+ * Ceiling for the settle-time fit. The scale comes from the node bounding box,
+ * which degenerates to a point for a single node and to a line for two. Glyphs
+ * keep their size on screen at any zoom, so a high zoom no longer balloons
+ * them; this cap only stops two nodes being spread to opposite corners.
+ */
+const MAX_FIT_ZOOM = 4;
+/** Room reserved above the fitted graph for the hub labels painted there. */
+const LABEL_HEADROOM = 22;
+/** One press of the + or − button. */
+const ZOOM_STEP = 1.4;
+/**
+ * Opacity of everything outside a hovered node's neighbourhood. Deeper than
+ * the filter fade: hover is a momentary question ("what is this connected
+ * to?") and the answer should stand out, where a filter is a standing state
+ * the reader has to keep reading through.
+ */
+const HOVER_DIM_ALPHA = 0.22;
+/** Edges outside a hovered neighbourhood. */
+const HOVER_DIM_EDGE_ALPHA = 0.16;
+/** Edges touching the hovered or selected node, in the accent colour. */
+const LIT_EDGE_ALPHA = 0.85;
+const LIT_EDGE_WIDTH = 1.4;
+/** How far an undirected edge bows, as a fraction of its length. */
+const EDGE_CURVATURE = 0.1;
 
 type ForceGraphComponent = React.ComponentType<any>;
 
@@ -110,13 +149,15 @@ export default function GraphCanvas({
   height = 520,
   selected,
   emphasized,
-  selectedStyle = "outline",
   anchor,
   drag = "none",
   labelMode = "config",
   labelSide = "auto",
   onSelect,
-  hubLayout = "force"
+  hubLayout = "force",
+  fitPad,
+  bottomInset = 0,
+  zoomControls = false
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<any>(null);
@@ -160,6 +201,12 @@ export default function GraphCanvas({
   // Bumped on every theme switch purely to force a re-render — see the
   // MutationObserver below for why that's what repaints the canvas.
   const [, setThemeVersion] = useState(0);
+  // Pixels per graph unit as of the last paint. Glyphs are sized in screen
+  // pixels, so hit-testing has to know the zoom to know how big a node is.
+  const zoomRef = useRef(1);
+  // Parent hub of each node, by folder; the cluster layout's one input beyond
+  // the links.
+  const parents = useMemo(() => parentHubs(graph.nodes), [graph]);
 
   useEffect(() => {
     let active = true;
@@ -249,9 +296,17 @@ export default function GraphCanvas({
     return out;
   }, [graph]);
 
+  // Only the pinned layouts place nodes by the canvas size, so only they should
+  // rebuild the node set when it changes. Rebuilding restarts the simulation,
+  // and a cluster map would rearrange itself on every window resize.
+  const pinBox = hubLayout === "circle" || hubLayout === "row" ? `${width ?? 800}x${height}` : "free";
+
   const graphData = useMemo(() => {
     const w = width ?? 800;
     const h = height;
+    // Folder-aware starting points, so the cluster layout settles the same way
+    // on every visit instead of from d3's spiral.
+    const seeds = hubLayout === "cluster" && !anchor ? seedPositions(graph.nodes, parents) : null;
     const hubs = graph.nodes.filter((node) => isHubType(node.type));
     const pinned: Record<string, { fx: number; fy: number; side: "top" | "bottom" }> = {};
 
@@ -308,11 +363,14 @@ export default function GraphCanvas({
         }
         // Unpinned nodes still get a side, derived from the same rule with
         // no y-position context yet — defaults to "top".
-        return { ...node, _labelSide: resolveSide(null) };
+        const seed = seeds?.get(node.id);
+        return { ...node, ...(seed ?? {}), _labelSide: resolveSide(null) };
       }),
       links: graph.edges.map((edge) => ({ ...edge }))
     };
-  }, [graph, hubLayout, height, width, labelSide, anchor]);
+    // `width` and `height` are read through `pinBox`, which changes only when
+    // a pinned layout actually depends on them.
+  }, [graph, hubLayout, pinBox, labelSide, anchor, parents]);
 
   // Drop a stale hover when the node set changes underneath it (e.g. a filter
   // removed the node the cursor was over).
@@ -350,6 +408,19 @@ export default function GraphCanvas({
     return () => observer.disconnect();
   }, []);
 
+  // Labels are painted in the site's web fonts, and a canvas does not repaint
+  // when a font finishes loading. Without this the first frames can settle in
+  // the fallback face and keep it until something else invalidates the canvas.
+  useEffect(() => {
+    let active = true;
+    document.fonts?.ready.then(() => {
+      if (active) setThemeVersion((version) => version + 1);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   /** Convert a pointer event to container-relative px, or null if not ready. */
   const pointerToContainer = (event: { clientX: number; clientY: number }) => {
     const container = containerRef.current;
@@ -366,7 +437,7 @@ export default function GraphCanvas({
     if (!fg?.screen2GraphCoords || !point) return null;
     const graphPoint = fg.screen2GraphCoords(point.x, point.y);
     return {
-      node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y),
+      node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y, zoomRef.current),
       point,
       graphPoint
     };
@@ -385,6 +456,10 @@ export default function GraphCanvas({
    */
   const allowPan = useCallback(() => !draggingRef.current, []);
 
+  /** Presses on the zoom buttons belong to the buttons, not to the map. */
+  const onControls = (event: { target: EventTarget | null }) =>
+    event.target instanceof Element && Boolean(event.target.closest(".graph-zoom"));
+
   function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
     const held = grabRef.current;
     if (held) {
@@ -399,6 +474,7 @@ export default function GraphCanvas({
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (onControls(event)) return;
     pressRef.current = { x: event.clientX, y: event.clientY };
     if (drag === "none") return;
     // Touch is left to pan and pinch. Claiming the gesture would need
@@ -491,7 +567,7 @@ export default function GraphCanvas({
   function handleClick(event: React.MouseEvent<HTMLDivElement>) {
     const press = pressRef.current;
     pressRef.current = null;
-    if (!onSelect) return;
+    if (!onSelect || onControls(event)) return;
     if (press) {
       const travel = Math.hypot(event.clientX - press.x, event.clientY - press.y);
       if (travel > DRAG_CLICK_TOLERANCE_PX) return; // that was a pan
@@ -509,12 +585,52 @@ export default function GraphCanvas({
   );
   // With painted labels suppressed, the floating label is a node's only channel
   // for its title, so every hovered node gets one regardless of its configured
-  // visibility. Honouring `labelVisibility` here would leave "always" types
-  // (hubs) silently anonymous — labelled nowhere on the canvas and unlabelled
-  // on hover — which is exactly backwards for the biggest nodes in the view.
-  const showFloatingLabel = Boolean(
-    hover && (labelMode === "none" || labelVisibilityFor(hover.node.type) === "hover")
-  );
+  // visibility. Where labels are painted, hovering paints the node's own label
+  // and its neighbours' on the canvas instead (see `focus`), so a floating
+  // copy would only repeat one of them.
+  const showFloatingLabel = Boolean(hover && labelMode === "none");
+
+  /** Links per node, for the cluster layout's link strengths. */
+  const degree = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const edge of drawnEdges) {
+      out.set(edge.source, (out.get(edge.source) ?? 0) + 1);
+      out.set(edge.target, (out.get(edge.target) ?? 0) + 1);
+    }
+    return out;
+  }, [drawnEdges]);
+
+  /** Each node's neighbours, either direction, for the hover highlight. */
+  const adjacency = useMemo(() => {
+    const out = new Map<string, Set<string>>();
+    for (const edge of drawnEdges) {
+      if (!out.has(edge.source)) out.set(edge.source, new Set());
+      if (!out.has(edge.target)) out.set(edge.target, new Set());
+      out.get(edge.source)!.add(edge.target);
+      out.get(edge.target)!.add(edge.source);
+    }
+    return out;
+  }, [drawnEdges]);
+
+  /**
+   * What the canvas is currently answering "connected to what?" for.
+   *
+   * Hover asks it of one node and dims everything outside the answer. A
+   * selection asks the same question more quietly — its edges light up, but
+   * nothing dims — because a selection lasts, and a map that stays mostly
+   * faded for as long as anything is selected is a map that is hard to read.
+   * Nothing is dimmed mid-drag, where the cursor is on the node being moved.
+   */
+  const hoverId = !dragging && hover ? (hover.node.id as string) : undefined;
+  const focus = useMemo(() => {
+    const id = hoverId ?? selected;
+    if (!id) return null;
+    return {
+      id,
+      dims: Boolean(hoverId),
+      near: new Set([id, ...(adjacency.get(id) ?? [])])
+    };
+  }, [hoverId, selected, adjacency]);
 
   /**
    * Where the neighbours sit and how many pixels a graph unit is worth. Pure
@@ -527,10 +643,15 @@ export default function GraphCanvas({
         ANCHOR_RING,
         { widthPx: width ?? 800, heightPx: height, padPx: fitPadding(height) },
         {
+          // Glyphs are sized in screen pixels, so in graph units they depend on
+          // the zoom; the ring is planned at the zoom it asks for.
           neighbourRadii: graph.nodes
             .filter((node) => node.id !== anchor)
-            .map((node) => nodePaintedRadius(node)),
-          anchorRadius: nodePaintedRadius(graph.nodes.find((node) => node.id === anchor))
+            .map((node) => nodePaintedRadius(node, ANCHOR_RING.scale)),
+          anchorRadius: nodePaintedRadius(
+            graph.nodes.find((node) => node.id === anchor),
+            ANCHOR_RING.scale
+          )
         }
       ),
     [width, height, graph.nodes, anchor]
@@ -564,15 +685,24 @@ export default function GraphCanvas({
    * edges the same effect is the point: crossings should darken, because that
    * is what makes a dense part of the map look dense.
    *
-   * So each edge's shaft and heads go into one path and are filled once, and
-   * separate edges get separate fills. `edgeGeometry` winds every ring the same
-   * direction so that single fill unions them rather than punching a hole where
-   * they overlap.
+   * Undirected edges (the default) are one stroked curve each. Directed edges
+   * keep the filled outline: each edge's shaft and heads go into one path and
+   * are filled once, and `edgeGeometry` winds every ring the same direction so
+   * that single fill unions them rather than punching a hole where they
+   * overlap.
+   *
+   * Widths and glyph radii are screen pixels divided by `scale`, the zoom, so
+   * a line is as fine zoomed in as out.
+   *
+   * Edges touching the focused node go in the accent colour, and are painted
+   * first: this runs under `destination-over`, where each later draw lands
+   * *beneath* what is already there, so first is on top.
    */
   const drawEdges = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D, scale: number) => {
       const { width, opacity, directed, arrow } = graphConfig.links;
       const edgeColor = resolveColor(graphConfig.links.color);
+      const accent = cssVar("--color-accent");
       const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
       // Heads only join the shaft's path when they share its colour. Given a
       // colour of their own they are a separate mark and belong on top, where
@@ -585,31 +715,58 @@ export default function GraphCanvas({
         path.closePath();
       };
 
+      const isLit = (edge: { source: string; target: string }) =>
+        Boolean(focus && (edge.source === focus.id || edge.target === focus.id));
+      const ordered = focus
+        ? [...drawnEdges.filter(isLit), ...drawnEdges.filter((edge) => !isLit(edge))]
+        : drawnEdges;
+
       ctx.save();
-      ctx.globalAlpha = opacity;
-      for (const edge of drawnEdges) {
+      ctx.lineCap = "round";
+      for (const edge of ordered) {
         const source = liveNodeById.get(edge.source);
         const target = liveNodeById.get(edge.target);
         if (!source || !target) continue;
         if (typeof source.x !== "number" || typeof target.x !== "number") continue;
+        const lit = isLit(edge);
+        ctx.globalAlpha = lit ? LIT_EDGE_ALPHA : focus?.dims ? HOVER_DIM_EDGE_ALPHA : opacity;
+        const color = lit ? accent : edgeColor;
+        const sourceRadius = nodePaintedRadius(source, scale);
+        const targetRadius = nodePaintedRadius(target, scale);
+
+        if (!directed) {
+          const curve = curvedEdge(source, target, {
+            sourceRadius,
+            targetRadius,
+            curvature: EDGE_CURVATURE
+          });
+          if (!curve) continue;
+          ctx.beginPath();
+          ctx.moveTo(curve.start.x, curve.start.y);
+          ctx.quadraticCurveTo(curve.control.x, curve.control.y, curve.end.x, curve.end.y);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = (lit ? LIT_EDGE_WIDTH : width) / scale;
+          ctx.stroke();
+          continue;
+        }
 
         const { shaft, heads } = edgeGeometry(source, target, {
-          sourceRadius: nodePaintedRadius(source),
-          targetRadius: nodePaintedRadius(target),
-          width,
+          sourceRadius,
+          targetRadius,
+          width: (lit ? LIT_EDGE_WIDTH : width) / scale,
           directed,
           bidirectional: edge.bidirectional,
-          arrow
+          arrow: { ...arrow, length: arrow.length / scale, width: arrow.width / scale }
         });
         if (!shaft && heads.length === 0) continue;
 
         const body = new Path2D();
         if (shaft) ring(body, shaft);
-        if (headsShareShaft) for (const head of heads) ring(body, head);
-        ctx.fillStyle = edgeColor;
+        if (headsShareShaft || lit) for (const head of heads) ring(body, head);
+        ctx.fillStyle = color;
         ctx.fill(body);
 
-        if (!headsShareShaft && heads.length > 0) {
+        if (!headsShareShaft && !lit && heads.length > 0) {
           const tips = new Path2D();
           for (const head of heads) ring(tips, head);
           ctx.fillStyle = headColor;
@@ -618,39 +775,58 @@ export default function GraphCanvas({
       }
       ctx.restore();
     },
-    [drawnEdges, liveNodeById]
+    [drawnEdges, liveNodeById, focus]
   );
 
+  /**
+   * Frame the viewport.
+   *
+   * Without an anchor, fit every node's bounding box into the canvas, less the
+   * padding, the headroom hub labels need above the top row, and anything
+   * covering the bottom (`bottomInset`). Glyphs keep their size on screen, so
+   * the padding in pixels is all the room they need.
+   *
+   * With one, there is nothing to fit: the anchor goes dead centre and the
+   * zoom is `anchorGeometry`'s, decided before the layout ran. Measuring the
+   * layout and scaling it to fill would hand the neighbour count control of
+   * how big a node is painted, which is the one thing this view must not do.
+   */
   const frame = (duration: number) => {
     const fg = fgRef.current;
     if (!fg || width == null) return;
-    const padding = fitPadding(height);
+    const padding = fitPad ?? fitPadding(height);
     const nodes = graphData.nodes as Array<{ id: string; x?: number; y?: number; type?: any }>;
     const anchorNode = anchor ? nodes.find((node) => node.id === anchor) : undefined;
     if (!anchorNode || typeof anchorNode.x !== "number") {
-      // `zoomToFit` reads its scale off the node bounding box, which has no
-      // area for one node and no height for two in a row — so a small graph
-      // gets magnified until a single glyph fills the canvas. Where the fit
-      // would exceed the ceiling we centre and cap by hand; everywhere else
-      // this defers to the library, so the ordinary case is untouched.
       const box = boundingBox(nodes);
-      const fit = box
-        ? Math.min(
-            (width - padding * 2) / Math.max(box.w, 1e-6),
-            (height - padding * 2) / Math.max(box.h, 1e-6)
-          )
-        : Infinity;
-      if (box && fit > MAX_FIT_ZOOM) {
-        fg.centerAt?.(box.cx, box.cy, duration);
-        fg.zoom?.(MAX_FIT_ZOOM, duration);
-      } else {
-        fg.zoomToFit?.(duration, padding);
-      }
+      if (!box) return;
+      const usableW = width - padding * 2;
+      const usableH = height - bottomInset - padding * 2 - LABEL_HEADROOM;
+      const zoom = Math.max(
+        0.05,
+        Math.min(
+          usableW / Math.max(box.w, 1e-6),
+          usableH / Math.max(box.h, 1e-6),
+          MAX_FIT_ZOOM
+        )
+      );
+      // `centerAt` puts a point at the middle of the whole canvas. Shifting it
+      // by half the covered strip, less half the label headroom, centres the
+      // graph in the part the reader can actually see.
+      const shiftPx = (bottomInset - LABEL_HEADROOM) / 2;
+      fg.centerAt?.(box.cx, box.cy + shiftPx / zoom, duration);
+      fg.zoom?.(zoom, duration);
       return;
     }
     fg.centerAt?.(anchorNode.x, anchorNode.y, duration);
     fg.zoom?.(anchorGeometry.zoom, duration);
   };
+
+  function zoomBy(factor: number) {
+    const fg = fgRef.current;
+    if (!fg?.zoom) return;
+    fg.zoom(Math.min(12, Math.max(0.05, fg.zoom() * factor)), 250);
+  }
 
   // Tune the d3-force simulation so hubs get more personal space than the
   // small entries around them. The default many-body strength is a flat
@@ -674,9 +850,21 @@ export default function GraphCanvas({
     //
     // An anchored view already has a centre by construction. Drop the force.
     if (roomy) fg.d3Force?.("center", null);
+    // The cluster layout replaces it too, with a per-node pull that keeps
+    // disconnected groups near one another (see `centerForce`).
+    const cluster = !roomy && hubLayout === "cluster";
+    if (cluster) fg.d3Force?.("center", null);
+    fg.d3Force?.(
+      "clusterCenter",
+      cluster ? centerForce(0.07, (width ?? 800) / Math.max(1, height - bottomInset)) : null
+    );
+    fg.d3Force?.("cluster", cluster ? clusterForce(parents, 36, 0.3) : null);
     const charge = fg.d3Force?.("charge");
     if (charge) {
-      if (roomy) {
+      if (cluster) {
+        charge.strength((node: any) => (isHubType(node.type) ? -140 : -45));
+        charge.distanceMax?.(220);
+      } else if (roomy) {
         // The radial force owns the radius, so many-body is left with one job:
         // pushing neighbours apart *around* the ring.
         charge.strength((node: any) =>
@@ -687,7 +875,7 @@ export default function GraphCanvas({
           isHubType(node.type) ? (roomy ? -400 : -180) : roomy ? -140 : -45
         );
       }
-      charge.distanceMax?.(roomy ? 900 : 280);
+      if (!cluster) charge.distanceMax?.(roomy ? 900 : 280);
     }
     const link = fg.d3Force?.("link");
     if (link) {
@@ -697,6 +885,21 @@ export default function GraphCanvas({
         // around the ring instead of sitting at arbitrary angles.
         link.distance(anchorGeometry.ringRadius);
         link.strength?.(ANCHOR_RING.linkStrength);
+      } else if (cluster) {
+        // Inside a group, links hold pages close; between groups they are
+        // long and weak, so a citation across topics leans two groups toward
+        // each other without dragging a page out of its own.
+        const id = (end: any) => (typeof end === "object" ? end.id : end);
+        const together = (edge: any) => {
+          const a = id(edge.source);
+          const b = id(edge.target);
+          return parents.get(a) === b || parents.get(b) === a || (parents.has(a) && parents.get(a) === parents.get(b));
+        };
+        link.distance((edge: any) => (together(edge) ? 40 : 80));
+        link.strength?.((edge: any) => {
+          const fewest = Math.min(degree.get(id(edge.source)) ?? 1, degree.get(id(edge.target)) ?? 1);
+          return (together(edge) ? 1 : 0.15) / Math.max(1, fewest);
+        });
       } else {
         link.distance((edge: any) => {
           const s = typeof edge.source === "object" ? edge.source.type : undefined;
@@ -715,11 +918,21 @@ export default function GraphCanvas({
     // Hard separation. Many-body alone lets nodes overlap once links pull them
     // together, which is what makes a force layout look bunched; a collision
     // force gives the neighbourhood a real minimum spacing.
-    fg.d3Force?.("anchorCollide", roomy ? collideForce(ANCHOR_RING.minGap) : null);
+    fg.d3Force?.(
+      "anchorCollide",
+      roomy
+        ? collideForce(ANCHOR_RING.minGap, ANCHOR_RING.scale)
+        : cluster
+          ? collideForce(18, 1)
+          : null
+    );
     fg.d3ReheatSimulation?.();
     // Frame onEngineStop: a wall-clock delay can fire while paused, before
     // the layout has reached its final bounds.
-  }, [ForceGraph, graphData, height, anchor, anchorGeometry, visibility.started]);
+    // `height` reaches the anchored forces through `anchorGeometry`, and the
+    // cluster's aspect ratio is read once per settle; a resize re-frames
+    // without re-running the layout (see below).
+  }, [ForceGraph, graphData, anchor, anchorGeometry, visibility.started, hubLayout, parents, degree]);
 
   // Re-frame when the slot changes width. The fit above runs once the
   // simulation settles and is never revisited, so a canvas that gets narrower
@@ -732,7 +945,7 @@ export default function GraphCanvas({
     if (!fg || width == null) return;
     const timer = window.setTimeout(() => frame(300), 250);
     return () => window.clearTimeout(timer);
-  }, [ForceGraph, width, height, anchor, anchorGeometry, visibility.started]);
+  }, [ForceGraph, width, height, anchor, anchorGeometry, visibility.started, bottomInset]);
 
   return (
     <div
@@ -793,7 +1006,12 @@ export default function GraphCanvas({
           // near, so it is given room to get there.
           // An anchored view has a radius to *reach*, not merely to settle
           // near, so it is given room to get there.
-          cooldownTicks={anchor ? 300 : 80}
+          cooldownTicks={anchor ? 300 : hubLayout === "cluster" ? 150 : 80}
+          // The cluster layout needs about 300 ticks to settle, which is five
+          // seconds of a map sliding about if every one of them is animated.
+          // Half run before the first frame, so the map opens nearly composed
+          // and only eases the last of the way into place.
+          warmupTicks={!anchor && hubLayout === "cluster" ? 150 : 0}
           // The default 15s wall-clock deadline expires even while animation
           // frames are suspended. Only actual simulation ticks should count.
           cooldownTime={Infinity}
@@ -818,25 +1036,45 @@ export default function GraphCanvas({
           // drawing beforehand would place edges at the previous tick's
           // positions and let them trail visibly behind a dragged node.
           // `destination-over` puts them back underneath the glyphs.
-          onRenderFramePost={(ctx: CanvasRenderingContext2D) => {
+          onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
             ctx.save();
             ctx.globalCompositeOperation = "destination-over";
-            drawEdges(ctx);
+            drawEdges(ctx, globalScale);
             ctx.restore();
           }}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+            zoomRef.current = globalScale;
+            const near = focus?.near.has(node.id) ?? false;
             drawNode(ctx, node, globalScale, {
               selected: selected === node.id,
               anchored: anchor === node.id,
-              // The selected node is exempt: see drawSelectedGlow.
+              focused: focus?.id === node.id,
+              // The selected node is exempt: see drawSelectionRing.
               faded: selected !== node.id && !!emphasized && !emphasized.has(node.id),
-              labelMode,
-              selectedStyle
+              dimmed: Boolean(focus?.dims) && !near,
+              // A hovered node and its neighbours are named on the canvas.
+              revealLabel: Boolean(focus?.dims) && near,
+              labelMode
             });
           }}
         />
       ) : (
         <div className="graph-loading">Loading graph...</div>
+      )}
+      {zoomControls && ForceGraph && visibility.started && (
+        <div className="graph-zoom" role="group" aria-label="Zoom">
+          <button type="button" aria-label="Zoom in" onClick={() => zoomBy(ZOOM_STEP)}>
+            +
+          </button>
+          <button type="button" aria-label="Zoom out" onClick={() => zoomBy(1 / ZOOM_STEP)}>
+            −
+          </button>
+          <button type="button" aria-label="Fit the map" onClick={() => frame(400)}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+            </svg>
+          </button>
+        </div>
       )}
       {showFloatingLabel && hover && (
         <div
@@ -888,7 +1126,7 @@ function radialForce(radius: number, strength: number) {
  * collide force does. O(n²), which is nothing at the twenty-odd nodes a local
  * neighbourhood holds. Pinned nodes are left where they are.
  */
-function collideForce(padding: number) {
+function collideForce(padding: number, scale: number) {
   let nodes: any[] = [];
   const force = () => {
     for (let i = 0; i < nodes.length; i += 1) {
@@ -897,7 +1135,7 @@ function collideForce(padding: number) {
         const b = nodes[j];
         const dx = (b.x ?? 0) - (a.x ?? 0);
         const dy = (b.y ?? 0) - (a.y ?? 0);
-        const minimum = nodePaintedRadius(a) + nodePaintedRadius(b) + padding;
+        const minimum = nodePaintedRadius(a, scale) + nodePaintedRadius(b, scale) + padding;
         const distance = Math.hypot(dx, dy) || 1e-6;
         if (distance >= minimum) continue;
         const shift = ((minimum - distance) / distance) * 0.5;
@@ -966,119 +1204,149 @@ function clamp(value: number, min: number, max: number): number {
 function drawNode(
   ctx: CanvasRenderingContext2D,
   node: any,
-  globalScale: number,
+  scale: number,
   state: {
     selected: boolean;
     faded: boolean;
+    /** Outside a hovered node's neighbourhood. */
+    dimmed: boolean;
+    /** The hovered or selected node itself. */
+    focused: boolean;
+    /** Paint this node's label even where its type is hover-only. */
+    revealLabel: boolean;
     labelMode: LabelMode;
-    selectedStyle: SelectedStyle;
     anchored?: boolean;
   }
 ) {
   const meta = getEntryType(node.type).graph;
-  const radius = nodePaintedRadius(node);
+  // Every size below is screen pixels over `scale`, so the glyph, its outline,
+  // and its label hold their size at any zoom.
+  const px = 1 / scale;
+  const radius = nodePaintedRadius(node, scale);
   const color = nodeColor(node.type);
   ctx.save();
-  ctx.globalAlpha = state.faded ? FADE_ALPHA : 1;
-
-  if (state.selected && state.selectedStyle === "soft-glow") {
-    drawSelectedGlow(ctx, node, radius, color);
-  }
-
+  ctx.globalAlpha = state.dimmed ? HOVER_DIM_ALPHA : state.faded ? FADE_ALPHA : 1;
 
   ctx.fillStyle = color;
-  ctx.strokeStyle =
-    state.selected && state.selectedStyle === "outline" ? cssVar("--color-fg") : cssVar("--color-bg");
-  ctx.lineWidth = state.selected && state.selectedStyle === "outline" ? 2.5 : 1;
-
+  ctx.strokeStyle = cssVar("--color-bg-soft");
+  ctx.lineWidth = 1.25 * px;
+  ctx.beginPath();
   if (meta.shape === "square") {
-    ctx.beginPath();
-    ctx.rect(node.x - radius, node.y - radius, radius * 2, radius * 2);
-    ctx.fill();
-    ctx.stroke();
+    // Rounded: a hub is a soft block, not a hard tile. NodeIcon matches.
+    roundedSquare(ctx, node.x, node.y, radius);
   } else if (meta.shape === "diamond") {
-    ctx.beginPath();
     ctx.moveTo(node.x, node.y - radius);
     ctx.lineTo(node.x + radius, node.y);
     ctx.lineTo(node.x, node.y + radius);
     ctx.lineTo(node.x - radius, node.y);
     ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
   } else if (meta.shape === "hexagon") {
-    polygon(ctx, node.x, node.y, radius + 1, 6);
-    ctx.fill();
-    ctx.stroke();
+    polygon(ctx, node.x, node.y, radius, 6);
   } else {
-    ctx.beginPath();
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
   }
+  ctx.fill();
+  ctx.stroke();
 
   // Punched out on top of the fill it punches through.
   if (state.anchored) {
     drawAnchorCore(ctx, node, radius);
   }
-
-  if (shouldPaintLabel(node, state.labelMode)) {
-    const label = node.title;
-    const fontSize = Math.min(14, Math.max(9, 11 / globalScale));
-    ctx.font = `${fontSize}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.fillStyle = cssVar("--color-fg");
-    ctx.textAlign = "center";
-    // Floored rather than inherited: the glyph says "not what you filtered
-    // for", the name says "you are here", and only the first of those is
-    // worth dimming.
-    if (state.faded) ctx.globalAlpha = FADED_LABEL_ALPHA;
-
-    const side: "top" | "bottom" = node._labelSide === "bottom" ? "bottom" : "top";
-    const offset = radius + 6;
-    if (side === "top") {
-      ctx.textBaseline = "bottom";
-      ctx.fillText(label, node.x, node.y - offset);
-    } else {
-      ctx.textBaseline = "top";
-      ctx.fillText(label, node.x, node.y + offset);
-    }
-  }
   ctx.restore();
+
+  if (state.selected) {
+    drawSelectionRing(ctx, node, radius, px);
+  }
+
+  const named = state.revealLabel || state.selected;
+  if (shouldPaintLabel(node, state.labelMode) || (named && state.labelMode !== "none")) {
+    paintLabel(ctx, node, radius, px, {
+      hub: labelVisibilityFor(node.type) === "always",
+      strong: state.focused || state.selected,
+      // Floored rather than inherited: the glyph says "not what you filtered
+      // for", the name says "you are here", and only the first of those is
+      // worth dimming.
+      alpha: state.dimmed ? HOVER_DIM_ALPHA * 2 : state.faded ? FADED_LABEL_ALPHA : 1
+    });
+  }
+}
+
+/**
+ * A node's name, above or below it.
+ *
+ * Hubs are set in the body serif, like the site's headings: they name topics,
+ * and are the map's few permanent words. Everything else is named only on
+ * hover or selection, in the UI face. Each label sits on a halo of the canvas
+ * colour, so an edge running behind it breaks around the text instead of
+ * striking through it.
+ */
+function paintLabel(
+  ctx: CanvasRenderingContext2D,
+  node: any,
+  radius: number,
+  px: number,
+  style: { hub: boolean; strong: boolean; alpha: number }
+) {
+  const size = style.hub ? 14.5 : 12;
+  const weight = style.hub ? 600 : style.strong ? 500 : 400;
+  const family = cssVar(style.hub ? "--font-body" : "--font-ui", "ui-sans-serif, system-ui, sans-serif");
+  ctx.save();
+  ctx.globalAlpha = style.alpha;
+  ctx.font = `${weight} ${size * px}px ${family}`;
+  ctx.textAlign = "center";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 4 * px;
+  ctx.strokeStyle = cssVar("--color-bg-soft");
+  ctx.fillStyle = cssVar("--color-fg");
+  const offset = radius + (style.hub ? 9 : 7) * px;
+  const below = node._labelSide === "bottom";
+  ctx.textBaseline = below ? "top" : "bottom";
+  const y = below ? node.y + offset : node.y - offset;
+  ctx.strokeText(node.title, node.x, y);
+  ctx.fillText(node.title, node.x, y);
+  ctx.restore();
+}
+
+function roundedSquare(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
+  const corner = radius * 0.36;
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(x - radius, y - radius, radius * 2, radius * 2, corner);
+    return;
+  }
+  ctx.rect(x - radius, y - radius, radius * 2, radius * 2);
 }
 
 /**
  * Mark the anchor node: a small disc of page background punched through the
  * glyph's centre. It leaves the node's shape and colour intact, and reads as
  * annotation rather than as another node state — which matters, because
- * selection already owns the glow.
+ * selection already owns the ring.
  */
 function drawAnchorCore(ctx: CanvasRenderingContext2D, node: any, radius: number) {
   ctx.save();
   ctx.fillStyle = cssVar("--color-bg");
   ctx.beginPath();
-  ctx.arc(node.x, node.y, Math.max(1.5, radius * 0.32), 0, 2 * Math.PI);
+  ctx.arc(node.x, node.y, radius * 0.32, 0, 2 * Math.PI);
   ctx.fill();
   ctx.restore();
 }
 
 /**
+ * A fine ring around the selected node.
+ *
  * Selection is a third axis — what the reader is inspecting — and not a claim
  * about matching anything, so it paints at full strength even when the node
  * under it is faded. Otherwise selecting a node and then filtering it out
- * leaves the preview pane describing something all but invisible.
+ * leaves the panel describing something all but invisible.
  */
-function drawSelectedGlow(
-  ctx: CanvasRenderingContext2D,
-  node: any,
-  radius: number,
-  color: string
-) {
-  const glowRadius = radius + 4;
+function drawSelectionRing(ctx: CanvasRenderingContext2D, node: any, radius: number, px: number) {
   ctx.save();
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.18;
+  ctx.globalAlpha = SELECTION_RING_ALPHA;
+  ctx.strokeStyle = cssVar("--color-fg");
+  ctx.lineWidth = 1.25 * px;
   ctx.beginPath();
-  ctx.arc(node.x, node.y, glowRadius, 0, 2 * Math.PI);
-  ctx.fill();
+  ctx.arc(node.x, node.y, radius + 4 * px, 0, 2 * Math.PI);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -1117,7 +1385,7 @@ function resolveColor(color: string): string {
   return cssVariable ? cssVar(cssVariable) : color;
 }
 
-function cssVar(name: string): string {
-  if (typeof window === "undefined") return "#111111";
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#111111";
+function cssVar(name: string, fallback = "#111111"): string {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }

@@ -16,7 +16,8 @@ export default function NodeIcon({ shape, color }: { shape: NodeShape; color: st
     case "square":
       return (
         <svg {...props}>
-          <rect x={-4} y={-4} width={8} height={8} />
+          {/* Corners as rounded as the canvas glyph's (0.36 of the radius). */}
+          <rect x={-4} y={-4} width={8} height={8} rx={1.45} />
         </svg>
       );
     case "diamond":

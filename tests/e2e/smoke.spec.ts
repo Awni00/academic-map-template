@@ -149,9 +149,9 @@ test("writing browser supports URL state and preview", async ({ page }) => {
   // canvas to that too); the panel offers the hubs as a way in instead.
   await expect(page.locator(".graph-canvas__surface")).toBeVisible();
   const preview = page.locator(".preview-pane");
-  const title = preview.locator(".preview-title");
+  const title = preview.locator(".node-panel__title");
   const openPage = preview.getByRole("link", { name: "Open page" });
-  await expect(preview).toContainText("Select a node on the map");
+  await expect(preview).toContainText(/(Select|Tap) a node on the map/);
   await expect(title).toHaveCount(0);
 
   // Rows — hubs here, connections below — select the node they name rather
@@ -166,6 +166,10 @@ test("writing browser supports URL state and preview", async ({ page }) => {
   await expect(title).toHaveText("Hub 1");
   await expect(openPage).toHaveAttribute("href", /\/writing\/hub-1\/?$/);
 
+  // On a phone the panel is a bottom sheet that opens collapsed, with the
+  // connections behind its "links" toggle.
+  const more = preview.locator(".node-panel__more");
+  if (await more.isVisible()) await more.click();
   const connection = preview.locator(".preview-link").first();
   const connectionTitle = await connection
     .locator(".connection-title")

@@ -17,10 +17,10 @@ import type { EntryType, LabelVisibility } from "../../config";
  * side effect of being testable without a DOM.
  */
 
-/** Smallest pointer target, in graph units — keeps 9px notes reachable. */
-const MIN_HIT_RADIUS = 8;
+/** Smallest pointer target, in screen pixels — keeps the smallest glyphs reachable. */
+const MIN_HIT_RADIUS = 10;
 
-/** Grab room beyond the painted glyph, in graph units. */
+/** Grab room beyond the painted glyph, in screen pixels. */
 const HIT_PADDING = 3;
 
 /**
@@ -30,7 +30,7 @@ const HIT_PADDING = 3;
  */
 const AXIS_EPSILON = 1e-6;
 
-export type HubLayout = "circle" | "row" | "force";
+export type HubLayout = "cluster" | "circle" | "row" | "force";
 export type LabelSide = "top" | "bottom" | "auto";
 export type LabelPlacement = "top" | "bottom";
 
@@ -41,9 +41,16 @@ export type PositionedNode = {
   y?: number;
 };
 
-/** Radius `drawNode` paints the glyph at, in graph units. */
-export function nodePaintedRadius(node?: { type?: EntryType }): number {
-  return Math.max(3, getEntryType(node?.type as EntryType).graph.size / 2);
+/**
+ * Radius `drawNode` paints the glyph at, in graph units.
+ *
+ * A type's `size` is a diameter in screen pixels, so the radius in graph units
+ * depends on how many pixels a unit is worth: `scale`, the canvas zoom. Passing
+ * the live zoom keeps a glyph the same size on screen however far the reader
+ * zooms; the default of 1 is the layout's own measure, where a unit is a pixel.
+ */
+export function nodePaintedRadius(node?: { type?: EntryType }, scale = 1): number {
+  return Math.max(3, getEntryType(node?.type as EntryType).graph.size / 2) / scale;
 }
 
 /**
@@ -51,8 +58,8 @@ export function nodePaintedRadius(node?: { type?: EntryType }): number {
  * glyph so a hub owns proportionally more canvas than a note, with a floor so
  * the smallest types stay comfortably clickable.
  */
-export function nodeHitRadius(node?: { type?: EntryType }): number {
-  return Math.max(MIN_HIT_RADIUS, nodePaintedRadius(node) + HIT_PADDING);
+export function nodeHitRadius(node?: { type?: EntryType }, scale = 1): number {
+  return Math.max(MIN_HIT_RADIUS, nodePaintedRadius(node) + HIT_PADDING) / scale;
 }
 
 /**
@@ -63,14 +70,15 @@ export function nodeHitRadius(node?: { type?: EntryType }): number {
 export function nodeAtPoint<T extends PositionedNode>(
   nodes: readonly T[],
   x: number,
-  y: number
+  y: number,
+  scale = 1
 ): T | null {
   let best: T | null = null;
   let bestDistance = Infinity;
   for (const node of nodes) {
     if (typeof node.x !== "number" || typeof node.y !== "number") continue;
     const distance = Math.hypot(node.x - x, node.y - y);
-    if (distance > nodeHitRadius(node) || distance >= bestDistance) continue;
+    if (distance > nodeHitRadius(node, scale) || distance >= bestDistance) continue;
     bestDistance = distance;
     best = node;
   }
@@ -97,7 +105,7 @@ export function resolveLabelSide(
   if (options.labelSide === "top") return "top";
   if (options.labelSide === "bottom") return "bottom";
   // "auto": only the circle layout has an above/below to derive from.
-  if (options.hubLayout === "row" || options.hubLayout === "force") return "top";
+  if (options.hubLayout !== "circle") return "top";
   return yPos != null && yPos > AXIS_EPSILON ? "bottom" : "top";
 }
 
