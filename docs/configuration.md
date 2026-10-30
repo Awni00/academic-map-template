@@ -310,6 +310,7 @@ export const siteConfigOverrides = {
         enabled: true,
         title: "Recent posts",
         maxItems: 6,
+        select: "featured-first",
         viewAll: {
           enabled: true,
           label: "View all →",
@@ -326,6 +327,14 @@ export const siteConfigOverrides = {
 - `title`: the section heading, default `"Recent writing"`. Set it alongside
   `writing.label` and `writing.route` if you rename the writing section.
 - `maxItems`: how many entries to show, default `6`.
+- `select`: which entries fill the row, newest first within each group.
+  - `featured-first` (default): entries with `featured: true` in their
+    frontmatter, then the rest. Without any featured entry this is the same
+    as `recent`. If you feature `maxItems` or more entries, the row shows only
+    those.
+  - `recent`: by date only; `featured` is ignored.
+  - `featured`: only featured entries. Retitle the section to match, e.g.
+    `title: "Featured writing"`.
 - `viewAll`: the card that ends the row. `enabled: false` drops it, leaving
   only the recent entries. `label` is its link text, default `"View all →"`.
   `description` is the line beneath, default `"Browse {writing.label}"`, so it

@@ -72,6 +72,7 @@ export const defaultSiteConfig = {
       enabled: true,
       title: "Recent writing",
       maxItems: 6,
+      select: "featured-first",
       viewAll: {
         enabled: true,
         label: "View all →"
