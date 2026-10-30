@@ -4,6 +4,7 @@ import { getEntryType, graphConfig, writingConfig, type EntryType } from "../../
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
 import { searchWriting, toSearchDocuments } from "../../lib/search/writingSearch";
 import GraphCanvas from "./GraphCanvas";
+import NodeIcon, { type NodeShape } from "./NodeIcon";
 import ListView from "./list/ListView";
 import TopicsView from "./topics/TopicsView";
 
@@ -618,51 +619,4 @@ function TagIcon() {
       <circle cx={7} cy={7} r={1.3} fill="currentColor" stroke="none" />
     </svg>
   );
-}
-
-type NodeShape = "square" | "circle" | "diamond" | "hexagon";
-
-function NodeIcon({ shape, color }: { shape: NodeShape; color: string }) {
-  // Inline SVG so the legend mirrors the actual node glyphs drawn on the
-  // canvas (not just colored dots).
-  const props = {
-    width: 12,
-    height: 12,
-    viewBox: "-6 -6 12 12",
-    "aria-hidden": true,
-    className: "graph-legend-icon",
-    style: { color, fill: color }
-  } as const;
-  switch (shape) {
-    case "square":
-      return (
-        <svg {...props}>
-          <rect x={-4} y={-4} width={8} height={8} />
-        </svg>
-      );
-    case "diamond":
-      return (
-        <svg {...props}>
-          <polygon points="0,-5 5,0 0,5 -5,0" />
-        </svg>
-      );
-    case "hexagon": {
-      const points = Array.from({ length: 6 }, (_, i) => {
-        const angle = (Math.PI * 2 * i) / 6 - Math.PI / 2;
-        return `${Math.cos(angle) * 5},${Math.sin(angle) * 5}`;
-      }).join(" ");
-      return (
-        <svg {...props}>
-          <polygon points={points} />
-        </svg>
-      );
-    }
-    case "circle":
-    default:
-      return (
-        <svg {...props}>
-          <circle cx={0} cy={0} r={4.5} />
-        </svg>
-      );
-  }
 }

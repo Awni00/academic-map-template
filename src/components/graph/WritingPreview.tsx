@@ -1,9 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 
+import { getEntryType } from "../../config";
 import type { EntryType, GraphIndex, EntryNode } from "../../lib/graph/types";
 import { writingEntryUrl } from "../../lib/routes/paths";
 import GraphCanvas from "./GraphCanvas";
 import NodeDetailPanel from "./NodeDetailPanel";
+import NodeIcon, { type NodeShape } from "./NodeIcon";
 
 /**
  * The "Explore Writing" widget that sits on the homepage below the hero.
@@ -95,13 +97,16 @@ export default function WritingPreview({
     [graph, filter, maxNodes]
   );
 
-  // Selection starts on the first node shown — hubs sort first, so normally a
-  // hub — so the panel is never empty and opens on the map's broadest entry.
+  // Starts with nothing selected, as the full map does; the panel offers the
+  // hubs in the meantime.
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const handleSelect = useCallback((id: string) => setSelectedId(id), []);
-  const selected =
-    previewGraph.nodes.find((node) => node.id === selectedId) ?? previewGraph.nodes[0];
-  const showPanel = interactive && selected !== undefined;
+  const selected = previewGraph.nodes.find((node) => node.id === selectedId);
+  const previewHubs = useMemo(() => {
+    const shown = new Set(previewGraph.nodes.map((node) => node.id));
+    return graph.hubs.filter((hub) => shown.has(hub.id));
+  }, [graph, previewGraph]);
+  const showPanel = interactive && previewGraph.nodes.length > 0;
 
   const needsGraph = desktopMode === "graph" || mobileMode === "graph";
   const needsCards = desktopMode === "topic-cards" || mobileMode === "topic-cards";
@@ -140,12 +145,17 @@ export default function WritingPreview({
               height={previewHeight}
               hubLayout="circle"
               labelMode="config"
-              selected={showPanel ? selected.id : undefined}
+              selected={showPanel ? selected?.id : undefined}
               selectedStyle="soft-glow"
               onSelect={showPanel ? handleSelect : undefined}
             />
           </div>
-          {showPanel && <NodeDetailPanel node={selected} className="writing-preview__side" />}
+          {showPanel &&
+            (selected ? (
+              <NodeDetailPanel node={selected} className="writing-preview__side" />
+            ) : (
+              <PreviewOverview hubs={previewHubs} onSelect={handleSelect} />
+            ))}
         </div>
       )}
 
@@ -160,6 +170,36 @@ export default function WritingPreview({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * The panel before anything is selected: what to do, and the hubs as a way in
+ * — the same opening state as the full map's preview pane.
+ */
+function PreviewOverview({ hubs, onSelect }: { hubs: EntryNode[]; onSelect: (id: string) => void }) {
+  return (
+    <div className="node-panel writing-preview__side writing-preview__overview">
+      <p className="preview-prompt">Select a node on the map to see its details.</p>
+      {hubs.length > 0 && (
+        <ul className="writing-preview__hubs">
+          {hubs.map((hub) => {
+            const hubType = getEntryType(hub.type);
+            return (
+              <li key={hub.id}>
+                <button type="button" className="preview-link" onClick={() => onSelect(hub.id)}>
+                  <NodeIcon
+                    shape={hubType.graph.shape as NodeShape}
+                    color={hubType.graph.color as string}
+                  />
+                  <span className="connection-title">{hub.title}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 

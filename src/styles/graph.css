@@ -79,6 +79,20 @@
   height: calc(var(--map-height, 360px) + 2 * var(--preview-pad) + 2px);
 }
 
+/* Nothing selected yet: no type to colour the edge by, and the hub list is a
+   set of ways in rather than a description, so the edge stays neutral. */
+.writing-preview__overview {
+  --map-accent: var(--color-border);
+}
+
+.writing-preview__hubs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--color-fg-soft);
+}
+
 .writing-preview__canvas::before {
   content: "";
   position: absolute;

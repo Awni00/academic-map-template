@@ -63,8 +63,9 @@ async function clickNode(page: Page, label: string) {
 test("clicking a homepage map node selects it without leaving the page", async ({ page }) => {
   await openHomeMap(page);
   const panel = page.locator(".writing-preview .node-panel");
-  // Opens on a node rather than empty.
-  await expect(panel.locator(".node-panel__title")).not.toHaveText("");
+  // Opens with nothing selected, as the full map does.
+  await expect(panel).toContainText("Select a node on the map");
+  await expect(panel.locator(".node-panel__title")).toHaveCount(0);
 
   await clickNode(page, "Hub 2");
   await expect(panel.locator(".node-panel__title")).toHaveText("Hub 2");
@@ -75,4 +76,11 @@ test("clicking a homepage map node selects it without leaving the page", async (
   expect(href).toBeTruthy();
   await open.click();
   await expect(page).toHaveURL((url) => url.pathname === new URL(href!, url).pathname);
+});
+
+test("a hub in the homepage map's opening panel selects it", async ({ page }) => {
+  await openHomeMap(page);
+  const panel = page.locator(".writing-preview .node-panel");
+  await panel.locator(".preview-link", { hasText: "Hub 3" }).click();
+  await expect(panel.locator(".node-panel__title")).toHaveText("Hub 3");
 });
