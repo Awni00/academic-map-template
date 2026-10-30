@@ -416,6 +416,8 @@ export type PublicationsConfig = {
     showButtonField: string;
   };
   abstractDisplay: PublicationAbstractDisplay;
+  /** Typeset `$…$` and `\(…\)` in abstracts with KaTeX; `false` prints them as written. */
+  abstractMath: boolean;
   previews: {
     enabled: boolean;
     basePath: string;

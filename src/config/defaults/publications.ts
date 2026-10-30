@@ -11,6 +11,7 @@ export const defaultPublicationsConfig = {
     showButtonField: "bibtex_show"
   },
   abstractDisplay: "popup",
+  abstractMath: true,
   previews: {
     enabled: true,
     basePath: "/publications"

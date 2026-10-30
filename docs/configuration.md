@@ -110,6 +110,21 @@ export const siteConfigOverrides = {
 } satisfies SiteConfigOverrides;
 ```
 
+Math in an abstract is typeset with KaTeX in every mode: write `$…$` or
+`\(…\)` in the BibTeX `abstract` field, as in a paper. It uses the same
+macros as articles (`src/site/math.ts`). `\$` is a literal dollar, and
+prices stay prose: a `$` with no partner, or a pair with a space just inside
+or a digit right after (`costs $5 and $10`), is left as text. To print
+abstracts exactly as written instead:
+
+```ts
+export const siteConfigOverrides = {
+  publications: {
+    abstractMath: false
+  }
+} satisfies SiteConfigOverrides;
+```
+
 ## Homepage Hero
 
 The homepage opens with a "margin card": your photo, a short caption (name,
