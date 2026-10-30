@@ -3,6 +3,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import GraphBrowser from "../../src/components/graph/GraphBrowser";
+import { writingConfig } from "../../src/config/writing";
+import { browserLabels } from "../../src/lib/graph/browserLabels";
 import { buildGraphIndex } from "../../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../../src/lib/graph/types";
 
@@ -46,5 +48,26 @@ describe("GraphBrowser initial state", () => {
     expect(html).toContain(">Learning<");
     expect(html).toContain(">Systems<");
     expect(html).not.toContain(">Paper One<");
+  });
+});
+
+describe("GraphBrowser labels", () => {
+  it("names the browser after writing.label rather than a fixed word", () => {
+    const { index } = buildGraphIndex(entries);
+    const html = renderToString(createElement(GraphBrowser, { graph: index }));
+    const { heading, all } = browserLabels();
+
+    expect(heading).toBe(writingConfig.label);
+    expect(html).toContain(`>${heading}</span>`);
+    expect(html).toContain(`<span class="crumb">${all}</span>`);
+    expect(html).toContain(`aria-label="${heading} browser"`);
+  });
+
+  it("derives the breadcrumb from the label unless the site sets one", () => {
+    const base = { label: "Blog", browser: { ...writingConfig.browser, labels: {} } };
+    expect(browserLabels(base)).toEqual({ heading: "Blog", all: "All blog" });
+    expect(
+      browserLabels({ ...base, browser: { ...base.browser, labels: { all: "All posts" } } }).all
+    ).toBe("All posts");
   });
 });

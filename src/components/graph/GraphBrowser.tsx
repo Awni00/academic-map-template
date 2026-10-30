@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getEntryType, graphConfig, writingConfig, type EntryType } from "../../config";
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
+import { browserLabels } from "../../lib/graph/browserLabels";
 import { searchWriting, toSearchDocuments } from "../../lib/search/writingSearch";
 import GraphCanvas from "./GraphCanvas";
 import ListView from "./list/ListView";
@@ -23,6 +24,7 @@ const CANVAS_HEIGHT = 660;
 const CANVAS_HEIGHT_NARROW = 420;
 
 const VIEWS = ["map", "topics", "list"] as const;
+const labels = browserLabels();
 type View = (typeof VIEWS)[number];
 
 export default function GraphBrowser({ graph }: GraphBrowserProps) {
@@ -152,7 +154,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       : `${listEntries.length} pages`;
 
   const ViewSwitcher = (
-    <div className="graph-seg" role="tablist" aria-label="Writing view">
+    <div className="graph-seg" role="tablist" aria-label={`${labels.heading} view`}>
       {VIEWS.map((v) => (
         <button
           key={v}
@@ -168,10 +170,10 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   );
 
   return (
-    <section className="graph-browser" aria-label="Writing browser">
+    <section className="graph-browser" aria-label={`${labels.heading} browser`}>
       <div className="graph-view-bar">
         <div className="graph-view-bar__left">
-          <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>Writing</span>
+          <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>{labels.heading}</span>
           <span className="graph-view-bar__count">{countLabel}</span>
         </div>
         <div className="graph-view-bar__right">
@@ -189,7 +191,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
           <div className="graph-panel graph-panel--center">
             <div className="graph-canvas-bar">
               <div className="graph-crumbs">
-                <span className="crumb">All writing</span>
+                <span className="crumb">{labels.all}</span>
                 {/* A map where everything is faded looks identical to one that
                     failed to render, so the zero case has to be said in words
                     rather than shown. */}

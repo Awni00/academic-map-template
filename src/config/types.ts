@@ -111,6 +111,14 @@ export type WritingConfig = {
   browser: {
     topics: TopicsConfig;
     list: ListConfig;
+    /**
+     * Text the writing browser shows. The heading is always `writing.label`;
+     * `all` is the map's breadcrumb, defaulting to "All {label}" lowercased —
+     * set it when that reads badly ("All blog" → "All posts").
+     */
+    labels: {
+      all?: string;
+    };
   };
   entryLayout: {
     mode: {
