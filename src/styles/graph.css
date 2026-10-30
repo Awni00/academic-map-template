@@ -359,14 +359,6 @@
   gap: 6px;
 }
 
-.graph-crumbs .crumb-sep {
-  color: var(--color-muted-2);
-}
-
-.graph-crumbs .crumb--active {
-  color: var(--color-fg);
-}
-
 .graph-crumbs button {
   background: transparent;
   border: 0;

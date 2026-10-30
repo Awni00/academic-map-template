@@ -276,17 +276,14 @@ a table of contents and margin asides (1340px).
 
 `writing.route` moves the writing browser and every entry URL, and
 `writing.label` names the section: the browser's heading, its page title and
-description, the RSS feed title, and the homepage "View all" card. The map's
-breadcrumb reads "All {label}", lowercased; set `writing.browser.labels.all`
-when that reads badly.
+description, the RSS feed title, and the homepage "View all" card.
 
 ```ts
 export const siteConfigOverrides = {
   writing: {
     route: "/blog",
     label: "Blog",
-    rss: { route: "/blog/rss.xml" },
-    browser: { labels: { all: "All posts" } }
+    rss: { route: "/blog/rss.xml" }
   }
 } satisfies SiteConfigOverrides;
 ```

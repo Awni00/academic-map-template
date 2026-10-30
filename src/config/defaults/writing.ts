@@ -37,8 +37,7 @@ export const defaultWritingConfig = {
       showTypeFilter: true,
       defaultSort: { field: "date", dir: "desc" },
       sortOptions: ["date", "title", "type"]
-    },
-    labels: {}
+    }
   },
   entryLayout: {
     mode: {

@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 
 import GraphBrowser from "../../src/components/graph/GraphBrowser";
 import { writingConfig } from "../../src/config/writing";
-import { browserLabels } from "../../src/lib/graph/browserLabels";
 import { buildGraphIndex } from "../../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../../src/lib/graph/types";
 
@@ -55,19 +54,20 @@ describe("GraphBrowser labels", () => {
   it("names the browser after writing.label rather than a fixed word", () => {
     const { index } = buildGraphIndex(entries);
     const html = renderToString(createElement(GraphBrowser, { graph: index }));
-    const { heading, all } = browserLabels();
+    const label = writingConfig.label;
 
-    expect(heading).toBe(writingConfig.label);
-    expect(html).toContain(`>${heading}</span>`);
-    expect(html).toContain(`<span class="crumb">${all}</span>`);
-    expect(html).toContain(`aria-label="${heading} browser"`);
+    expect(html).toContain(`>${label}</span>`);
+    expect(html).toContain(`aria-label="${label} browser"`);
+    expect(html).toContain(`aria-label="${label} view"`);
   });
 
-  it("derives the breadcrumb from the label unless the site sets one", () => {
-    const base = { label: "Blog", browser: { ...writingConfig.browser, labels: {} } };
-    expect(browserLabels(base)).toEqual({ heading: "Blog", all: "All blog" });
-    expect(
-      browserLabels({ ...base, browser: { ...base.browser, labels: { all: "All posts" } } }).all
-    ).toBe("All posts");
+  // The bar above the map reports on filters and nothing else, so it starts
+  // empty. It used to carry a fixed "All writing" left over from hub focus.
+  it("shows no breadcrumb until a filter is active", () => {
+    const { index } = buildGraphIndex(entries);
+    const html = renderToString(createElement(GraphBrowser, { graph: index }));
+
+    expect(html).toMatch(/<div class="graph-crumbs"><\/div>/);
+    expect(html).not.toMatch(/>All [a-z]+</);
   });
 });
