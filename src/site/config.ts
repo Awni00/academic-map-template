@@ -62,6 +62,7 @@ export const siteConfigOverrides: SiteConfigOverrides = {
   //     recentWriting: {
   //       title: "Recent writing",  // e.g. "Recent posts" if you rename Writing
   //       maxItems: 6,              // newest dated entries shown in the carousel
+  //       select: "featured-first", // "featured-first" | "recent" | "featured"
   //       // The card that ends the row; `description` defaults to
   //       // "Browse {writing.label}", and "" hides it.
   //       viewAll: { enabled: true, label: "View all →" }

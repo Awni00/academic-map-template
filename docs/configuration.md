@@ -123,6 +123,21 @@ export const siteConfigOverrides = {
 } satisfies SiteConfigOverrides;
 ```
 
+Math in an abstract is typeset with KaTeX in every mode: write `$…$` or
+`\(…\)` in the BibTeX `abstract` field, as in a paper. It uses the same
+macros as articles (`src/site/math.ts`). `\$` is a literal dollar, and
+prices stay prose: a `$` with no partner, or a pair with a space just inside
+or a digit right after (`costs $5 and $10`), is left as text. To print
+abstracts exactly as written instead:
+
+```ts
+export const siteConfigOverrides = {
+  publications: {
+    abstractMath: false
+  }
+} satisfies SiteConfigOverrides;
+```
+
 ## Homepage Hero
 
 The homepage opens with a "margin card": your photo, a short caption (name,
@@ -270,6 +285,25 @@ every page. Pages that need more room keep their own wider layouts: the
 writing map (up to 1440px), the writing list (1180px), and article pages with
 a table of contents and margin asides (1340px).
 
+## Renaming The Writing Section
+
+`writing.route` moves the writing browser and every entry URL, and
+`writing.label` names the section: the browser's heading, its page title and
+description, the RSS feed title, and the homepage "View all" card.
+
+```ts
+export const siteConfigOverrides = {
+  writing: {
+    route: "/blog",
+    label: "Blog",
+    rss: { route: "/blog/rss.xml" }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+The nav is a separate array (`site.nav`), so update its entry too, and the
+homepage section title (`site.homepage.recentWriting.title`).
+
 ## Homepage Recent Writing
 
 The homepage shows the newest dated entries as a horizontally scrolling row of
@@ -286,6 +320,7 @@ export const siteConfigOverrides = {
         enabled: true,
         title: "Recent posts",
         maxItems: 6,
+        select: "featured-first",
         viewAll: {
           enabled: true,
           label: "View all →",
@@ -302,6 +337,14 @@ export const siteConfigOverrides = {
 - `title`: the section heading, default `"Recent writing"`. Set it alongside
   `writing.label` and `writing.route` if you rename the writing section.
 - `maxItems`: how many entries to show, default `6`.
+- `select`: which entries fill the row, newest first within each group.
+  - `featured-first` (default): entries with `featured: true` in their
+    frontmatter, then the rest. Without any featured entry this is the same
+    as `recent`. If you feature `maxItems` or more entries, the row shows only
+    those.
+  - `recent`: by date only; `featured` is ignored.
+  - `featured`: only featured entries. Retitle the section to match, e.g.
+    `title: "Featured writing"`.
 - `viewAll`: the card that ends the row. `enabled: false` drops it, leaving
   only the recent entries. `label` is its link text, default `"View all →"`.
   `description` is the line beneath, default `"Browse {writing.label}"`, so it

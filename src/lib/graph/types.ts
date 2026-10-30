@@ -15,6 +15,8 @@ export type EntryNode = {
   updated?: string;
   url: string;
   draft?: boolean;
+  /** Frontmatter `featured`; leads the homepage carousel (see `recentWriting.select`). */
+  featured?: boolean;
 };
 
 export type GraphEdge = {
@@ -112,6 +114,7 @@ export type WritingEntryLike = {
           note?: string;
         }
     >;
+    featured?: boolean;
     draft?: boolean;
     theme?: "global" | "system" | "light" | "dark";
     external?: Record<string, string | undefined>;

@@ -9,7 +9,12 @@ import {
   resolveShortLinks,
   type ShortLinkSource
 } from "../../src/lib/routes/shortLinks";
+import { writingRoute } from "../../src/lib/routes/paths";
 import { collectShortLinks } from "../../src/lib/routes/shortLinksSource";
+
+// Read from the resolved config, so the suite also holds on a site that moves
+// the writing browser (e.g. `writing.route: "/blog"`).
+const W = writingRoute();
 
 const reserved = buildReservedRoutes({
   writingIds: ["hub-1/index", "hub-1/entry-1"],
@@ -30,12 +35,12 @@ describe("short links", () => {
   it("points a short URL at the entry's canonical writing URL", () => {
     const { redirects, issues } = resolveShortLinks(sources(["hub-4/hub-5/index", "/project-name"]));
     expect(issues).toEqual([]);
-    expect(redirects).toEqual({ "/project-name": "/writing/hub-4/hub-5" });
+    expect(redirects).toEqual({ "/project-name": `${W}/hub-4/hub-5` });
   });
 
   it("accepts multi-segment short URLs so links can be namespaced", () => {
     const { redirects } = resolveShortLinks(sources(["hub-1/entry-2", "/p/entry-two"]));
-    expect(redirects).toEqual({ "/p/entry-two": "/writing/hub-1/entry-2" });
+    expect(redirects).toEqual({ "/p/entry-two": `${W}/hub-1/entry-2` });
   });
 
   it("ignores entries with no short URL", () => {
@@ -56,7 +61,7 @@ describe("short links", () => {
     const { redirects, issues } = resolveShortLinks(
       sources(["a/index", "/shared"], ["b/index", "/shared"])
     );
-    expect(redirects).toEqual({ "/shared": "/writing/a" });
+    expect(redirects).toEqual({ "/shared": `${W}/a` });
     expect(issues).toContainEqual(
       expect.objectContaining({ entry: "b/index", shortUrl: "/shared" })
     );
@@ -71,7 +76,7 @@ describe("short links", () => {
 
   it("rejects a short URL that collides with the writing browser or an entry", () => {
     const { issues } = resolveShortLinks(
-      sources(["a/index", "/writing"], ["b/index", "/writing/hub-1/entry-1"]),
+      sources(["a/index", W], ["b/index", `${W}/hub-1/entry-1`]),
       reserved
     );
     expect(issues.map((issue) => issue.entry)).toEqual(["a/index", "b/index"]);
@@ -84,7 +89,7 @@ describe("short links", () => {
       sources(["a/index", "/research"], ["b/index", "/project-name"]),
       reserved
     );
-    expect(redirects).toEqual({ "/project-name": "/writing/b" });
+    expect(redirects).toEqual({ "/project-name": `${W}/b` });
     expect(issues).toHaveLength(1);
   });
 
@@ -102,7 +107,7 @@ describe("short links", () => {
     );
 
     const { redirects, issues } = collectShortLinks({ root });
-    expect(redirects).toEqual({ "/published": "/writing/hub/published" });
+    expect(redirects).toEqual({ "/published": `${W}/hub/published` });
     expect(issues).toEqual([]);
   });
 });

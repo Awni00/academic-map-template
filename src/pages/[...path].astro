@@ -50,7 +50,7 @@ const rendered = entry ? await render(entry) : undefined;
 
 {
   kind === "writing-index" && (
-    <BaseLayout title={writingConfig.label} description="Browse writing as a conceptual graph.">
+    <BaseLayout title={writingConfig.label} description={`Browse ${writingConfig.label.toLowerCase()} as a conceptual graph.`}>
       <GraphBrowser client:load graph={graph} />
     </BaseLayout>
   )

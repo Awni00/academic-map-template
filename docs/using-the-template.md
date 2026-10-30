@@ -85,6 +85,7 @@ tags:
   - learning-theory
 links:
   - hub-1/entry-1
+featured: false
 draft: false
 external:
   arxiv: "https://arxiv.org/abs/..."
@@ -113,6 +114,11 @@ entry's, with a custom page, or with a built-in route is rejected — `npm run
 validate` fails and names the conflict, and the dev server drops that one link
 with a warning. Short URLs are read when the dev server starts, so restart it
 after adding or changing one.
+
+`featured: true` moves a dated entry to the front of the homepage's recent
+writing row, ahead of newer entries; featured entries are ordered newest first
+among themselves. `site.homepage.recentWriting.select` changes this — see
+[Homepage Recent Writing](configuration.md#homepage-recent-writing).
 
 The `article` block holds per-entry presentation overrides and mirrors the
 `article` block in the entry type registry, so the same keys mean the same

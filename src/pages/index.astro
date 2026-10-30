@@ -4,6 +4,7 @@ import { getCollection, render } from "astro:content";
 import HomeLayout from "../layouts/HomeLayout.astro";
 import { entryTypeIncludedInRecent, siteConfig } from "../config";
 import { buildGraphIndex } from "../lib/graph/buildGraph";
+import { selectRecentWriting } from "../lib/home/recentWriting";
 import { loadNews } from "../lib/news/loadNews";
 import { loadPublications } from "../lib/publications/parseBibtex";
 
@@ -19,10 +20,11 @@ const publications = await loadPublications();
 const selectedPublications = publications
   .filter((publication) => publication.selected)
   .slice(0, siteConfig.homepage.selectedPublications.maxItems);
-const recentWriting = graph.nodes
-  .filter((node) => entryTypeIncludedInRecent(node.type) && node.date)
-  .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
-  .slice(0, siteConfig.homepage.recentWriting.maxItems);
+const recentWriting = selectRecentWriting(graph.nodes, {
+  select: siteConfig.homepage.recentWriting.select,
+  maxItems: siteConfig.homepage.recentWriting.maxItems,
+  includeType: entryTypeIncludedInRecent
+});
 const news = await loadNews(siteConfig.homepage.news);
 ---
 

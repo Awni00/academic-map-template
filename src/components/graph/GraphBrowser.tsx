@@ -153,7 +153,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
       : `${listEntries.length} pages`;
 
   const ViewSwitcher = (
-    <div className="graph-seg" role="tablist" aria-label="Writing view">
+    <div className="graph-seg" role="tablist" aria-label={`${writingConfig.label} view`}>
       {VIEWS.map((v) => (
         <button
           key={v}
@@ -169,10 +169,10 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   );
 
   return (
-    <section className="graph-browser" aria-label="Writing browser">
+    <section className="graph-browser" aria-label={`${writingConfig.label} browser`}>
       <div className="graph-view-bar">
         <div className="graph-view-bar__left">
-          <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>Writing</span>
+          <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>{writingConfig.label}</span>
           <span className="graph-view-bar__count">{countLabel}</span>
         </div>
         <div className="graph-view-bar__right">
@@ -189,8 +189,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
         <div className="graph-browser__grid">
           <div className="graph-panel graph-panel--center">
             <div className="graph-canvas-bar">
+              {/* Empty until a filter is active: it only reports on the
+                  selection, and the heading already names the section. */}
               <div className="graph-crumbs">
-                <span className="crumb">All writing</span>
                 {/* A map where everything is faded looks identical to one that
                     failed to render, so the zero case has to be said in words
                     rather than shown. */}

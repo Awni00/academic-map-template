@@ -1,5 +1,9 @@
 ---
+import { publicationsConfig } from "../../config";
+import { renderInlineMath } from "../../lib/math/inlineMath";
+import { resolveMathMacros } from "../../lib/math/resolve";
 import { highlightedAuthorParts, publicationLinks } from "../../lib/publications/formatPublication";
+import { globalMathMacros } from "../../site/math";
 import type { PublicationAbstractDisplay } from "../../config/types";
 import type { Publication } from "../../lib/publications/types";
 
@@ -18,6 +22,12 @@ const effectiveAbstractDisplay: PublicationAbstractDisplay = compact ? "hidden" 
 const showInlineAbstract = Boolean(publication.abstract) && effectiveAbstractDisplay === "inline";
 const showAbstractButton = Boolean(publication.abstract) && effectiveAbstractDisplay === "popup";
 const abstractDialogId = `abstract-${publication.id}`;
+// BibTeX abstracts never pass through the Markdown pipeline, so their math is
+// typeset here, with the same site macros articles get.
+const abstractHtml =
+  publication.abstract && publicationsConfig.abstractMath
+    ? renderInlineMath(publication.abstract, resolveMathMacros({ globalMacros: globalMathMacros }))
+    : undefined;
 const dialogId = `bib-${publication.id}`;
 ---
 
@@ -55,7 +65,13 @@ const dialogId = `bib-${publication.id}`;
     <p class="publication-venue">
       {publication.venue ? <i>{publication.venue}</i> : publication.type}, {publication.year}
     </p>
-    {showInlineAbstract && <p class="publication-abstract">{publication.abstract}</p>}
+    {showInlineAbstract && (
+      abstractHtml ? (
+        <p class="publication-abstract" set:html={abstractHtml} />
+      ) : (
+        <p class="publication-abstract">{publication.abstract}</p>
+      )
+    )}
     {(links.length > 0 || showAbstractButton || publication.bibtexShow) && (
       <div class="publication-links">
         {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
@@ -88,7 +104,7 @@ const dialogId = `bib-${publication.id}`;
           <button type="button" class="publication-dialog__close" data-dialog-close aria-label="Close">×</button>
         </div>
         <div class="publication-dialog__body">
-          <p>{publication.abstract}</p>
+          {abstractHtml ? <p set:html={abstractHtml} /> : <p>{publication.abstract}</p>}
         </div>
       </dialog>
     )}

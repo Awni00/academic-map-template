@@ -1,6 +1,7 @@
 import katex from "katex";
 import { describe, expect, it } from "vitest";
 
+import { renderInlineMath } from "../../src/lib/math/inlineMath";
 import { defaultMathMacros } from "../../src/lib/math/macros";
 import { resolveMathMacros, selectedMathMacroPacks } from "../../src/lib/math/resolve";
 
@@ -71,3 +72,40 @@ describe("math macros", () => {
     ).not.toThrow();
   });
 });
+
+describe("inline math in plain text", () => {
+  const katexCount = (html: string) => html.split('class="katex"').length - 1;
+
+  it("escapes prose and leaves text without math alone", () => {
+    expect(renderInlineMath("A <b>bold</b> & plain claim.")).toBe(
+      "A &lt;b&gt;bold&lt;/b&gt; &amp; plain claim."
+    );
+    expect(renderInlineMath('<script>alert("x")</script>')).not.toContain("<script>");
+  });
+
+  it("typesets $…$, $$…$$ and \\(…\\) inline", () => {
+    const html = renderInlineMath("An $O(n^2)$ bound, $$x+y$$ and \\(\\theta\\) here.");
+    expect(katexCount(html)).toBe(3);
+    expect(html).not.toContain("katex-display");
+    expect(html).toMatch(/^An <span class="katex">/);
+    expect(html).toContain(" here.");
+  });
+
+  it("keeps escaped and unpaired dollars as text", () => {
+    expect(renderInlineMath("It costs \\$5.")).toBe("It costs $5.");
+    expect(renderInlineMath("A lone $ sign")).toBe("A lone $ sign");
+    expect(renderInlineMath("Between $5 and $10 a month")).toBe("Between $5 and $10 a month");
+  });
+
+  it("expands the site's macros", () => {
+    const html = renderInlineMath("Class $\\calF$.", defaultMathMacros);
+    expect(katexCount(html)).toBe(1);
+    expect(html).not.toContain("katex-error");
+    expect(html).toContain("mathcal");
+  });
+
+  it("does not throw on malformed TeX", () => {
+    expect(() => renderInlineMath("Broken $\\frac{1$ math")).not.toThrow();
+  });
+});
+

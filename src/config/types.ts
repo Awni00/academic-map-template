@@ -247,6 +247,12 @@ export type SiteConfig = {
       title: string;
       maxItems: number;
       /**
+       * Which entries fill the row, newest first within each group.
+       * "featured-first": entries with `featured: true`, then the rest.
+       * "recent": by date only. "featured": featured entries only.
+       */
+      select: RecentWritingSelect;
+      /**
        * The card that ends the row and links to the writing browser.
        * `description` defaults to "Browse {writing.label}"; set it to ""
        * to show the label alone.
@@ -399,6 +405,8 @@ export type HoverNoteAppearance = "card" | "inverted";
 /** "dotted" draws a soft dotted underline under a `<Term>`; "none" leaves just the accent colour. */
 export type TermUnderline = "dotted" | "none";
 
+export type RecentWritingSelect = "featured-first" | "recent" | "featured";
+
 export type PublicationsConfig = {
   source: string;
   grouping: {
@@ -410,6 +418,8 @@ export type PublicationsConfig = {
     showButtonField: string;
   };
   abstractDisplay: PublicationAbstractDisplay;
+  /** Typeset `$…$` and `\(…\)` in abstracts with KaTeX; `false` prints them as written. */
+  abstractMath: boolean;
   previews: {
     enabled: boolean;
     basePath: string;
