@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { graphConfig } from "../../config";
+import type { GraphHoverConfig } from "../../config/types";
+import { resolveHover } from "../../lib/graph/graphSettings";
 import { hubMemberCounts } from "../../lib/graph/clusterLayout";
 import type { EntryType, GraphIndex, EntryNode } from "../../lib/graph/types";
 import { writingEntryUrl } from "../../lib/routes/paths";
@@ -79,6 +81,8 @@ export type WritingPreviewProps = {
    * selection. `false` renders the canvas alone, as a decorative preview.
    */
   interactive?: boolean;
+  /** Overrides `graph.hover` for this map (`writingPreview.hover`). */
+  hover?: Partial<GraphHoverConfig>;
 };
 
 export default function WritingPreview({
@@ -91,7 +95,8 @@ export default function WritingPreview({
   previewHeight = 280,
   desktopMode = "graph",
   mobileMode = "topic-cards",
-  interactive = true
+  interactive = true,
+  hover
 }: WritingPreviewProps) {
   const previewGraph = useMemo(
     () => buildPreviewGraph(graph, filter, maxNodes),
@@ -148,6 +153,7 @@ export default function WritingPreview({
               graph={previewGraph}
               height={previewHeight}
               hubLayout={graphConfig.layout.hubs}
+              hover={resolveHover(graphConfig.hover, hover)}
               labelMode="config"
               selected={showPanel ? selected?.id : undefined}
               onSelect={showPanel ? handleSelect : undefined}

@@ -72,12 +72,75 @@ Supported top-level sections:
 - `row` — hubs pinned in a row across the top.
 - `force` — no pins and no grouping; links alone decide.
 
-`graph.links.directed` (default `false`) draws edges as plain curves. Direction
-is still shown where it can be read, in the selected page's connection list;
-set it to `true` for arrowheads on the canvas.
+Edges (`graph.links`):
+
+- `width` (default `1`) — line thickness in screen pixels, the same at any zoom.
+- `opacity` (default `0.55`) — how strongly an edge shows at rest. A hovered
+  or selected node's edges are drawn in the accent colour on top.
+- `curvature` (default `0.1`) — how far an edge bows, as a fraction of its
+  length; `0` draws straight lines, `0.5` is the most allowed.
+- `color` (default `var(--graph-edge)`) — any CSS colour.
+- `directed` (default `false`) — plain curves. Direction is still shown where
+  it can be read, in the selected page's connection list; set it to `true` for
+  arrowheads on the canvas (`arrow.length`, `arrow.width`, `arrow.relPos`,
+  `arrow.color` shape them).
 
 Glyph sizes (`entryTypes[].graph.size`) are diameters in screen pixels, and
 hold at every zoom level.
+
+#### Layout forces
+
+`graph.layout.forces` tunes the `cluster` layout. Distances are in layout
+units — roughly screen pixels before the map is zoomed to fit — and strengths
+run from 0 to 1. Set only what you want to change; the rest keep their
+defaults.
+
+```ts
+export const siteConfigOverrides = {
+  graph: {
+    layout: {
+      forces: {
+        hubRepulsion: 140,      // how hard hubs push everything away; larger spreads the groups
+        entryRepulsion: 45,     // how hard every other page pushes its neighbours away
+        repulsionRange: 220,    // beyond this, two nodes stop pushing on each other
+        groupDistance: 36,      // how far a page sits from its hub
+        groupPull: 0.3,         // how firmly it is held there (0–1)
+        linkLength: 40,         // a link inside a group
+        crossLinkLength: 80,    // a link between groups
+        crossLinkStrength: 0.15,// how much a link between groups draws them together (0–1)
+        minGap: 18,             // clear space kept between any two glyphs
+        centerPull: 0.07        // keeps loose groups near the rest (0–1)
+      }
+    }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+A looser map: raise `groupDistance` and `minGap`. Tighter groups: raise
+`groupPull`. Topics further apart: raise `hubRepulsion` or lower
+`crossLinkStrength`. Out-of-range values stop the build with a message naming
+the setting.
+
+#### Hover
+
+`graph.hover` sets what hovering a node does on the writing map and on each
+entry's local map:
+
+- `labels` — which titles appear: `"node"` (the hovered node's own),
+  `"neighbours"` (default; it and every page it links with), or `"none"` (no
+  titles, just the highlight). Hubs are always named.
+- `dim` (default `true`) — fade everything outside the hovered node's
+  neighbourhood. Either way, its edges light up in the accent colour.
+
+The homepage map overrides this with `site.homepage.writingPreview.hover`,
+which by default is `{ labels: "node" }`: a small canvas gets crowded fast.
+
+```ts
+export const siteConfigOverrides = {
+  graph: { hover: { labels: "node", dim: false } },
+  site: { homepage: { writingPreview: { hover: { labels: "none" } } } }
+} satisfies SiteConfigOverrides;
+```
 
 ### Graph interaction
 

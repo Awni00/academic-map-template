@@ -242,6 +242,11 @@ export type SiteConfig = {
           };
       maxNodes: number | null;
       previewHeight: number;
+      /**
+       * Overrides `graph.hover` for this map. A small canvas gets crowded
+       * fast, so by default it names only the hovered node.
+       */
+      hover: Partial<GraphHoverConfig>;
       clickTarget: string;
       title: string;
       description: string;
@@ -451,12 +456,57 @@ export type PublicationsConfig = {
  */
 export type DragMode = "none" | "stays" | "resettle";
 
+/**
+ * Which titles appear while a node is hovered.
+ *   "node"       — the hovered node's own title.
+ *   "neighbours" — the hovered node's and every page it links with.
+ *   "none"       — no titles; the highlight alone.
+ * Types whose `labelVisibility` is "always" (hubs) are named regardless.
+ */
+export type GraphHoverLabels = "node" | "neighbours" | "none";
+
+export type GraphHoverConfig = {
+  labels: GraphHoverLabels;
+  /** Fade everything outside the hovered node's neighbourhood. */
+  dim: boolean;
+};
+
+/**
+ * The forces behind the "cluster" layout. Distances are in layout units, which
+ * are roughly screen pixels before the map is zoomed to fit; strengths are
+ * fractions, and a larger one pulls harder.
+ */
+export type GraphForcesConfig = {
+  /** How hard hubs push everything away. Larger spreads the groups apart. */
+  hubRepulsion: number;
+  /** How hard every other page pushes its neighbours away. */
+  entryRepulsion: number;
+  /** Beyond this distance two nodes stop pushing on each other. */
+  repulsionRange: number;
+  /** How far a page sits from the hub whose folder it lives in. */
+  groupDistance: number;
+  /** How firmly pages are held at that distance from their hub (0–1). */
+  groupPull: number;
+  /** Length of a link between two pages of the same group. */
+  linkLength: number;
+  /** Length of a link between pages of different groups. */
+  crossLinkLength: number;
+  /** How much a link between groups draws them together (0–1). */
+  crossLinkStrength: number;
+  /** Clear space kept between any two glyphs. */
+  minGap: number;
+  /** How firmly everything is drawn toward the middle; keeps loose groups near the rest. */
+  centerPull: number;
+};
+
 export type GraphConfigBase = {
   colorBy: "type";
   links: {
     color: string;
     width: number;
     opacity: number;
+    /** How far an edge bows, as a fraction of its length. 0 draws straight lines. */
+    curvature: number;
     directed: boolean;
     arrow: {
       length: number;
@@ -469,7 +519,15 @@ export type GraphConfigBase = {
     hubs: "cluster" | "circle" | "row" | "force";
     labels: "config" | "all" | "none";
     labelSide: "top" | "bottom" | "auto";
+    /** Used by the "cluster" layout. */
+    forces: GraphForcesConfig;
   };
+  /**
+   * What hovering a node does on the writing map and the per-entry maps. The
+   * homepage map takes its own overrides from
+   * `site.homepage.writingPreview.hover`.
+   */
+  hover: GraphHoverConfig;
   interaction: {
     /**
      * Applies to the writing browser and the per-entry local maps. The
