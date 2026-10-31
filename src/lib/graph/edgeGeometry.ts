@@ -153,3 +153,69 @@ export function curvedEdge(
     end: toward(target, options.targetRadius)
   };
 }
+
+/** A point on the quadratic from `start` through `control` to `end`, at `t`. */
+function pointAt(curve: CurvedEdge, t: number): Point {
+  const u = 1 - t;
+  return {
+    x: u * u * curve.start.x + 2 * u * t * curve.control.x + t * t * curve.end.x,
+    y: u * u * curve.start.y + 2 * u * t * curve.control.y + t * t * curve.end.y
+  };
+}
+
+/** The part of a quadratic between `ta` and `tb`, itself a quadratic. */
+function slice(curve: CurvedEdge, ta: number, tb: number): CurvedEdge {
+  const { start: s, control: c, end: e } = curve;
+  const k0 = (1 - ta) * (1 - tb);
+  const k1 = (1 - ta) * tb + ta * (1 - tb);
+  const k2 = ta * tb;
+  return {
+    start: pointAt(curve, ta),
+    control: { x: k0 * s.x + k1 * c.x + k2 * e.x, y: k0 * s.y + k1 * c.y + k2 * e.y },
+    end: pointAt(curve, tb)
+  };
+}
+
+/**
+ * A curved edge with arrowheads: the same bow as `curvedEdge`, with a head at
+ * the target end (and the source end when `bidirectional`), each pointing along
+ * the curve where it lands.
+ *
+ * The shaft stops where a head begins, so a translucent edge never doubles up
+ * under its own arrowhead. Heads are wound the same way as `edgeGeometry`'s.
+ */
+export function curvedArrow(
+  source: Point,
+  target: Point,
+  options: {
+    sourceRadius: number;
+    targetRadius: number;
+    curvature: number;
+    bidirectional: boolean;
+    arrow: { length: number; width: number };
+  }
+): { shaft: CurvedEdge; heads: Point[][] } | null {
+  const curve = curvedEdge(source, target, options);
+  if (!curve) return null;
+  const span = Math.hypot(curve.end.x - curve.start.x, curve.end.y - curve.start.y) || 1;
+  // Fraction of the curve one head takes up, measured along the chord, which a
+  // gentle bow keeps close enough to the arc length.
+  const share = Math.min(0.45, options.arrow.length / span);
+
+  const head = (tip: Point, from: Point): Point[] => {
+    const dx = tip.x - from.x;
+    const dy = tip.y - from.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d;
+    const uy = dy / d;
+    const bx = tip.x - ux * options.arrow.length;
+    const by = tip.y - uy * options.arrow.length;
+    const w = options.arrow.width;
+    return [tip, { x: bx - uy * w, y: by + ux * w }, { x: bx + uy * w, y: by - ux * w }];
+  };
+
+  const heads = [head(curve.end, pointAt(curve, 1 - share))];
+  if (options.bidirectional) heads.push(head(curve.start, pointAt(curve, share)));
+  const shaft = slice(curve, options.bidirectional ? share : 0, 1 - share);
+  return { shaft, heads };
+}
