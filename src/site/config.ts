@@ -11,7 +11,9 @@ import type { SiteConfigOverrides } from "../config/types";
  * the sketch below is only a starting point — uncomment what you want to
  * change and delete the rest. `docs/configuration.md` covers every section,
  * including the ones deliberately left out here: graph appearance, writing
- * layout, and the entry-type registry.
+ * layout, and the entry-type registry. To try graph settings first, run the
+ * dev server and open /fixtures/graph-playground, which writes the config out
+ * for you.
  *
  * Two things that catch people out:
  *   - Objects merge into the defaults, but **arrays replace them**. Overriding
