@@ -8,6 +8,7 @@ export const defaultGraphConfig = {
     // Fainter than a bare line could afford, because a hovered or selected
     // node lifts its own edges to the accent colour on top of this.
     opacity: 0.55,
+    curvature: 0.1,
     // Off by default. At map scale an arrowhead is a few pixels of noise piled
     // up at every hub; direction is stated in the panel's connection rows
     // instead, where it can be read. Sites that want it on the canvas can
@@ -29,7 +30,23 @@ export const defaultGraphConfig = {
     // find their own places. See src/lib/graph/clusterLayout.ts.
     hubs: "cluster",
     labels: "config",
-    labelSide: "auto"
+    labelSide: "auto",
+    forces: {
+      hubRepulsion: 140,
+      entryRepulsion: 45,
+      repulsionRange: 220,
+      groupDistance: 36,
+      groupPull: 0.3,
+      linkLength: 40,
+      crossLinkLength: 80,
+      crossLinkStrength: 0.15,
+      minGap: 18,
+      centerPull: 0.07
+    }
+  },
+  hover: {
+    labels: "neighbours",
+    dim: true
   },
   interaction: {
     // Dropped nodes stay put and the layout re-settles around them, so moving

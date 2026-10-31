@@ -33,6 +33,7 @@ import {
 } from "../../lib/graph/nodeDrag";
 import { curvedEdge, edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
+import type { GraphHoverConfig } from "../../config/types";
 
 type LabelMode = "config" | "all" | "none";
 type GraphCanvasProps = {
@@ -96,6 +97,8 @@ type GraphCanvasProps = {
   bottomInset?: number;
   /** Show +, −, and fit buttons in the corner of the canvas. */
   zoomControls?: boolean;
+  /** What hovering a node does. Defaults to the site's `graph.hover`. */
+  hover?: GraphHoverConfig;
 };
 
 /**
@@ -139,8 +142,7 @@ const HOVER_DIM_EDGE_ALPHA = 0.16;
 /** Edges touching the hovered or selected node, in the accent colour. */
 const LIT_EDGE_ALPHA = 0.85;
 const LIT_EDGE_WIDTH = 1.4;
-/** How far an undirected edge bows, as a fraction of its length. */
-const EDGE_CURVATURE = 0.1;
+
 
 type ForceGraphComponent = React.ComponentType<any>;
 
@@ -157,7 +159,8 @@ export default function GraphCanvas({
   hubLayout = "force",
   fitPad,
   bottomInset = 0,
-  zoomControls = false
+  zoomControls = false,
+  hover: hoverConfig = graphConfig.hover
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<any>(null);
@@ -615,22 +618,29 @@ export default function GraphCanvas({
   /**
    * What the canvas is currently answering "connected to what?" for.
    *
-   * Hover asks it of one node and dims everything outside the answer. A
-   * selection asks the same question more quietly — its edges light up, but
-   * nothing dims — because a selection lasts, and a map that stays mostly
-   * faded for as long as anything is selected is a map that is hard to read.
-   * Nothing is dimmed mid-drag, where the cursor is on the node being moved.
+   * Hover asks it of one node: its edges light up and, with `hover.dim`,
+   * everything outside the answer fades. A selection asks the same question
+   * more quietly — its edges light up, but nothing dims — because a selection
+   * lasts, and a map that stays mostly faded for as long as anything is
+   * selected is a map that is hard to read. Nothing is dimmed mid-drag, where
+   * the cursor is on the node being moved.
+   *
+   * `named` is which nodes hovering puts a title on, per `hover.labels`.
    */
   const hoverId = !dragging && hover ? (hover.node.id as string) : undefined;
   const focus = useMemo(() => {
     const id = hoverId ?? selected;
     if (!id) return null;
-    return {
-      id,
-      dims: Boolean(hoverId),
-      near: new Set([id, ...(adjacency.get(id) ?? [])])
-    };
-  }, [hoverId, selected, adjacency]);
+    const near = new Set([id, ...(adjacency.get(id) ?? [])]);
+    const named = !hoverId
+      ? new Set<string>()
+      : hoverConfig.labels === "neighbours"
+        ? near
+        : hoverConfig.labels === "node"
+          ? new Set([hoverId])
+          : new Set<string>();
+    return { id, dims: Boolean(hoverId) && hoverConfig.dim, near, named };
+  }, [hoverId, selected, adjacency, hoverConfig.labels, hoverConfig.dim]);
 
   /**
    * Where the neighbours sit and how many pixels a graph unit is worth. Pure
@@ -738,7 +748,7 @@ export default function GraphCanvas({
           const curve = curvedEdge(source, target, {
             sourceRadius,
             targetRadius,
-            curvature: EDGE_CURVATURE
+            curvature: graphConfig.links.curvature
           });
           if (!curve) continue;
           ctx.beginPath();
@@ -853,17 +863,25 @@ export default function GraphCanvas({
     // The cluster layout replaces it too, with a per-node pull that keeps
     // disconnected groups near one another (see `centerForce`).
     const cluster = !roomy && hubLayout === "cluster";
+    const forces = graphConfig.layout.forces;
     if (cluster) fg.d3Force?.("center", null);
     fg.d3Force?.(
       "clusterCenter",
-      cluster ? centerForce(0.07, (width ?? 800) / Math.max(1, height - bottomInset)) : null
+      cluster
+        ? centerForce(forces.centerPull, (width ?? 800) / Math.max(1, height - bottomInset))
+        : null
     );
-    fg.d3Force?.("cluster", cluster ? clusterForce(parents, 36, 0.3) : null);
+    fg.d3Force?.(
+      "cluster",
+      cluster ? clusterForce(parents, forces.groupDistance, forces.groupPull) : null
+    );
     const charge = fg.d3Force?.("charge");
     if (charge) {
       if (cluster) {
-        charge.strength((node: any) => (isHubType(node.type) ? -140 : -45));
-        charge.distanceMax?.(220);
+        charge.strength((node: any) =>
+          isHubType(node.type) ? -forces.hubRepulsion : -forces.entryRepulsion
+        );
+        charge.distanceMax?.(forces.repulsionRange);
       } else if (roomy) {
         // The radial force owns the radius, so many-body is left with one job:
         // pushing neighbours apart *around* the ring.
@@ -895,10 +913,10 @@ export default function GraphCanvas({
           const b = id(edge.target);
           return parents.get(a) === b || parents.get(b) === a || (parents.has(a) && parents.get(a) === parents.get(b));
         };
-        link.distance((edge: any) => (together(edge) ? 40 : 80));
+        link.distance((edge: any) => (together(edge) ? forces.linkLength : forces.crossLinkLength));
         link.strength?.((edge: any) => {
           const fewest = Math.min(degree.get(id(edge.source)) ?? 1, degree.get(id(edge.target)) ?? 1);
-          return (together(edge) ? 1 : 0.15) / Math.max(1, fewest);
+          return (together(edge) ? 1 : forces.crossLinkStrength) / Math.max(1, fewest);
         });
       } else {
         link.distance((edge: any) => {
@@ -923,7 +941,7 @@ export default function GraphCanvas({
       roomy
         ? collideForce(ANCHOR_RING.minGap, ANCHOR_RING.scale)
         : cluster
-          ? collideForce(18, 1)
+          ? collideForce(forces.minGap, 1)
           : null
     );
     fg.d3ReheatSimulation?.();
@@ -1052,8 +1070,8 @@ export default function GraphCanvas({
               // The selected node is exempt: see drawSelectionRing.
               faded: selected !== node.id && !!emphasized && !emphasized.has(node.id),
               dimmed: Boolean(focus?.dims) && !near,
-              // A hovered node and its neighbours are named on the canvas.
-              revealLabel: Boolean(focus?.dims) && near,
+              // Hovering names nodes on the canvas, as `hover.labels` says.
+              revealLabel: focus?.named.has(node.id) ?? false,
               labelMode
             });
           }}

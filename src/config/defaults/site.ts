@@ -58,6 +58,7 @@ export const defaultSiteConfig = {
       },
       maxNodes: null,
       previewHeight: 360,
+      hover: { labels: "node" },
       clickTarget: "/writing",
       title: "Explore Writing",
       description:

@@ -10,6 +10,7 @@ import { customThemes } from "../site/themes";
 import { defineTheme } from "../lib/theme/defineTheme";
 import { normalizeTocConfig } from "../lib/article/toc";
 import { validateJustifyConfig } from "../lib/article/justify";
+import { validateGraphSettings } from "../lib/graph/graphSettings";
 import {
   missingHeroLinkKeys,
   normalizeHeroConfig,
@@ -133,8 +134,14 @@ export const publicationsConfig = mergeConfig<PublicationsConfig>(
   siteConfigOverrides.publications
 );
 
+const mergedGraphConfig = mergeConfig<GraphConfigBase>(defaultGraphConfig, siteConfigOverrides.graph);
+const graphErrors = validateGraphSettings(mergedGraphConfig, siteConfig.homepage.writingPreview.hover);
+if (graphErrors.length > 0) {
+  throw new Error(`Invalid graph config:\n  - ${graphErrors.join("\n  - ")}`);
+}
+
 export const graphConfig: GraphConfig = {
-  ...mergeConfig<GraphConfigBase>(defaultGraphConfig, siteConfigOverrides.graph),
+  ...mergedGraphConfig,
   nodeTypes: Object.fromEntries(
     entryTypeDefinitions.map((entryType) => [entryType.id, entryType.graph])
   )
