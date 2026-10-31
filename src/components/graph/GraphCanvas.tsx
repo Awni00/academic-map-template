@@ -32,6 +32,7 @@ import {
   type Grab
 } from "../../lib/graph/nodeDrag";
 import { curvedArrow, curvedEdge } from "../../lib/graph/edgeGeometry";
+import { arrowMode } from "../../lib/graph/graphSettings";
 import { placeLabel, wrapLabel, type Box } from "../../lib/graph/labelLayout";
 import type { GraphIndex } from "../../lib/graph/types";
 import type {
@@ -734,7 +735,7 @@ export default function GraphCanvas({
    * edges the same effect is the point: crossings should darken, because that
    * is what makes a dense part of the map look dense.
    *
-   * Every edge is one stroked curve. A directed edge adds a filled head at
+   * Every edge is one stroked curve. An arrowed edge adds a filled head at
    * each arrowed end, and `curvedArrow` stops the shaft where a head begins,
    * so the two never overlap and the join cannot darken.
    *
@@ -748,7 +749,8 @@ export default function GraphCanvas({
    */
   const drawEdges = useCallback(
     (ctx: CanvasRenderingContext2D, scale: number) => {
-      const { width, opacity, directed, arrow } = linkStyle;
+      const { width, opacity, arrow } = linkStyle;
+      const arrows = arrowMode(linkStyle);
       const edgeColor = resolveColor(linkStyle.color);
       const accent = cssVar("--color-accent");
       const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
@@ -780,7 +782,10 @@ export default function GraphCanvas({
 
         const lineWidth = (lit ? width * LIT_EDGE_WIDTH_RATIO : width) / scale;
         const curvature = linkStyle.curvature;
-        const shaft = directed
+        // "highlighted" puts heads on the focused node's edges only, so the map
+        // stays quiet until the reader asks about one node.
+        const headed = arrows === "always" || (arrows === "highlighted" && lit);
+        const shaft = headed
           ? curvedArrow(source, target, {
               sourceRadius,
               targetRadius,
@@ -793,7 +798,7 @@ export default function GraphCanvas({
               }
             })
           : null;
-        const curve = directed ? shaft?.shaft : curvedEdge(source, target, { sourceRadius, targetRadius, curvature });
+        const curve = headed ? shaft?.shaft : curvedEdge(source, target, { sourceRadius, targetRadius, curvature });
         if (!curve) continue;
         ctx.beginPath();
         ctx.moveTo(curve.start.x, curve.start.y);

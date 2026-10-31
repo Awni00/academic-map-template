@@ -507,6 +507,15 @@ export type GraphForcesConfig = {
   centerPull: number;
 };
 
+/**
+ * Which edges carry arrowheads.
+ *   "never"       — none; direction is read in the panel's connection list.
+ *   "always"      — every edge.
+ *   "highlighted" — only the edges of the hovered or selected node, so the
+ *                   map stays quiet until the reader asks about one node.
+ */
+export type GraphArrows = "never" | "always" | "highlighted";
+
 export type GraphConfigBase = {
   colorBy: "type";
   links: {
@@ -515,9 +524,14 @@ export type GraphConfigBase = {
     opacity: number;
     /** How far an edge bows, as a fraction of its length. 0 draws straight lines. */
     curvature: number;
+    /** Which edges carry arrowheads. Unset, `directed` decides (true = "always"). */
+    arrows?: GraphArrows;
+    /** The older switch for arrowheads, kept for existing configs; `arrows` wins. */
     directed: boolean;
     arrow: {
+      /** Head length along the edge, in screen pixels at the default edge width. */
       length: number;
+      /** Head half-width, so a head is twice this across. */
       width: number;
       relPos: number;
       color: "edge" | string;
