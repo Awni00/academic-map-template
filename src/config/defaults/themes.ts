@@ -234,7 +234,7 @@ export const builtInThemes: readonly Theme[] = [
       "border-soft": "#eae6d2",
       rule: "#d5d1bb",
 
-      accent: "#2f78a0", // tuned from #3a94c5
+      accent: "#2d7298", // tuned from #3a94c5; clears 4.5:1 on accent-soft too
       "accent-soft": "#e7eff2",
       "accent-line": "#bcd7e3",
 
@@ -332,7 +332,7 @@ export const builtInThemes: readonly Theme[] = [
       "border-soft": "#dce0e8",
       rule: "#bcc0cc",
 
-      accent: "#1962f5", // tuned from #1e66f5
+      accent: "#185eeb", // tuned from #1e66f5; clears 4.5:1 on accent-soft too
       "accent-soft": "#e2e9fd",
       "accent-line": "#b7c8f8",
 

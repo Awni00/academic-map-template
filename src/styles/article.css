@@ -216,8 +216,8 @@
 }
 
 .article-byline__col a:hover {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
 }
 
 .article-byline__note {
@@ -383,13 +383,13 @@
 }
 
 .article-content a:not(.heading-anchor) {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: none;
-  border-bottom: 1px solid var(--color-accent-line);
+  border-bottom: 1px solid var(--color-link-line);
 }
 
 .article-content a:not(.heading-anchor):hover {
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--color-link);
 }
 
 .article-content blockquote {
@@ -483,8 +483,8 @@
 }
 
 .sidebar-section a:hover {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
 }
 
 /* TOC */
@@ -1419,7 +1419,7 @@
   border-bottom-color: var(--color-fg);
 }
 
-/* The accent is tuned for the page background, not for this one. */
+/* The link colour is tuned for the page background, not for this one. */
 [data-hover-popover][data-appearance="inverted"] .hover-pop a {
   color: inherit;
   border-bottom-color: color-mix(in srgb, currentColor 45%, transparent);
@@ -1472,7 +1472,7 @@ body {
   border: 0;
   border-radius: 3px;
   background: none;
-  color: var(--color-accent);
+  color: var(--color-annotation);
   font: inherit;
   /* After `font`, which resets it. A <button> is inline-block, so it would take
      the sup's zero line-height and collapse to a 0px box: a flat focus ring,
@@ -1484,11 +1484,11 @@ body {
 }
 
 .hovernote[data-open] .hovernote__mark {
-  background: var(--color-accent-soft);
+  background: var(--color-annotation-soft);
 }
 
 .hovernote :is(a, button).hovernote__mark:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-annotation);
   outline-offset: 1px;
 }
 
@@ -1514,7 +1514,7 @@ body {
   padding-top: 6px;
   border-top: 1px solid var(--color-border-soft);
   border-bottom: 0;
-  color: var(--color-accent);
+  color: var(--color-link);
   font-size: 12px;
 }
 
@@ -1570,10 +1570,11 @@ body {
 
 /* ── Term (words that explain themselves) ───────────────────────────── */
 
-/* Accent words, tinted only while their note is open (hover, focus, tap). */
+/* Annotation-coloured words, tinted only while their note is open (hover,
+   focus, tap). `--color-annotation` is the accent unless the theme sets it. */
 .term__text {
   border-radius: 3px;
-  color: var(--color-accent);
+  color: var(--color-annotation);
   cursor: help;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -1585,25 +1586,25 @@ body {
 /* Beats `.article-content a:not(.heading-anchor)` by source order. */
 .term a.term__text {
   border-bottom: 0;
-  color: var(--color-accent);
+  color: var(--color-annotation);
   cursor: pointer;
 }
 
-/* underline="dotted": drawn in the soft accent line, and dotted where a link's
+/* underline="dotted": drawn in the soft annotation line, and dotted where a link's
    underline is solid, so a term does not read as a link. */
 .term[data-underline="dotted"] .term__text {
   text-decoration: underline dotted 1.5px;
-  text-decoration-color: var(--color-accent-line);
+  text-decoration-color: var(--color-annotation-line);
   text-underline-offset: 0.22em;
 }
 
 .term[data-open] .term__text {
-  background: var(--color-accent-soft);
-  text-decoration-color: var(--color-accent);
+  background: var(--color-annotation-soft);
+  text-decoration-color: var(--color-annotation);
 }
 
 .term__text:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-annotation);
   outline-offset: 2px;
 }
 
@@ -1702,8 +1703,8 @@ body {
 }
 
 .entry-foot-content a:hover {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
 }
 
 /* When the article has no sidebar, centre its main column. */

@@ -18,9 +18,9 @@ export type Rgba = Rgb & { alpha: number };
  * `rgba(20 20 20 / 0.15)` on white at 18:1 when it actually shows at 1.4:1.
  *
  * Returns `null` rather than throwing so callers can report *which* token is
- * malformed. Notably this does not parse `color-mix()` — those are emitted by
- * `defineTheme` for derived tokens and can only be resolved by a browser, so
- * the contrast check skips them (see `isCheckable`).
+ * malformed. Notably this does not parse `color-mix()`. `defineTheme` resolves
+ * its own mixes to hex when it can (see `mixSrgb`); any that remain can only be
+ * resolved by a browser, so the contrast check skips them (see `isCheckable`).
  */
 export function parseColor(value: string): Rgba | null {
   const input = value.trim().toLowerCase();
@@ -127,6 +127,27 @@ export function contrastRatio(foreground: string, background: string): number {
 function composite(front: Rgba, back: Rgb): Rgb {
   const mix = (top: number, bottom: number) => top * front.alpha + bottom * (1 - front.alpha);
   return { r: mix(front.r, back.r), g: mix(front.g, back.g), b: mix(front.b, back.b) };
+}
+
+/**
+ * `color-mix(in srgb, base (100 − amount)%, toward)`, resolved here to a hex
+ * colour so the result can be contrast-checked like any literal.
+ *
+ * Only opaque inputs are resolved; for those, browsers mix plain sRGB channels,
+ * so the hex matches what `color-mix()` would paint to within rounding. Anything
+ * else — a translucent colour, a `var()`, a named colour — returns `null` and
+ * the caller keeps the `color-mix()` expression for the browser to resolve.
+ */
+export function mixSrgb(base: string, toward: string, amount: number): string | null {
+  const from = parseColor(base);
+  const to = parseColor(toward);
+  if (!from || !to || from.alpha < 1 || to.alpha < 1) return null;
+  const t = amount / 100;
+  const channel = (a: number, b: number) =>
+    Math.round(a * (1 - t) + b * t)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(from.r, to.r)}${channel(from.g, to.g)}${channel(from.b, to.b)}`;
 }
 
 /** Whether a background reads as dark, used to sanity-check `appearance`. */

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { CALLOUT_ROLE_COLORS } from "../../src/components/article/calloutRoles";
 import { builtInThemes } from "../../src/config/defaults/themes";
 import { darkTheme, lightTheme, themeConfig, themeRegistry } from "../../src/config/resolve";
-import { CONTRAST_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
-import { contrastRatio, isCheckable, parseColor } from "../../src/lib/theme/contrast";
+import { CONTRAST_TARGETS, PAIR_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
+import { contrastRatio, isCheckable, mixSrgb, parseColor } from "../../src/lib/theme/contrast";
 import { defineTheme } from "../../src/lib/theme/defineTheme";
 import { siteThemeCss, themeToCss } from "../../src/lib/theme/themeCss";
 
@@ -36,6 +36,19 @@ describe("contrast", () => {
     expect(seen).toBeLessThan(1.5);
     expect(seen).toBeCloseTo(contrastRatio("#dcdcdc", "#ffffff"), 1);
     expect(contrastRatio("rgb(0 0 0 / 0)", "#ffffff")).toBeCloseTo(1, 5);
+  });
+
+  it("mixes opaque colours in sRGB, as color-mix(in srgb) paints them", () => {
+    // `amount` is the share of `toward`: 25% of the way from white to black.
+    expect(mixSrgb("#ffffff", "#000000", 25)).toBe("#bfbfbf");
+    expect(mixSrgb("#ff0000", "#0000ff", 0)).toBe("#ff0000");
+    expect(mixSrgb("#ff0000", "#0000ff", 100)).toBe("#0000ff");
+    expect(mixSrgb("rgb(0 0 0)", "#fff", 50)).toBe("#808080");
+  });
+
+  it("leaves mixes it cannot resolve faithfully to the browser", () => {
+    expect(mixSrgb("var(--x)", "#fff", 50)).toBeNull();
+    expect(mixSrgb("rgba(0, 0, 0, 0.5)", "#fff", 50)).toBeNull();
   });
 
   it("refuses to measure against a translucent background", () => {
@@ -76,6 +89,26 @@ describe("built-in themes", () => {
     }
   );
 
+  it("leaves the optional roles on the accent", () => {
+    for (const theme of builtInThemes) {
+      const c = theme.colors;
+      expect(c.link, theme.id).toBe(c.accent);
+      expect(c.annotation, theme.id).toBe(c.accent);
+      expect(c["link-line"], theme.id).toBe(c["accent-line"]);
+      expect(c["annotation-soft"], theme.id).toBe(c["accent-soft"]);
+      expect(c["annotation-line"], theme.id).toBe(c["accent-line"]);
+    }
+  });
+
+  it("keeps text on its own tint readable", () => {
+    for (const theme of builtInThemes) {
+      for (const { token, on, target } of PAIR_TARGETS) {
+        const ratio = contrastRatio(theme.colors[token], theme.colors[on]);
+        expect(ratio, `${theme.id}: ${token} on ${on}`).toBeGreaterThanOrEqual(target);
+      }
+    }
+  });
+
   it("states literal colours for every checked token, so nothing skips the check", () => {
     for (const theme of builtInThemes) {
       for (const token of Object.keys(CONTRAST_TARGETS)) {
@@ -95,6 +128,43 @@ describe("checkTheme", () => {
       colors: { ...base.colors, muted: "rgba(20, 20, 20, 0.15)" }
     });
     expect(report.errors.map((issue) => issue.token)).toContain("muted");
+  });
+
+  it("holds the link and annotation roles to the text threshold", () => {
+    const report = checkTheme({
+      ...base,
+      colors: { ...base.colors, link: "#a0b4e0", annotation: "#e0b0a0" }
+    });
+    const tokens = report.errors.map((issue) => issue.token);
+    expect(tokens).toContain("link");
+    expect(tokens).toContain("annotation");
+  });
+
+  it("measures an annotation against its open-state tint, not just the page", () => {
+    // 6.1:1 on white, but the tint is dark enough to drop it below 4.5:1.
+    const report = checkTheme({
+      ...base,
+      colors: { ...base.colors, annotation: "#2c5cc5", "annotation-soft": "#c8d6f3" }
+    });
+    expect(report.errors).toEqual([
+      expect.objectContaining({
+        token: "annotation",
+        message: expect.stringMatching(/on annotation-soft/)
+      })
+    ]);
+  });
+
+  it("measures a translucent tint as it renders over the page", () => {
+    const opaque = checkTheme({
+      ...base,
+      colors: { ...base.colors, "accent-soft": "#2c5cc5" }
+    });
+    const faint = checkTheme({
+      ...base,
+      colors: { ...base.colors, "accent-soft": "rgba(44, 92, 197, 0.05)" }
+    });
+    expect(opaque.errors.map((issue) => issue.token)).toContain("accent");
+    expect(faint.errors).toEqual([]);
   });
 
   it("rejects a translucent background instead of throwing", () => {
@@ -149,8 +219,101 @@ describe("defineTheme", () => {
 
   it("fills every token from three colours", () => {
     expect(Object.values(minimal.colors).every((value) => typeof value === "string")).toBe(true);
-    expect(minimal.colors["bg-soft"]).toContain("color-mix");
-    expect(minimal.colors.muted).toContain("color-mix");
+  });
+
+  it("resolves derived mixes to literals, so every checked token is measured", () => {
+    expect(minimal.colors["bg-soft"]).toBe(mixSrgb("#ffffff", "#101010", 3));
+    expect(minimal.colors.muted).toBe(mixSrgb("#101010", "#ffffff", 38));
+    for (const token of Object.keys(CONTRAST_TARGETS)) {
+      const value = minimal.colors[token as keyof typeof minimal.colors];
+      expect(isCheckable(value), `${token} = ${value}`).toBe(true);
+    }
+    expect(checkTheme(minimal).warnings).toEqual([]);
+  });
+
+  // Before derived tokens were measured, this pair shipped muted-2 and
+  // graph-note at 2.88:1 under a "verify by eye" warning.
+  it("pulls a derived grey back toward fg only as far as its target needs", () => {
+    const cream = defineTheme({
+      id: "cream",
+      label: "Cream",
+      appearance: "light",
+      colors: { bg: "#fffdf8", fg: "#1b1a17", accent: "#8a3324" }
+    });
+    expect(contrastRatio(cream.colors["muted-2"], "#fffdf8")).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(cream.colors["muted-2"], "#fffdf8")).toBeLessThan(3.1);
+    // Unmoved where the usual mix already clears its target.
+    expect(cream.colors.muted).toBe(mixSrgb("#1b1a17", "#fffdf8", 38));
+    expect(checkTheme(cream).errors).toEqual([]);
+  });
+
+  it.each([
+    ["light, fg at exactly 7:1", "light", "#ffffff", "#595959", "#1a5fb4"],
+    ["dark, fg at 7:1", "dark", "#0c0d10", "#9c9c9c", "#8ab4f8"],
+    ["light, accent just past 4.5:1", "light", "#ffffff", "#101010", "#2f78b0"],
+    ["dark, accent just past 4.5:1", "dark", "#202020", "#f0f0f0", "#4a8af0"]
+  ] as const)("keeps a readable three-colour theme valid: %s", (_name, appearance, bg, fg, accent) => {
+    expect(contrastRatio(fg, bg)).toBeGreaterThanOrEqual(7);
+    expect(contrastRatio(accent, bg)).toBeGreaterThanOrEqual(4.5);
+    const theme = defineTheme({ id: "edge", label: "Edge", appearance, colors: { bg, fg, accent } });
+    expect(checkTheme(theme).errors).toEqual([]);
+  });
+
+  it("does not bend a tint to rescue a role that fails on its own", () => {
+    const failing = defineTheme({
+      id: "failing",
+      label: "Failing",
+      appearance: "light",
+      colors: { bg: "#ffffff", fg: "#101010", accent: "#0b57d0", annotation: "#9db8e8" }
+    });
+    expect(failing.colors["annotation-soft"]).toBe(mixSrgb("#ffffff", "#9db8e8", 10));
+    expect(checkTheme(failing).errors.map((issue) => issue.token)).toContain("annotation");
+  });
+
+  it("falls back to color-mix() when an input is not a literal", () => {
+    const themed = defineTheme({
+      id: "vars",
+      label: "Vars",
+      appearance: "light",
+      colors: { bg: "#ffffff", fg: "var(--ink)", accent: "#0b57d0" }
+    });
+    expect(themed.colors.muted).toBe("color-mix(in srgb, var(--ink) 62%, #ffffff)");
+  });
+
+  it("gives unset roles the accent and its companions", () => {
+    const c = minimal.colors;
+    expect(c.link).toBe("#0b57d0");
+    expect(c.annotation).toBe("#0b57d0");
+    expect(c["link-line"]).toBe(c["accent-line"]);
+    expect(c["annotation-soft"]).toBe(c["accent-soft"]);
+    expect(c["annotation-line"]).toBe(c["accent-line"]);
+  });
+
+  it("derives a set role's companions from the role, not the accent", () => {
+    const roles = defineTheme({
+      id: "roles",
+      label: "Roles",
+      appearance: "dark",
+      colors: { bg: "#16171b", fg: "#ece8df", accent: "#e0a46a", link: "#8cc4e8", annotation: "#c4a7e7" }
+    });
+    const c = roles.colors;
+    expect(c.link).toBe("#8cc4e8");
+    expect(c["link-line"]).toBe(mixSrgb("#16171b", "#8cc4e8", 30));
+    expect(c["annotation-soft"]).toBe(mixSrgb("#16171b", "#c4a7e7", 14));
+    expect(c["annotation-line"]).toBe(mixSrgb("#16171b", "#c4a7e7", 30));
+    // The accent keeps its own companions.
+    expect(c["accent-line"]).toBe(mixSrgb("#16171b", "#e0a46a", 30));
+    expect(checkTheme(roles).errors).toEqual([]);
+  });
+
+  it("keeps an explicit companion over the derived one", () => {
+    const roles = defineTheme({
+      id: "explicit",
+      label: "Explicit",
+      appearance: "light",
+      colors: { bg: "#ffffff", fg: "#101010", accent: "#0b57d0", link: "#1f5f8b", "link-line": "#1f5f8b" }
+    });
+    expect(roles.colors["link-line"]).toBe("#1f5f8b");
   });
 
   it("derives hued semantics from accessible fallbacks, not from the background", () => {

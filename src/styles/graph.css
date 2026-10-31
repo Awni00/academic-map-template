@@ -603,7 +603,7 @@
 }
 
 .graph-zoom button:focus-visible {
-  outline: 2px solid var(--color-accent-line);
+  outline: 2px solid var(--color-accent);
   outline-offset: -2px;
 }
 
@@ -778,7 +778,7 @@
 }
 
 .preview-link:focus-visible {
-  outline: 2px solid var(--color-accent-line);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -1110,14 +1110,14 @@
 }
 
 .topics-hub__open {
-  color: var(--color-accent);
-  border-bottom: 1px solid var(--color-accent-line);
+  color: var(--color-link);
+  border-bottom: 1px solid var(--color-link-line);
   padding-bottom: 2px;
   text-decoration: none;
 }
 
 .topics-hub__open:hover {
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--color-link);
 }
 
 .topics-hub__sum {
@@ -1292,14 +1292,14 @@
 }
 
 .topics-preview-footer__link {
-  color: var(--color-accent);
-  border-bottom: 1px solid var(--color-accent-line);
+  color: var(--color-link);
+  border-bottom: 1px solid var(--color-link-line);
   padding-bottom: 1px;
   text-decoration: none;
 }
 
 .topics-preview-footer__link:hover {
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--color-link);
 }
 
 .topics-pager {
@@ -1359,8 +1359,8 @@
 }
 
 .topics-pager__open {
-  color: var(--color-accent);
-  border-bottom: 1px solid var(--color-accent-line);
+  color: var(--color-link);
+  border-bottom: 1px solid var(--color-link-line);
   padding-bottom: 1px;
   font-family: var(--font-ui);
   font-size: 12.5px;
@@ -1368,7 +1368,7 @@
 }
 
 .topics-pager__open:hover {
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--color-link);
 }
 
 /* ── List view ──────────────────────────────────────────────────────── */

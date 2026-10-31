@@ -1,4 +1,6 @@
 import type { Theme, ThemeAppearance, ThemeColors, ThemeInput } from "../../config/types";
+import { CONTRAST_TARGETS, PAIR_TARGETS } from "./checkTheme";
+import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
 
 /**
  * Build a complete `Theme` from as little as three colours.
@@ -9,10 +11,19 @@ import type { Theme, ThemeAppearance, ThemeColors, ThemeInput } from "../../conf
  * derived from a background, so they fall back to the accessible defaults
  * below; a theme that wants its own reds and golds should say so explicitly.
  *
- * Derived values are emitted as `color-mix()` rather than being resolved to
- * hex here. That keeps this function free of a colour-space implementation,
- * but it means the contrast checker cannot measure them — it reports those
- * tokens as "verify by eye" instead of passing them silently.
+ * The `link` and `annotation` roles fall back to the accent, and so do their
+ * `-line` / `-soft` companions: a theme that sets neither role emits exactly
+ * the accent's values. Setting a role derives its companions from it instead.
+ *
+ * Mixes are resolved to hex here whenever both inputs are opaque literals, so
+ * derived tokens are contrast-checked like stated ones. A derived token that
+ * would miss its contrast target is pulled back toward the colour that clears
+ * it — a grey toward `fg`, a tint toward `bg` — just far enough to pass, so a
+ * theme whose three colours are readable never fails on a token it did not
+ * set. Most themes clear the targets at the usual mix and are not moved. Only a mix of
+ * something this module cannot read — a translucent colour, a `var()` — is
+ * left as `color-mix()` for the browser, and the checker reports that token
+ * as "verify by eye".
  */
 export function defineTheme(input: ThemeInput): Theme {
   const { colors } = input;
@@ -22,7 +33,31 @@ export function defineTheme(input: ThemeInput): Theme {
 
   /** `base` shifted `amount`% of the way toward `toward`. */
   const mix = (base: string, toward: string, amount: number) =>
-    `color-mix(in srgb, ${base} ${100 - amount}%, ${toward})`;
+    mixSrgb(base, toward, amount) ?? `color-mix(in srgb, ${base} ${100 - amount}%, ${toward})`;
+
+  /**
+   * `mix`, but stepping `amount` down until `legible` accepts the result. Gives
+   * up and returns the plain mix if nothing passes — that means an input itself
+   * fails, and the checker will name it.
+   */
+  const fit = (base: string, toward: string, amount: number, legible: (c: string) => boolean) => {
+    for (let step = amount; step >= 0; step -= 1) {
+      const candidate = mixSrgb(base, toward, step);
+      if (candidate === null) break;
+      if (legible(candidate)) return candidate;
+    }
+    return mix(base, toward, amount);
+  };
+
+  /** A grey from `fg` toward `bg` that still clears `token`'s target on `bg`. */
+  const grey = (token: keyof typeof CONTRAST_TARGETS, amount: number) =>
+    fit(fg, bg, amount, (c) => contrastRatio(c, bg) >= CONTRAST_TARGETS[token]);
+
+  /** A tint from `bg` toward `role`'s colour that the colour stays readable on. */
+  const tint = (role: (typeof PAIR_TARGETS)[number]["token"], ink: string, amount: number) => {
+    const { target } = PAIR_TARGETS.find((pair) => pair.token === role)!;
+    return fit(bg, ink, amount, (c) => isCheckable(ink) && contrastRatio(ink, c) >= target);
+  };
 
   const pick = <K extends keyof ThemeColors>(token: K, fallback: string): string =>
     colors[token] ?? fallback;
@@ -32,22 +67,37 @@ export function defineTheme(input: ThemeInput): Theme {
   const success = pick("success", hues.success);
   const info = pick("info", hues.info);
   const example = pick("example", hues.example);
-  const muted = pick("muted", mix(fg, bg, 38));
+  const muted = pick("muted", grey("muted", 38));
+  const accentSoft = pick("accent-soft", tint("accent", accent, dark ? 14 : 10));
+  const accentLine = pick("accent-line", mix(bg, accent, dark ? 30 : 28));
+  const link = colors.link;
+  const annotation = colors.annotation;
 
   const resolved: ThemeColors = {
     bg,
     "bg-soft": pick("bg-soft", mix(bg, fg, 3)),
     "bg-soft-2": pick("bg-soft-2", mix(bg, fg, 6)),
     fg,
-    "fg-soft": pick("fg-soft", mix(fg, bg, 12)),
+    "fg-soft": pick("fg-soft", grey("fg-soft", 12)),
     muted,
-    "muted-2": pick("muted-2", mix(fg, bg, 55)),
+    "muted-2": pick("muted-2", grey("muted-2", 55)),
     border: pick("border", mix(bg, fg, 12)),
     "border-soft": pick("border-soft", mix(bg, fg, 7)),
     rule: pick("rule", mix(bg, fg, 20)),
     accent,
-    "accent-soft": pick("accent-soft", mix(bg, accent, dark ? 14 : 10)),
-    "accent-line": pick("accent-line", mix(bg, accent, dark ? 30 : 28)),
+    "accent-soft": accentSoft,
+    "accent-line": accentLine,
+    link: link ?? accent,
+    "link-line": pick("link-line", link ? mix(bg, link, dark ? 30 : 28) : accentLine),
+    annotation: annotation ?? accent,
+    "annotation-soft": pick(
+      "annotation-soft",
+      annotation ? tint("annotation", annotation, dark ? 14 : 10) : accentSoft
+    ),
+    "annotation-line": pick(
+      "annotation-line",
+      annotation ? mix(bg, annotation, dark ? 30 : 28) : accentLine
+    ),
     danger,
     "danger-text": pick("danger-text", danger),
     warning,
@@ -58,14 +108,14 @@ export function defineTheme(input: ThemeInput): Theme {
     "info-text": pick("info-text", info),
     example,
     "example-text": pick("example-text", example),
-    quote: pick("quote", mix(fg, bg, 45)),
+    quote: pick("quote", grey("quote", 45)),
     // The quote rule is a quiet grey; its title reuses the readable one.
     "quote-text": pick("quote-text", muted),
     "graph-hub": pick("graph-hub", fg),
-    "graph-sub-hub": pick("graph-sub-hub", mix(fg, bg, 45)),
+    "graph-sub-hub": pick("graph-sub-hub", grey("graph-sub-hub", 45)),
     "graph-paper": pick("graph-paper", accent),
     "graph-post": pick("graph-post", info),
-    "graph-note": pick("graph-note", mix(fg, bg, 55)),
+    "graph-note": pick("graph-note", grey("graph-note", 55)),
     "graph-teaching": pick("graph-teaching", success),
     "graph-project": pick("graph-project", example),
     "graph-edge": pick("graph-edge", mix(bg, fg, 28)),
