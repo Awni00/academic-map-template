@@ -33,7 +33,12 @@ import {
 } from "../../lib/graph/nodeDrag";
 import { curvedEdge, edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
-import type { GraphConfigBase, GraphForcesConfig, GraphHoverConfig } from "../../config/types";
+import type {
+  GraphConfigBase,
+  GraphForcesConfig,
+  GraphHoverConfig,
+  GraphSelectionStyle
+} from "../../config/types";
 
 type LabelMode = "config" | "all" | "none";
 type GraphCanvasProps = {
@@ -99,6 +104,8 @@ type GraphCanvasProps = {
   zoomControls?: boolean;
   /** What hovering a node does. Defaults to the site's `graph.hover`. */
   hover?: GraphHoverConfig;
+  /** How the selected node is marked. Defaults to `graph.selection.style`. */
+  selectionStyle?: GraphSelectionStyle;
   /**
    * Overrides for the site's `graph.links`, `graph.layout.forces`, and the
    * entry types' glyph sizes (screen pixels, by type id). Every surface leaves
@@ -123,11 +130,12 @@ const FADE_ALPHA = 0.42;
  */
 const FADED_LABEL_ALPHA = 0.6;
 /**
- * The selection ring's opacity. Tests find the ring on the canvas by this
- * value (tests/e2e/graph-selection.spec.ts), so nothing else may paint an arc
- * at it.
+ * Opacity of the two selection marks. Tests find the mark on the canvas by
+ * these values (tests/e2e/graph-selection.spec.ts), so nothing else may paint
+ * an arc at either.
  */
 const SELECTION_RING_ALPHA = 0.75;
+const SELECTION_HALO_ALPHA = 0.18;
 /**
  * Ceiling for the settle-time fit. The scale comes from the node bounding box,
  * which degenerates to a point for a single node and to a line for two. Glyphs
@@ -170,6 +178,7 @@ export default function GraphCanvas({
   bottomInset = 0,
   zoomControls = false,
   hover: hoverConfig = graphConfig.hover,
+  selectionStyle = graphConfig.selection.style,
   links: linkOverrides,
   forces: forceOverrides,
   nodeSizes
@@ -1091,13 +1100,14 @@ export default function GraphCanvas({
               selected: selected === node.id,
               anchored: anchor === node.id,
               focused: focus?.id === node.id,
-              // The selected node is exempt: see drawSelectionRing.
+              // The selected node is exempt: see drawSelectionMark.
               faded: selected !== node.id && !!emphasized && !emphasized.has(node.id),
               dimmed: Boolean(focus?.dims) && !near,
               // Hovering names nodes on the canvas, as `hover.labels` says.
               revealLabel: focus?.named.has(node.id) ?? false,
               labelMode,
-              radius: radiusOf(node, globalScale)
+              radius: radiusOf(node, globalScale),
+              selectionStyle
             });
           }}
         />
@@ -1261,6 +1271,7 @@ function drawNode(
     anchored?: boolean;
     /** Glyph radius in graph units at this zoom. */
     radius: number;
+    selectionStyle: GraphSelectionStyle;
   }
 ) {
   const meta = getEntryType(node.type).graph;
@@ -1269,6 +1280,10 @@ function drawNode(
   const px = 1 / scale;
   const radius = state.radius;
   const color = nodeColor(node.type);
+  // The halo sits behind the glyph, so it is drawn first; the ring sits on it.
+  if (state.selected && state.selectionStyle === "halo") {
+    drawSelectionMark(ctx, node, radius, px, "halo", color);
+  }
   ctx.save();
   ctx.globalAlpha = state.dimmed ? HOVER_DIM_ALPHA : state.faded ? FADE_ALPHA : 1;
 
@@ -1299,8 +1314,8 @@ function drawNode(
   }
   ctx.restore();
 
-  if (state.selected) {
-    drawSelectionRing(ctx, node, radius, px);
+  if (state.selected && state.selectionStyle === "ring") {
+    drawSelectionMark(ctx, node, radius, px, "ring", color);
   }
 
   const named = state.revealLabel || state.selected;
@@ -1377,21 +1392,36 @@ function drawAnchorCore(ctx: CanvasRenderingContext2D, node: any, radius: number
 }
 
 /**
- * A fine ring around the selected node.
+ * Mark the selected node, as `graph.selection.style` says: a translucent halo
+ * in the node's own colour behind the glyph, or a fine dark ring around it.
  *
  * Selection is a third axis — what the reader is inspecting — and not a claim
  * about matching anything, so it paints at full strength even when the node
  * under it is faded. Otherwise selecting a node and then filtering it out
  * leaves the panel describing something all but invisible.
  */
-function drawSelectionRing(ctx: CanvasRenderingContext2D, node: any, radius: number, px: number) {
+function drawSelectionMark(
+  ctx: CanvasRenderingContext2D,
+  node: any,
+  radius: number,
+  px: number,
+  style: GraphSelectionStyle,
+  color: string
+) {
   ctx.save();
-  ctx.globalAlpha = SELECTION_RING_ALPHA;
-  ctx.strokeStyle = cssVar("--color-fg");
-  ctx.lineWidth = 1.25 * px;
   ctx.beginPath();
-  ctx.arc(node.x, node.y, radius + 4 * px, 0, 2 * Math.PI);
-  ctx.stroke();
+  if (style === "halo") {
+    ctx.globalAlpha = SELECTION_HALO_ALPHA;
+    ctx.fillStyle = color;
+    ctx.arc(node.x, node.y, radius + 6 * px, 0, 2 * Math.PI);
+    ctx.fill();
+  } else {
+    ctx.globalAlpha = SELECTION_RING_ALPHA;
+    ctx.strokeStyle = cssVar("--color-fg");
+    ctx.lineWidth = 1.25 * px;
+    ctx.arc(node.x, node.y, radius + 4 * px, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 

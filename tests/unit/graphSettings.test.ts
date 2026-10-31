@@ -34,6 +34,11 @@ describe("validateGraphSettings", () => {
     expect(errors).toMatch(/forces\.groupPull/);
   });
 
+  it("names an unknown selection style", () => {
+    const errors = validateGraphSettings({ ...base, selection: { style: "glow" as any } });
+    expect(errors.join("\n")).toMatch(/graph\.selection\.style/);
+  });
+
   it("bounds edge width, opacity, and curvature", () => {
     const links = { ...base.links, width: 0, opacity: 2, curvature: 0.9 };
     const errors = validateGraphSettings({ ...base, links }).join("\n");
@@ -62,6 +67,7 @@ describe("resolved graph config", () => {
     expect(defaultGraphConfig.hover).toEqual({ labels: "neighbours", dim: true });
     expect(defaultGraphConfig.layout.forces.groupDistance).toBe(36);
     expect(defaultGraphConfig.links.curvature).toBe(0.1);
+    expect(defaultGraphConfig.selection.style).toBe("halo");
   });
 
   it("merges site overrides into the defaults field by field", () => {

@@ -6,7 +6,8 @@ import type {
   GraphConfigBase,
   GraphForcesConfig,
   GraphHoverConfig,
-  GraphHoverLabels
+  GraphHoverLabels,
+  GraphSelectionStyle
 } from "../config/types";
 import type { GraphIndex } from "../lib/graph/types";
 
@@ -18,6 +19,7 @@ type Settings = {
   forces: GraphForcesConfig;
   links: Links;
   hover: GraphHoverConfig;
+  selection: GraphSelectionStyle;
   sizes: Record<string, number>;
 };
 
@@ -44,6 +46,7 @@ const LINK_SLIDERS: (Slider & { key: "width" | "opacity" | "curvature" })[] = [
 
 const HUB_LAYOUTS: Hubs[] = ["cluster", "circle", "row", "force"];
 const HOVER_LABELS: GraphHoverLabels[] = ["node", "neighbours", "none"];
+const SELECTION_STYLES: GraphSelectionStyle[] = ["halo", "ring"];
 
 function defaults(types: string[]): Settings {
   return {
@@ -56,6 +59,7 @@ function defaults(types: string[]): Settings {
       directed: graphConfig.links.directed
     },
     hover: { ...graphConfig.hover },
+    selection: graphConfig.selection.style,
     sizes: Object.fromEntries(types.map((type) => [type, getEntryType(type).graph.size]))
   };
 }
@@ -166,6 +170,17 @@ export default function GraphPlayground({ graph }: { graph: GraphIndex }) {
           />
         </Group>
 
+        <Group title="Selection">
+          <Select
+            label="Selected node"
+            value={settings.selection}
+            options={SELECTION_STYLES}
+            changed={settings.selection !== base.selection}
+            onChange={(value) => set("selection", value as GraphSelectionStyle)}
+          />
+          <p className="gp-note">Click a node on either map to compare.</p>
+        </Group>
+
         <Group title="Node sizes">
           {types.map((type) => (
             <Range
@@ -211,6 +226,7 @@ export default function GraphPlayground({ graph }: { graph: GraphIndex }) {
             onSelect={setSelected}
             hubLayout={settings.hubs}
             hover={settings.hover}
+            selectionStyle={settings.selection}
             links={links}
             forces={forces}
             nodeSizes={sizes}
@@ -406,6 +422,8 @@ function configSnippet(base: Settings, next: Settings): string | null {
         .join(", ")} }`
     );
   }
+
+  if (next.selection !== base.selection) graph.push(`selection: { style: "${next.selection}" }`);
 
   const sizeKeys = diff(base.sizes, next.sizes);
   if (!graph.length && !sizeKeys.length) return null;

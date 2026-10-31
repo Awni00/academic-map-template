@@ -48,6 +48,9 @@ export const defaultGraphConfig = {
     labels: "neighbours",
     dim: true
   },
+  selection: {
+    style: "halo"
+  },
   interaction: {
     // Dropped nodes stay put and the layout re-settles around them, so moving
     // one node reads as rearranging a live thing rather than parking a sticker

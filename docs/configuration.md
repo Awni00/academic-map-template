@@ -63,7 +63,7 @@ Supported top-level sections:
 
 ### Graph layout and edges
 
-Everything in this section, plus node sizes, can be tried before it is written
+Everything in this section, plus node sizes and the selection mark, can be tried before it is written
 down: run `npm run dev` and open `/fixtures/graph-playground`. It shows your
 writing map as your config draws it, beside the same map driven by sliders and
 toggles, and writes the changed values out as config to paste into
@@ -148,6 +148,15 @@ export const siteConfigOverrides = {
   site: { homepage: { writingPreview: { hover: { labels: "none" } } } }
 } satisfies SiteConfigOverrides;
 ```
+
+#### Selection
+
+`graph.selection.style` sets how the selected node is marked on every map:
+
+- `"halo"` (default) — a translucent disc in the node's own colour behind it.
+- `"ring"` — a thin dark ring around it.
+
+Either way, the selected node's edges are drawn in the accent colour.
 
 ### Graph interaction
 
