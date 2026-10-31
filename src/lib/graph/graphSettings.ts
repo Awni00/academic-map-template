@@ -1,6 +1,7 @@
 import type { GraphConfigBase, GraphForcesConfig, GraphHoverConfig } from "../../config/types";
 
 const HOVER_LABELS = ["node", "neighbours", "none"] as const;
+const SELECTION_STYLES = ["halo", "ring"] as const;
 
 /** Strengths are fractions; anything above 1 overshoots and the layout shakes. */
 const FRACTIONS: readonly (keyof GraphForcesConfig)[] = ["groupPull", "crossLinkStrength", "centerPull"];
@@ -25,7 +26,7 @@ export function resolveHover(
  * say why. Checked here instead, the build stops and names the setting.
  */
 export function validateGraphSettings(
-  config: Pick<GraphConfigBase, "links" | "layout" | "hover">,
+  config: Pick<GraphConfigBase, "links" | "layout" | "hover"> & Partial<Pick<GraphConfigBase, "selection">>,
   homepageHover?: Partial<GraphHoverConfig>
 ): string[] {
   const errors: string[] = [];
@@ -42,6 +43,13 @@ export function validateGraphSettings(
   };
   checkHover(config.hover, "graph.hover");
   checkHover(homepageHover, "site.homepage.writingPreview.hover");
+
+  const style = config.selection?.style;
+  if (style !== undefined && !SELECTION_STYLES.includes(style)) {
+    errors.push(
+      `graph.selection.style is ${JSON.stringify(style)}; use one of ${SELECTION_STYLES.map((value) => `"${value}"`).join(", ")}.`
+    );
+  }
 
   const forces = config.layout.forces;
   for (const [key, value] of Object.entries(forces) as [keyof GraphForcesConfig, unknown][]) {

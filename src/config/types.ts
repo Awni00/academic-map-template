@@ -465,6 +465,14 @@ export type DragMode = "none" | "stays" | "resettle";
  */
 export type GraphHoverLabels = "node" | "neighbours" | "none";
 
+/**
+ * How the selected node is marked.
+ *   "halo" — a translucent disc in the node's own colour around the glyph.
+ *   "ring" — a thin dark ring around the glyph.
+ * Either way the selected node's edges are drawn in the accent colour.
+ */
+export type GraphSelectionStyle = "halo" | "ring";
+
 export type GraphHoverConfig = {
   labels: GraphHoverLabels;
   /** Fade everything outside the hovered node's neighbourhood. */
@@ -528,6 +536,7 @@ export type GraphConfigBase = {
    * `site.homepage.writingPreview.hover`.
    */
   hover: GraphHoverConfig;
+  selection: { style: GraphSelectionStyle };
   interaction: {
     /**
      * Applies to the writing browser and the per-entry local maps. The
