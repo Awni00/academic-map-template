@@ -33,7 +33,7 @@ import {
 } from "../../lib/graph/nodeDrag";
 import { curvedEdge, edgeGeometry } from "../../lib/graph/edgeGeometry";
 import type { GraphIndex } from "../../lib/graph/types";
-import type { GraphHoverConfig } from "../../config/types";
+import type { GraphConfigBase, GraphForcesConfig, GraphHoverConfig } from "../../config/types";
 
 type LabelMode = "config" | "all" | "none";
 type GraphCanvasProps = {
@@ -99,6 +99,15 @@ type GraphCanvasProps = {
   zoomControls?: boolean;
   /** What hovering a node does. Defaults to the site's `graph.hover`. */
   hover?: GraphHoverConfig;
+  /**
+   * Overrides for the site's `graph.links`, `graph.layout.forces`, and the
+   * entry types' glyph sizes (screen pixels, by type id). Every surface leaves
+   * these unset and draws from config; the graph playground fixture sets them
+   * to preview settings before they are written into config.
+   */
+  links?: Partial<GraphConfigBase["links"]>;
+  forces?: GraphForcesConfig;
+  nodeSizes?: Partial<Record<string, number>>;
 };
 
 /**
@@ -160,8 +169,21 @@ export default function GraphCanvas({
   fitPad,
   bottomInset = 0,
   zoomControls = false,
-  hover: hoverConfig = graphConfig.hover
+  hover: hoverConfig = graphConfig.hover,
+  links: linkOverrides,
+  forces: forceOverrides,
+  nodeSizes
 }: GraphCanvasProps) {
+  const linkStyle = useMemo(() => ({ ...graphConfig.links, ...(linkOverrides ?? {}) }), [linkOverrides]);
+  const forceConfig = forceOverrides ?? graphConfig.layout.forces;
+  /** Glyph radius in graph units at `scale`, honouring `nodeSizes`. */
+  const radiusOf = useCallback(
+    (node: any, scale = 1) => {
+      const size = node && nodeSizes?.[node.type];
+      return size != null ? Math.max(3, size / 2) / scale : nodePaintedRadius(node, scale);
+    },
+    [nodeSizes]
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<any>(null);
   // Width is `null` until we've measured the container. We deliberately do
@@ -440,7 +462,9 @@ export default function GraphCanvas({
     if (!fg?.screen2GraphCoords || !point) return null;
     const graphPoint = fg.screen2GraphCoords(point.x, point.y);
     return {
-      node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y, zoomRef.current),
+      node: nodeAtPoint(graphData.nodes as any[], graphPoint.x, graphPoint.y, zoomRef.current, (node) =>
+        radiusOf(node)
+      ),
       point,
       graphPoint
     };
@@ -657,14 +681,14 @@ export default function GraphCanvas({
           // the zoom; the ring is planned at the zoom it asks for.
           neighbourRadii: graph.nodes
             .filter((node) => node.id !== anchor)
-            .map((node) => nodePaintedRadius(node, ANCHOR_RING.scale)),
-          anchorRadius: nodePaintedRadius(
+            .map((node) => radiusOf(node, ANCHOR_RING.scale)),
+          anchorRadius: radiusOf(
             graph.nodes.find((node) => node.id === anchor),
             ANCHOR_RING.scale
           )
         }
       ),
-    [width, height, graph.nodes, anchor]
+    [width, height, graph.nodes, anchor, radiusOf]
   );
 
   /**
@@ -710,8 +734,8 @@ export default function GraphCanvas({
    */
   const drawEdges = useCallback(
     (ctx: CanvasRenderingContext2D, scale: number) => {
-      const { width, opacity, directed, arrow } = graphConfig.links;
-      const edgeColor = resolveColor(graphConfig.links.color);
+      const { width, opacity, directed, arrow } = linkStyle;
+      const edgeColor = resolveColor(linkStyle.color);
       const accent = cssVar("--color-accent");
       const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
       // Heads only join the shaft's path when they share its colour. Given a
@@ -741,14 +765,14 @@ export default function GraphCanvas({
         const lit = isLit(edge);
         ctx.globalAlpha = lit ? LIT_EDGE_ALPHA : focus?.dims ? HOVER_DIM_EDGE_ALPHA : opacity;
         const color = lit ? accent : edgeColor;
-        const sourceRadius = nodePaintedRadius(source, scale);
-        const targetRadius = nodePaintedRadius(target, scale);
+        const sourceRadius = radiusOf(source, scale);
+        const targetRadius = radiusOf(target, scale);
 
         if (!directed) {
           const curve = curvedEdge(source, target, {
             sourceRadius,
             targetRadius,
-            curvature: graphConfig.links.curvature
+            curvature: linkStyle.curvature
           });
           if (!curve) continue;
           ctx.beginPath();
@@ -785,7 +809,7 @@ export default function GraphCanvas({
       }
       ctx.restore();
     },
-    [drawnEdges, liveNodeById, focus]
+    [drawnEdges, liveNodeById, focus, linkStyle, radiusOf]
   );
 
   /**
@@ -863,7 +887,7 @@ export default function GraphCanvas({
     // The cluster layout replaces it too, with a per-node pull that keeps
     // disconnected groups near one another (see `centerForce`).
     const cluster = !roomy && hubLayout === "cluster";
-    const forces = graphConfig.layout.forces;
+    const forces = forceConfig;
     if (cluster) fg.d3Force?.("center", null);
     fg.d3Force?.(
       "clusterCenter",
@@ -939,9 +963,9 @@ export default function GraphCanvas({
     fg.d3Force?.(
       "anchorCollide",
       roomy
-        ? collideForce(ANCHOR_RING.minGap, ANCHOR_RING.scale)
+        ? collideForce(ANCHOR_RING.minGap, (node) => radiusOf(node, ANCHOR_RING.scale))
         : cluster
-          ? collideForce(forces.minGap, 1)
+          ? collideForce(forces.minGap, (node) => radiusOf(node))
           : null
     );
     fg.d3ReheatSimulation?.();
@@ -950,7 +974,7 @@ export default function GraphCanvas({
     // `height` reaches the anchored forces through `anchorGeometry`, and the
     // cluster's aspect ratio is read once per settle; a resize re-frames
     // without re-running the layout (see below).
-  }, [ForceGraph, graphData, anchor, anchorGeometry, visibility.started, hubLayout, parents, degree]);
+  }, [ForceGraph, graphData, anchor, anchorGeometry, visibility.started, hubLayout, parents, degree, forceConfig, radiusOf]);
 
   // Re-frame when the slot changes width. The fit above runs once the
   // simulation settles and is never revisited, so a canvas that gets narrower
@@ -1072,7 +1096,8 @@ export default function GraphCanvas({
               dimmed: Boolean(focus?.dims) && !near,
               // Hovering names nodes on the canvas, as `hover.labels` says.
               revealLabel: focus?.named.has(node.id) ?? false,
-              labelMode
+              labelMode,
+              radius: radiusOf(node, globalScale)
             });
           }}
         />
@@ -1144,7 +1169,7 @@ function radialForce(radius: number, strength: number) {
  * collide force does. O(n²), which is nothing at the twenty-odd nodes a local
  * neighbourhood holds. Pinned nodes are left where they are.
  */
-function collideForce(padding: number, scale: number) {
+function collideForce(padding: number, radius: (node: any) => number) {
   let nodes: any[] = [];
   const force = () => {
     for (let i = 0; i < nodes.length; i += 1) {
@@ -1153,7 +1178,7 @@ function collideForce(padding: number, scale: number) {
         const b = nodes[j];
         const dx = (b.x ?? 0) - (a.x ?? 0);
         const dy = (b.y ?? 0) - (a.y ?? 0);
-        const minimum = nodePaintedRadius(a, scale) + nodePaintedRadius(b, scale) + padding;
+        const minimum = radius(a) + radius(b) + padding;
         const distance = Math.hypot(dx, dy) || 1e-6;
         if (distance >= minimum) continue;
         const shift = ((minimum - distance) / distance) * 0.5;
@@ -1234,13 +1259,15 @@ function drawNode(
     revealLabel: boolean;
     labelMode: LabelMode;
     anchored?: boolean;
+    /** Glyph radius in graph units at this zoom. */
+    radius: number;
   }
 ) {
   const meta = getEntryType(node.type).graph;
   // Every size below is screen pixels over `scale`, so the glyph, its outline,
   // and its label hold their size at any zoom.
   const px = 1 / scale;
-  const radius = nodePaintedRadius(node, scale);
+  const radius = state.radius;
   const color = nodeColor(node.type);
   ctx.save();
   ctx.globalAlpha = state.dimmed ? HOVER_DIM_ALPHA : state.faded ? FADE_ALPHA : 1;

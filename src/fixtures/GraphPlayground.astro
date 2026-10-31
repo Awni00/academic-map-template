@@ -1,0 +1,290 @@
+---
+/**
+ * A playground for the graph settings: the writing map as the site's config
+ * draws it, beside the same map drawn from a panel of controls, with the
+ * changed values written out as config to paste into `src/site/config.ts`.
+ *
+ * Dev-only, routed through `src/pages/fixtures/[fixture].astro`, like every
+ * fixture: `astro build` emits nothing for it.
+ */
+import { getCollection } from "astro:content";
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { buildGraphIndex } from "../lib/graph/buildGraph";
+import GraphPlayground from "./GraphPlayground";
+
+const entries = await getCollection("writing", ({ data }) => data.draft !== true);
+const graph = buildGraphIndex(entries, { collectWarnings: false }).index;
+---
+
+<BaseLayout title="Graph playground" description="Preview graph settings against the current config.">
+  <section class="gp-page">
+    <header class="gp-head">
+      <h1>Graph playground</h1>
+      <p>
+        Tune the writing map and compare it with what the site draws now. Nothing here changes the
+        site: copy the generated config into <code>src/site/config.ts</code> when you like a result.
+      </p>
+    </header>
+    <GraphPlayground client:load graph={graph} />
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .gp-page {
+    width: min(100% - 2 * var(--page-gutter), 1680px);
+    margin: 0 auto;
+    padding: 28px 0 48px;
+    font-family: var(--font-ui);
+  }
+
+  .gp-head h1 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+  }
+
+  .gp-head p {
+    margin: 0 0 22px;
+    color: var(--color-muted);
+    font-size: 14.5px;
+    max-width: 80ch;
+  }
+
+  .gp {
+    display: grid;
+    grid-template-columns: 290px minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  .gp-controls {
+    position: sticky;
+    top: calc(var(--site-header-height, 56px) + 12px);
+    max-height: calc(100vh - var(--site-header-height, 56px) - 24px);
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+
+  .gp-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .gp-btn {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+    color: var(--color-fg);
+    border-radius: 5px;
+    padding: 5px 11px;
+    font: 500 12.5px var(--font-ui);
+    cursor: pointer;
+  }
+
+  .gp-btn:hover:not(:disabled) {
+    border-color: var(--color-accent-line);
+    color: var(--color-accent);
+  }
+
+  .gp-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .gp-group {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg);
+    margin-bottom: 10px;
+  }
+
+  .gp-group summary {
+    cursor: pointer;
+    padding: 9px 12px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .gp-group__body {
+    padding: 2px 12px 10px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .gp-field {
+    display: grid;
+    gap: 3px;
+    font-size: 12.5px;
+  }
+
+  .gp-field__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .gp-field__label {
+    color: var(--color-fg-soft);
+  }
+
+  .gp-field__value {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--color-muted);
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .gp-field.is-changed .gp-field__label,
+  .gp-field.is-changed .gp-field__value {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .gp-field__hint {
+    font-size: 11px;
+    color: var(--color-muted-2);
+  }
+
+  .gp-field input[type="range"] {
+    width: 100%;
+    accent-color: var(--color-accent);
+  }
+
+  .gp-field select {
+    font: 12.5px var(--font-ui);
+    padding: 4px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  .gp-field--toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .gp-field--toggle input {
+    accent-color: var(--color-accent);
+  }
+
+  .gp-undo {
+    border: 0;
+    background: none;
+    padding: 0;
+    color: var(--color-accent);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .gp-note {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--color-muted);
+  }
+
+  .gp-maps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .gp-map {
+    margin: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--color-bg);
+  }
+
+  .gp-map--accent {
+    border-color: var(--color-accent-line);
+  }
+
+  .gp-map figcaption {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--color-border-soft);
+    font-size: 13px;
+  }
+
+  .gp-map figcaption span {
+    font-size: 11.5px;
+    color: var(--color-muted);
+  }
+
+  .gp-map--accent figcaption strong {
+    color: var(--color-accent);
+  }
+
+  .gp-canvas {
+    position: relative;
+    background: var(--color-bg-soft);
+    background-image: radial-gradient(circle, var(--color-border) 0.6px, transparent 0.6px);
+    background-size: 22px 22px;
+  }
+
+  .gp-tip {
+    font-size: 12.5px;
+    color: var(--color-muted);
+    margin: 10px 0 18px;
+  }
+
+  .gp-config {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg);
+    padding: 12px 14px;
+  }
+
+  .gp-config__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .gp-config pre {
+    margin: 0 0 10px;
+    padding: 12px;
+    border-radius: 5px;
+    background: var(--color-bg-soft);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 1100px) {
+    .gp {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gp-controls {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+
+    .gp-maps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

@@ -58,8 +58,12 @@ export function nodePaintedRadius(node?: { type?: EntryType }, scale = 1): numbe
  * glyph so a hub owns proportionally more canvas than a note, with a floor so
  * the smallest types stay comfortably clickable.
  */
-export function nodeHitRadius(node?: { type?: EntryType }, scale = 1): number {
-  return Math.max(MIN_HIT_RADIUS, nodePaintedRadius(node) + HIT_PADDING) / scale;
+export function nodeHitRadius(
+  node?: { type?: EntryType },
+  scale = 1,
+  paintedPx: number = nodePaintedRadius(node)
+): number {
+  return Math.max(MIN_HIT_RADIUS, paintedPx + HIT_PADDING) / scale;
 }
 
 /**
@@ -71,14 +75,16 @@ export function nodeAtPoint<T extends PositionedNode>(
   nodes: readonly T[],
   x: number,
   y: number,
-  scale = 1
+  scale = 1,
+  /** Painted radius in screen pixels, where a caller sizes glyphs itself. */
+  paintedPx?: (node: T) => number
 ): T | null {
   let best: T | null = null;
   let bestDistance = Infinity;
   for (const node of nodes) {
     if (typeof node.x !== "number" || typeof node.y !== "number") continue;
     const distance = Math.hypot(node.x - x, node.y - y);
-    if (distance > nodeHitRadius(node, scale) || distance >= bestDistance) continue;
+    if (distance > nodeHitRadius(node, scale, paintedPx?.(node)) || distance >= bestDistance) continue;
     bestDistance = distance;
     best = node;
   }

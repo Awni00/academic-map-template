@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { graphConfig } from "../../src/config";
 import { defaultGraphConfig } from "../../src/config/defaults/graph";
 import { resolveHover, validateGraphSettings } from "../../src/lib/graph/graphSettings";
+import { siteConfigOverrides } from "../../src/site/config";
 
 const base = {
   links: { ...defaultGraphConfig.links },
@@ -53,9 +54,22 @@ describe("resolveHover", () => {
 });
 
 describe("resolved graph config", () => {
-  it("carries the hover and force defaults through", () => {
-    expect(graphConfig.hover).toEqual({ labels: "neighbours", dim: true });
-    expect(graphConfig.layout.forces.groupDistance).toBe(36);
-    expect(graphConfig.links.curvature).toBe(0.1);
+  // Compared with the defaults merged with the site's own overrides, so the
+  // test holds whatever a site has set in src/site/config.ts.
+  const site = siteConfigOverrides.graph;
+
+  it("ships the documented defaults", () => {
+    expect(defaultGraphConfig.hover).toEqual({ labels: "neighbours", dim: true });
+    expect(defaultGraphConfig.layout.forces.groupDistance).toBe(36);
+    expect(defaultGraphConfig.links.curvature).toBe(0.1);
+  });
+
+  it("merges site overrides into the defaults field by field", () => {
+    expect(graphConfig.hover).toEqual({ ...defaultGraphConfig.hover, ...site?.hover });
+    expect(graphConfig.layout.forces).toEqual({
+      ...defaultGraphConfig.layout.forces,
+      ...site?.layout?.forces
+    });
+    expect(graphConfig.links.curvature).toBe(site?.links?.curvature ?? defaultGraphConfig.links.curvature);
   });
 });
