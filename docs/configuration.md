@@ -90,6 +90,12 @@ hold at every zoom level.
 
 #### Layout forces
 
+To tune these by eye, run `npm run dev` and open `/fixtures/graph-playground`:
+your writing map as your config draws it, beside the same map driven by
+sliders for every setting in this section (and node sizes), with the changed
+values written out as config to paste here. It is a development page only;
+`astro build` does not publish it.
+
 `graph.layout.forces` tunes the `cluster` layout. Distances are in layout
 units — roughly screen pixels before the map is zoomed to fit — and strengths
 run from 0 to 1. Set only what you want to change; the rest keep their
