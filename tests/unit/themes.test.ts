@@ -64,8 +64,8 @@ describe("contrast", () => {
 });
 
 describe("built-in themes", () => {
-  it("ships ten themes with unique ids", () => {
-    expect(builtInThemes).toHaveLength(10);
+  it("ships eighteen themes with unique ids", () => {
+    expect(builtInThemes).toHaveLength(18);
     const ids = builtInThemes.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -89,8 +89,18 @@ describe("built-in themes", () => {
     }
   );
 
-  it("leaves the optional roles on the accent", () => {
-    for (const theme of builtInThemes) {
+  // The Paper/Ink variants each split one role off their accent; every other
+  // built-in leaves both roles on it.
+  const VARIANTS = {
+    ember: { split: "link" },
+    claret: { split: "link" },
+    pine: { split: "link" },
+    indigo: { split: "annotation" }
+  } as const;
+  const variantOf = (id: string) => VARIANTS[id.replace(/-(light|dark)$/, "") as keyof typeof VARIANTS];
+
+  it("leaves the optional roles on the accent unless a theme sets one", () => {
+    for (const theme of builtInThemes.filter((candidate) => !variantOf(candidate.id))) {
       const c = theme.colors;
       expect(c.link, theme.id).toBe(c.accent);
       expect(c.annotation, theme.id).toBe(c.accent);
@@ -99,6 +109,24 @@ describe("built-in themes", () => {
       expect(c["annotation-line"], theme.id).toBe(c["accent-line"]);
     }
   });
+
+  it.each(Object.keys(VARIANTS).flatMap((name) => [`${name}-light`, `${name}-dark`]))(
+    "builds %s on Paper/Ink's page with its own accent and one split-off role",
+    (id) => {
+      const { split } = variantOf(id);
+      const kept = split === "link" ? "annotation" : "link";
+      const v = builtInThemes.find((theme) => theme.id === id)!;
+      const b = builtInThemes.find((theme) => theme.id === (v.appearance === "light" ? "paper" : "ink"))!.colors;
+      const c = v.colors;
+      for (const token of ["bg", "fg", "fg-soft", "muted", "muted-2", "border", "rule"] as const) {
+        expect(c[token], `${id}.${token}`).toBe(b[token]);
+      }
+      expect(c.accent).not.toBe(b.accent);
+      expect(c["graph-paper"]).toBe(c.accent);
+      expect(c[split]).not.toBe(c.accent);
+      expect(c[kept]).toBe(c.accent);
+    }
+  );
 
   it("keeps text on its own tint readable", () => {
     for (const theme of builtInThemes) {

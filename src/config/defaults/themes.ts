@@ -118,6 +118,414 @@ export const builtInThemes: readonly Theme[] = [
     }
   }),
   defineTheme({
+    id: "ember-light",
+    label: "Ember Light",
+    appearance: "light",
+    shiki: "github-light-default",
+    colors: {
+      bg: "#ffffff",
+      "bg-soft": "#faf9f6",
+      "bg-soft-2": "#f5f4ef",
+
+      fg: "#15161a",
+      "fg-soft": "#2b2c30",
+      muted: "#6b6d72",
+      "muted-2": "#8e9095",
+
+      border: "#e8e6e0",
+      "border-soft": "#f0eee8",
+      rule: "#d8d6d0",
+
+      accent: "#b3401a",
+      "accent-soft": "#f7ece8",
+      "accent-line": "#eacabf",
+      // Links stay blue, so they read as links against the warm interface.
+      link: "#2456b8",
+
+      danger: "#b91c1c",
+      "danger-text": "#b91c1c",
+      warning: "#b45309",
+      "warning-text": "#b45309",
+      success: "#15803d",
+      "success-text": "#15803d",
+      info: "#0f766e",
+      "info-text": "#0f766e",
+      example: "#9333ea",
+      "example-text": "#9333ea",
+      quote: "#8e9095",
+      "quote-text": "#6b6d72",
+
+      "graph-hub": "#15161a",
+      "graph-sub-hub": "#7a808a",
+      "graph-paper": "#b3401a",
+      "graph-post": "#64748b",
+      "graph-note": "#8596ae", // tuned from #94a3b8
+      "graph-teaching": "#15803d",
+      "graph-project": "#9333ea",
+      "graph-edge": "#b8b6b0",
+
+      "placeholder-a": "#efece5",
+      "placeholder-b": "#e6e3dc"
+    }
+  }),
+  defineTheme({
+    id: "ember-dark",
+    label: "Ember Dark",
+    appearance: "dark",
+    shiki: "github-dark-default",
+    colors: {
+      bg: "#0c0d10",
+      "bg-soft": "#131418",
+      "bg-soft-2": "#1a1c21",
+
+      fg: "#f1f0ec",
+      "fg-soft": "#d8d6d0",
+      muted: "#9a9b9f",
+      "muted-2": "#74757a",
+
+      border: "#2a2b30",
+      "border-soft": "#1f2024",
+      rule: "#35363b",
+
+      accent: "#f0915f",
+      "accent-soft": "#2c1f1b",
+      "accent-line": "#503528",
+      // Links stay blue, so they read as links against the warm interface.
+      link: "#8eb0ff",
+
+      danger: "#f87171",
+      "danger-text": "#f87171",
+      warning: "#d6a14a",
+      "warning-text": "#d6a14a",
+      success: "#4ade80",
+      "success-text": "#4ade80",
+      info: "#5ccfe6",
+      "info-text": "#5ccfe6",
+      example: "#c084fc",
+      "example-text": "#c084fc",
+      quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
+
+      "graph-hub": "#f1f0ec",
+      "graph-sub-hub": "#a1a1aa",
+      "graph-paper": "#f0915f",
+      "graph-post": "#7dd3fc",
+      "graph-note": "#71717a",
+      "graph-teaching": "#4ade80",
+      "graph-project": "#c084fc",
+      "graph-edge": "#4a4b50",
+
+      "placeholder-a": "#1f2024",
+      "placeholder-b": "#25262b"
+    }
+  }),
+  defineTheme({
+    id: "claret-light",
+    label: "Claret Light",
+    appearance: "light",
+    shiki: "github-light-default",
+    colors: {
+      bg: "#ffffff",
+      "bg-soft": "#faf9f6",
+      "bg-soft-2": "#f5f4ef",
+
+      fg: "#15161a",
+      "fg-soft": "#2b2c30",
+      muted: "#6b6d72",
+      "muted-2": "#8e9095",
+
+      border: "#e8e6e0",
+      "border-soft": "#f0eee8",
+      rule: "#d8d6d0",
+
+      accent: "#8b1e3f",
+      "accent-soft": "#f3e9ec",
+      "accent-line": "#dfc0c9",
+      // Navy links, so they read as links against the wine-red interface.
+      link: "#1d4e89",
+
+      danger: "#b91c1c",
+      "danger-text": "#b91c1c",
+      warning: "#b45309",
+      "warning-text": "#b45309",
+      success: "#15803d",
+      "success-text": "#15803d",
+      info: "#0f766e",
+      "info-text": "#0f766e",
+      example: "#9333ea",
+      "example-text": "#9333ea",
+      quote: "#8e9095",
+      "quote-text": "#6b6d72",
+
+      "graph-hub": "#15161a",
+      "graph-sub-hub": "#7a808a",
+      "graph-paper": "#8b1e3f",
+      "graph-post": "#64748b",
+      "graph-note": "#8596ae", // tuned from #94a3b8
+      "graph-teaching": "#15803d",
+      "graph-project": "#9333ea",
+      "graph-edge": "#b8b6b0",
+
+      "placeholder-a": "#efece5",
+      "placeholder-b": "#e6e3dc"
+    }
+  }),
+  defineTheme({
+    id: "claret-dark",
+    label: "Claret Dark",
+    appearance: "dark",
+    shiki: "github-dark-default",
+    colors: {
+      bg: "#0c0d10",
+      "bg-soft": "#131418",
+      "bg-soft-2": "#1a1c21",
+
+      fg: "#f1f0ec",
+      "fg-soft": "#d8d6d0",
+      muted: "#9a9b9f",
+      "muted-2": "#74757a",
+
+      border: "#2a2b30",
+      "border-soft": "#1f2024",
+      rule: "#35363b",
+
+      accent: "#e8879f",
+      "accent-soft": "#2b1e24",
+      "accent-line": "#4e323b",
+      // Blue links, so they read as links against the rose interface.
+      link: "#9cc0ff",
+
+      danger: "#f87171",
+      "danger-text": "#f87171",
+      warning: "#d6a14a",
+      "warning-text": "#d6a14a",
+      success: "#4ade80",
+      "success-text": "#4ade80",
+      info: "#5ccfe6",
+      "info-text": "#5ccfe6",
+      example: "#c084fc",
+      "example-text": "#c084fc",
+      quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
+
+      "graph-hub": "#f1f0ec",
+      "graph-sub-hub": "#a1a1aa",
+      "graph-paper": "#e8879f",
+      "graph-post": "#7dd3fc",
+      "graph-note": "#71717a",
+      "graph-teaching": "#4ade80",
+      "graph-project": "#c084fc",
+      "graph-edge": "#4a4b50",
+
+      "placeholder-a": "#1f2024",
+      "placeholder-b": "#25262b"
+    }
+  }),
+  defineTheme({
+    id: "pine-light",
+    label: "Pine Light",
+    appearance: "light",
+    shiki: "github-light-default",
+    colors: {
+      bg: "#ffffff",
+      "bg-soft": "#faf9f6",
+      "bg-soft-2": "#f5f4ef",
+
+      fg: "#15161a",
+      "fg-soft": "#2b2c30",
+      muted: "#6b6d72",
+      "muted-2": "#8e9095",
+
+      border: "#e8e6e0",
+      "border-soft": "#f0eee8",
+      rule: "#d8d6d0",
+
+      accent: "#1f6f5c",
+      "accent-soft": "#e9f1ef",
+      "accent-line": "#c0d7d1",
+      // Blue links, so they read as links against the green interface.
+      link: "#2456b8",
+
+      danger: "#b91c1c",
+      "danger-text": "#b91c1c",
+      warning: "#b45309",
+      "warning-text": "#b45309",
+      success: "#15803d",
+      "success-text": "#15803d",
+      info: "#0f766e",
+      "info-text": "#0f766e",
+      example: "#9333ea",
+      "example-text": "#9333ea",
+      quote: "#8e9095",
+      "quote-text": "#6b6d72",
+
+      "graph-hub": "#15161a",
+      "graph-sub-hub": "#7a808a",
+      "graph-paper": "#1f6f5c",
+      "graph-post": "#64748b",
+      "graph-note": "#8596ae", // tuned from #94a3b8
+      "graph-teaching": "#15803d",
+      "graph-project": "#9333ea",
+      "graph-edge": "#b8b6b0",
+
+      "placeholder-a": "#efece5",
+      "placeholder-b": "#e6e3dc"
+    }
+  }),
+  defineTheme({
+    id: "pine-dark",
+    label: "Pine Dark",
+    appearance: "dark",
+    shiki: "github-dark-default",
+    colors: {
+      bg: "#0c0d10",
+      "bg-soft": "#131418",
+      "bg-soft-2": "#1a1c21",
+
+      fg: "#f1f0ec",
+      "fg-soft": "#d8d6d0",
+      muted: "#9a9b9f",
+      "muted-2": "#74757a",
+
+      border: "#2a2b30",
+      "border-soft": "#1f2024",
+      rule: "#35363b",
+
+      accent: "#6fcfb0",
+      "accent-soft": "#1a2826",
+      "accent-line": "#2a4740",
+      // Blue links, so they read as links against the green interface.
+      link: "#8eb0ff",
+
+      danger: "#f87171",
+      "danger-text": "#f87171",
+      warning: "#d6a14a",
+      "warning-text": "#d6a14a",
+      success: "#4ade80",
+      "success-text": "#4ade80",
+      info: "#5ccfe6",
+      "info-text": "#5ccfe6",
+      example: "#c084fc",
+      "example-text": "#c084fc",
+      quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
+
+      "graph-hub": "#f1f0ec",
+      "graph-sub-hub": "#a1a1aa",
+      "graph-paper": "#6fcfb0",
+      "graph-post": "#7dd3fc",
+      "graph-note": "#71717a",
+      "graph-teaching": "#4ade80",
+      "graph-project": "#c084fc",
+      "graph-edge": "#4a4b50",
+
+      "placeholder-a": "#1f2024",
+      "placeholder-b": "#25262b"
+    }
+  }),
+  defineTheme({
+    id: "indigo-light",
+    label: "Indigo Light",
+    appearance: "light",
+    shiki: "github-light-default",
+    colors: {
+      bg: "#ffffff",
+      "bg-soft": "#faf9f6",
+      "bg-soft-2": "#f5f4ef",
+
+      fg: "#15161a",
+      "fg-soft": "#2b2c30",
+      muted: "#6b6d72",
+      "muted-2": "#8e9095",
+
+      border: "#e8e6e0",
+      "border-soft": "#f0eee8",
+      rule: "#d8d6d0",
+
+      accent: "#4b3fb3",
+      "accent-soft": "#edecf7",
+      "accent-line": "#cdc9ea",
+      // Links keep the indigo; terms and note marks turn coral.
+      annotation: "#b8432f",
+
+      danger: "#b91c1c",
+      "danger-text": "#b91c1c",
+      warning: "#b45309",
+      "warning-text": "#b45309",
+      success: "#15803d",
+      "success-text": "#15803d",
+      info: "#0f766e",
+      "info-text": "#0f766e",
+      example: "#9333ea",
+      "example-text": "#9333ea",
+      quote: "#8e9095",
+      "quote-text": "#6b6d72",
+
+      "graph-hub": "#15161a",
+      "graph-sub-hub": "#7a808a",
+      "graph-paper": "#4b3fb3",
+      "graph-post": "#64748b",
+      "graph-note": "#8596ae", // tuned from #94a3b8
+      "graph-teaching": "#15803d",
+      "graph-project": "#9333ea",
+      "graph-edge": "#b8b6b0",
+
+      "placeholder-a": "#efece5",
+      "placeholder-b": "#e6e3dc"
+    }
+  }),
+  defineTheme({
+    id: "indigo-dark",
+    label: "Indigo Dark",
+    appearance: "dark",
+    shiki: "github-dark-default",
+    colors: {
+      bg: "#0c0d10",
+      "bg-soft": "#131418",
+      "bg-soft-2": "#1a1c21",
+
+      fg: "#f1f0ec",
+      "fg-soft": "#d8d6d0",
+      muted: "#9a9b9f",
+      "muted-2": "#74757a",
+
+      border: "#2a2b30",
+      "border-soft": "#1f2024",
+      rule: "#35363b",
+
+      accent: "#a9a2ff",
+      "accent-soft": "#222231",
+      "accent-line": "#3b3a58",
+      // Links keep the indigo; terms and note marks turn coral.
+      annotation: "#ff9a85",
+
+      danger: "#f87171",
+      "danger-text": "#f87171",
+      warning: "#d6a14a",
+      "warning-text": "#d6a14a",
+      success: "#4ade80",
+      "success-text": "#4ade80",
+      info: "#5ccfe6",
+      "info-text": "#5ccfe6",
+      example: "#c084fc",
+      "example-text": "#c084fc",
+      quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
+
+      "graph-hub": "#f1f0ec",
+      "graph-sub-hub": "#a1a1aa",
+      "graph-paper": "#a9a2ff",
+      "graph-post": "#7dd3fc",
+      "graph-note": "#71717a",
+      "graph-teaching": "#4ade80",
+      "graph-project": "#c084fc",
+      "graph-edge": "#4a4b50",
+
+      "placeholder-a": "#1f2024",
+      "placeholder-b": "#25262b"
+    }
+  }),
+  defineTheme({
     id: "dawn",
     label: "Rosé Pine Dawn",
     appearance: "light",
