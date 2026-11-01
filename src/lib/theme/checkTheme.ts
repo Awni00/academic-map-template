@@ -43,6 +43,19 @@ export const CONTRAST_TARGETS = {
 } as const satisfies Partial<Record<keyof ThemeColors, number>>;
 
 /**
+ * Text that also appears on `surface-raised` — the menu, the contents and
+ * filter sheets, the map's inspector — and must stay readable there. These are
+ * interface labels rather than long-form prose, so even `fg` is held to AA.
+ */
+export const RAISED_TARGETS = {
+  fg: 4.5,
+  "fg-soft": 4.5,
+  muted: 4.5,
+  "muted-2": 3,
+  accent: 4.5
+} as const satisfies Partial<Record<keyof ThemeColors, number>>;
+
+/**
  * Text drawn on a tinted background rather than on `bg`, measured against
  * that tint: the accent on its own soft fill (publication pills) and an
  * annotation on its open-state highlight (an open `<Term>` or note mark).
@@ -70,6 +83,7 @@ const REQUIRED_TOKENS: readonly (keyof ThemeColors)[] = [
   "bg",
   "bg-soft",
   "bg-soft-2",
+  "surface-raised",
   "fg",
   "fg-soft",
   "muted",
@@ -170,6 +184,26 @@ export function checkTheme(theme: Theme): ThemeReport {
         )
       );
     }
+  }
+
+  const raised = theme.colors["surface-raised"];
+  if (isCheckable(raised)) {
+    const surface = flatten(raised, background);
+    for (const [token, target] of Object.entries(RAISED_TARGETS)) {
+      const value = theme.colors[token as keyof ThemeColors];
+      if (!isCheckable(value)) continue;
+      const ratio = contrastRatio(value, surface);
+      if (ratio < target) {
+        errors.push(
+          at(
+            token,
+            `${value} on surface-raised ${raised} is ${ratio.toFixed(2)}:1, below the ${target}:1 required`
+          )
+        );
+      }
+    }
+  } else {
+    warnings.push(at("surface-raised", `"${raised}" cannot be contrast-checked; verify it by eye`));
   }
 
   for (const { token, on, target } of PAIR_TARGETS) {

@@ -11,7 +11,7 @@
  * Dev-only, routed through `src/pages/fixtures/[fixture].astro`.
  */
 import { themeRegistry } from "../config/theme";
-import { CONTRAST_TARGETS, PAIR_TARGETS, checkTheme } from "../lib/theme/checkTheme";
+import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../lib/theme/checkTheme";
 import { contrastRatio, isCheckable, isOpaque } from "../lib/theme/contrast";
 import { themeToCss } from "../lib/theme/themeCss";
 
@@ -25,6 +25,7 @@ const css = themes
 
 /** The tokens worth showing as a strip, in the order they read as a palette. */
 const SWATCHES = [
+  "surface-raised",
   "accent",
   "link",
   "annotation",
@@ -67,7 +68,16 @@ const cards = themes.map((theme) => {
       target
     };
   });
-  return { theme, report, measurements: [...measurements, ...pairs] };
+  // The weakest text on menus and sheets; the rest of RAISED_TARGETS are
+  // checked by `checkTheme` and named in the status line if they fail.
+  const raised = theme.colors["surface-raised"];
+  const onRaised = (["muted", "accent"] as const).map((token) => ({
+    token: `${token} on surface-raised`,
+    value: theme.colors[token],
+    ratio: isCheckable(raised) && isOpaque(raised) ? contrastRatio(theme.colors[token], raised) : null,
+    target: RAISED_TARGETS[token]
+  }));
+  return { theme, report, measurements: [...measurements, ...pairs, ...onRaised] };
 });
 ---
 
@@ -182,6 +192,32 @@ const cards = themes.map((theme) => {
         flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 14px;
+      }
+      /* A stand-in for the phone menu: the page's floating surface. */
+      .raised {
+        margin: 0 0 14px;
+        padding: 6px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: var(--color-surface-raised);
+        box-shadow: var(--shadow-md);
+        font-size: 13px;
+      }
+      .raised__row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 6px;
+        color: var(--color-fg);
+      }
+      .raised__row[aria-current] {
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+      }
+      .raised__kind {
+        color: var(--color-muted);
+        font-family: ui-monospace, monospace;
+        font-size: 10.5px;
       }
       .pill--hover {
         border-color: var(--color-accent-line);
@@ -301,6 +337,13 @@ const cards = themes.map((theme) => {
                 <span class="pill">sample</span>
                 <span class="pill pill--hover">paper (hover)</span>
                 <span class="pub">pdf</span>
+              </div>
+              <div class="raised">
+                <div class="raised__row" aria-current="page">Home</div>
+                <div class="raised__row">Writing</div>
+                <div class="raised__row">
+                  CV <span class="raised__kind">PDF</span>
+                </div>
               </div>
               <div class="callout">
                 <div class="callout__title">Example summary</div>

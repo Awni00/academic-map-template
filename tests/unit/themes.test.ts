@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CALLOUT_ROLE_COLORS } from "../../src/components/article/calloutRoles";
 import { builtInThemes } from "../../src/config/defaults/themes";
 import { darkTheme, lightTheme, themeConfig, themeRegistry } from "../../src/config/resolve";
-import { CONTRAST_TARGETS, PAIR_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
+import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
 import { contrastRatio, isCheckable, mixSrgb, parseColor } from "../../src/lib/theme/contrast";
 import { defineTheme } from "../../src/lib/theme/defineTheme";
 import { siteThemeCss, themeToCss } from "../../src/lib/theme/themeCss";
@@ -167,6 +167,14 @@ describe("checkTheme", () => {
     expect(faint.errors).toEqual([]);
   });
 
+  it("checks text against an explicit raised surface", () => {
+    const ink = builtInThemes.find((candidate) => candidate.id === "ink")!;
+    const report = checkTheme({ ...ink, colors: { ...ink.colors, "surface-raised": "#55565c" } });
+    expect(report.errors).toContainEqual(
+      expect.objectContaining({ token: "muted", message: expect.stringMatching(/on surface-raised/) })
+    );
+  });
+
   it("rejects a translucent background instead of throwing", () => {
     const report = checkTheme({
       ...base,
@@ -268,6 +276,43 @@ describe("defineTheme", () => {
     });
     expect(failing.colors["annotation-soft"]).toBe(mixSrgb("#ffffff", "#9db8e8", 10));
     expect(checkTheme(failing).errors.map((issue) => issue.token)).toContain("annotation");
+  });
+
+  it("keeps a light theme's raised surface on bg", () => {
+    expect(minimal.colors["surface-raised"]).toBe("#ffffff");
+  });
+
+  it("lifts a dark theme's raised surface 9% when its text allows", () => {
+    const night = defineTheme({
+      id: "night",
+      label: "Night",
+      appearance: "dark",
+      colors: { bg: "#16171b", fg: "#ece8df", accent: "#e0a46a" }
+    });
+    expect(night.colors["surface-raised"]).toBe(mixSrgb("#16171b", "#ece8df", 9));
+  });
+
+  // rose-pine's stated muted (#908caa) is 4.42:1 on the full 9% lift.
+  it("lifts less when a stated colour would fail on the full lift", () => {
+    const rosePine = builtInThemes.find((theme) => theme.id === "rose-pine")!;
+    const { bg, fg, muted } = rosePine.colors;
+    expect(contrastRatio(muted, mixSrgb(bg, fg, 9)!)).toBeLessThan(4.5);
+    expect(rosePine.colors["surface-raised"]).not.toBe(bg);
+    expect(contrastRatio(muted, rosePine.colors["surface-raised"])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("derives greys that read on menus and sheets as well as the page", () => {
+    const edge = defineTheme({
+      id: "edge",
+      label: "Edge",
+      appearance: "dark",
+      colors: { bg: "#0c0d10", fg: "#9c9c9c", accent: "#8ab4f8" }
+    });
+    const raised = edge.colors["surface-raised"];
+    for (const [token, target] of Object.entries(RAISED_TARGETS)) {
+      const value = edge.colors[token as keyof typeof edge.colors];
+      expect(contrastRatio(value, raised), token).toBeGreaterThanOrEqual(target);
+    }
   });
 
   it("falls back to color-mix() when an input is not a literal", () => {

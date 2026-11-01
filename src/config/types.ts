@@ -324,6 +324,12 @@ export type ThemeColors = {
   bg: string;
   "bg-soft": string;
   "bg-soft-2": string;
+  /**
+   * Menus, sheets and other surfaces that float over the page. A light theme
+   * keeps `bg`; a dark one is lifted toward `fg`, as elevation reads in dark
+   * UIs. Text is drawn on it, so it is contrast-checked like `bg`.
+   */
+  "surface-raised": string;
   fg: string;
   "fg-soft": string;
   muted: string;

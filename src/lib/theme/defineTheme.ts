@@ -1,5 +1,5 @@
 import type { Theme, ThemeAppearance, ThemeColors, ThemeInput } from "../../config/types";
-import { CONTRAST_TARGETS, PAIR_TARGETS } from "./checkTheme";
+import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS } from "./checkTheme";
 import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
 
 /**
@@ -10,6 +10,10 @@ import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
  * theme's own colour space. Hued semantics (danger, warning, …) cannot be
  * derived from a background, so they fall back to the accessible defaults
  * below; a theme that wants its own reds and golds should say so explicitly.
+ *
+ * `surface-raised`, behind menus and sheets, is `bg` in a light theme. A dark
+ * theme lifts it up to 9% toward `fg`, but only as far as its text colours
+ * stay readable on it.
  *
  * The `link` and `annotation` roles fall back to the accent, and so do their
  * `-line` / `-soft` companions: a theme that sets neither role emits exactly
@@ -49,9 +53,24 @@ export function defineTheme(input: ThemeInput): Theme {
     return mix(base, toward, amount);
   };
 
-  /** A grey from `fg` toward `bg` that still clears `token`'s target on `bg`. */
+  /**
+   * How far a dark theme's floating surfaces may rise toward `fg`. The actual
+   * lift is fitted below; derived greys are made to clear their targets on the
+   * full lift, so they never hold it down.
+   */
+  const RAISED_LIFT = 9;
+  const raisedCeiling = dark ? mixSrgb(bg, fg, RAISED_LIFT) : null;
+
+  /**
+   * A grey from `fg` toward `bg` that still clears `token`'s target on `bg`
+   * and, for text that also sits in menus and sheets, on the raised surface.
+   */
   const grey = (token: keyof typeof CONTRAST_TARGETS, amount: number) =>
-    fit(fg, bg, amount, (c) => contrastRatio(c, bg) >= CONTRAST_TARGETS[token]);
+    fit(fg, bg, amount, (c) => {
+      if (contrastRatio(c, bg) < CONTRAST_TARGETS[token]) return false;
+      const onRaised = RAISED_TARGETS[token as keyof typeof RAISED_TARGETS];
+      return !raisedCeiling || onRaised === undefined || contrastRatio(c, raisedCeiling) >= onRaised;
+    });
 
   /** A tint from `bg` toward `role`'s colour that the colour stays readable on. */
   const tint = (role: (typeof PAIR_TARGETS)[number]["token"], ink: string, amount: number) => {
@@ -77,6 +96,8 @@ export function defineTheme(input: ThemeInput): Theme {
     bg,
     "bg-soft": pick("bg-soft", mix(bg, fg, 3)),
     "bg-soft-2": pick("bg-soft-2", mix(bg, fg, 6)),
+    // Placeholder; fitted to the finished text colours below.
+    "surface-raised": bg,
     fg,
     "fg-soft": pick("fg-soft", grey("fg-soft", 12)),
     muted,
@@ -122,6 +143,18 @@ export function defineTheme(input: ThemeInput): Theme {
     "placeholder-a": pick("placeholder-a", mix(bg, fg, 6)),
     "placeholder-b": pick("placeholder-b", mix(bg, fg, 10))
   };
+
+  resolved["surface-raised"] = pick(
+    "surface-raised",
+    dark
+      ? fit(bg, fg, RAISED_LIFT, (c) =>
+          Object.entries(RAISED_TARGETS).every(([token, target]) => {
+            const value = resolved[token as keyof ThemeColors];
+            return isCheckable(value) && contrastRatio(value, c) >= target;
+          })
+        )
+      : bg
+  );
 
   return {
     id: input.id,

@@ -133,7 +133,7 @@ Each becomes a CSS custom property: `bg` → `--color-bg`, `graph-hub` →
 
 | Group        | Tokens                                                                                                                   |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Surfaces     | `bg`, `bg-soft`, `bg-soft-2`                                                                                             |
+| Surfaces     | `bg`, `bg-soft`, `bg-soft-2`, `surface-raised`                                                                           |
 | Text         | `fg`, `fg-soft`, `muted`, `muted-2`                                                                                      |
 | Lines        | `border`, `border-soft`, `rule`                                                                                          |
 | Accent       | `accent`, `accent-soft`, `accent-line`                                                                                   |
@@ -241,6 +241,14 @@ fails the build on anything unreadable:
 | `danger`, `warning`, `success`, `info`, `example`, `quote` | 3:1                           | Rules and icons                             |
 | `graph-*` nodes                                            | 3:1                           | Graphic objects                             |
 | `border`, `rule`                                           | 1.2:1                         | Advisory warning, not an error              |
+
+Text also appears on `surface-raised`, the surface behind the phone menu, the
+contents and filter sheets and the map's inspector. There `fg`, `fg-soft`,
+`muted` and `accent` must clear 4.5:1 and `muted-2` 3:1. A light theme's
+raised surface is its `bg`. A dark one is lifted up to 9% toward `fg`, so it
+separates from the page, but only as far as those colours stay readable on
+it; a theme whose `muted` is close to its limit gets a smaller lift. Set
+`surface-raised` yourself to choose it.
 
 Two colours are also measured against the tint they sit on rather than `bg`:
 `accent` on `accent-soft` (publication links) and `annotation` on
