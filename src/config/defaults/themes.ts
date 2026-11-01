@@ -118,6 +118,108 @@ export const builtInThemes: readonly Theme[] = [
     }
   }),
   defineTheme({
+    id: "ember-light",
+    label: "Ember Light",
+    appearance: "light",
+    shiki: "github-light-default",
+    colors: {
+      bg: "#ffffff",
+      "bg-soft": "#faf9f6",
+      "bg-soft-2": "#f5f4ef",
+
+      fg: "#15161a",
+      "fg-soft": "#2b2c30",
+      muted: "#6b6d72",
+      "muted-2": "#8e9095",
+
+      border: "#e8e6e0",
+      "border-soft": "#f0eee8",
+      rule: "#d8d6d0",
+
+      accent: "#b3401a",
+      "accent-soft": "#f7ece8",
+      "accent-line": "#eacabf",
+      // Links stay blue, so they read as links against the warm interface.
+      link: "#2456b8",
+
+      danger: "#b91c1c",
+      "danger-text": "#b91c1c",
+      warning: "#b45309",
+      "warning-text": "#b45309",
+      success: "#15803d",
+      "success-text": "#15803d",
+      info: "#0f766e",
+      "info-text": "#0f766e",
+      example: "#9333ea",
+      "example-text": "#9333ea",
+      quote: "#8e9095",
+      "quote-text": "#6b6d72",
+
+      "graph-hub": "#15161a",
+      "graph-sub-hub": "#7a808a",
+      "graph-paper": "#b3401a",
+      "graph-post": "#64748b",
+      "graph-note": "#8596ae", // tuned from #94a3b8
+      "graph-teaching": "#15803d",
+      "graph-project": "#9333ea",
+      "graph-edge": "#b8b6b0",
+
+      "placeholder-a": "#efece5",
+      "placeholder-b": "#e6e3dc"
+    }
+  }),
+  defineTheme({
+    id: "ember-dark",
+    label: "Ember Dark",
+    appearance: "dark",
+    shiki: "github-dark-default",
+    colors: {
+      bg: "#0c0d10",
+      "bg-soft": "#131418",
+      "bg-soft-2": "#1a1c21",
+
+      fg: "#f1f0ec",
+      "fg-soft": "#d8d6d0",
+      muted: "#9a9b9f",
+      "muted-2": "#74757a",
+
+      border: "#2a2b30",
+      "border-soft": "#1f2024",
+      rule: "#35363b",
+
+      accent: "#f0915f",
+      "accent-soft": "#2c1f1b",
+      "accent-line": "#503528",
+      // Links stay blue, so they read as links against the warm interface.
+      link: "#8eb0ff",
+
+      danger: "#f87171",
+      "danger-text": "#f87171",
+      warning: "#d6a14a",
+      "warning-text": "#d6a14a",
+      success: "#4ade80",
+      "success-text": "#4ade80",
+      info: "#5ccfe6",
+      "info-text": "#5ccfe6",
+      example: "#c084fc",
+      "example-text": "#c084fc",
+      quote: "#9a9b9f",
+      "quote-text": "#9a9b9f",
+
+      "graph-hub": "#f1f0ec",
+      "graph-sub-hub": "#a1a1aa",
+      "graph-paper": "#f0915f",
+      "graph-post": "#7dd3fc",
+      "graph-note": "#71717a",
+      "graph-teaching": "#4ade80",
+      "graph-project": "#c084fc",
+      "graph-edge": "#4a4b50",
+
+      "placeholder-a": "#1f2024",
+      "placeholder-b": "#25262b"
+    }
+  }),
+  defineTheme({
     id: "dawn",
     label: "Rosé Pine Dawn",
     appearance: "light",

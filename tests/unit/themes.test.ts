@@ -64,8 +64,8 @@ describe("contrast", () => {
 });
 
 describe("built-in themes", () => {
-  it("ships ten themes with unique ids", () => {
-    expect(builtInThemes).toHaveLength(10);
+  it("ships twelve themes with unique ids", () => {
+    expect(builtInThemes).toHaveLength(12);
     const ids = builtInThemes.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -89,14 +89,30 @@ describe("built-in themes", () => {
     }
   );
 
-  it("leaves the optional roles on the accent", () => {
-    for (const theme of builtInThemes) {
+  // Ember is the one built-in that splits a role off: blue links on a warm
+  // interface. Every other theme leaves both roles on its accent.
+  it("leaves the optional roles on the accent unless a theme sets one", () => {
+    for (const theme of builtInThemes.filter((candidate) => !candidate.id.startsWith("ember-"))) {
       const c = theme.colors;
       expect(c.link, theme.id).toBe(c.accent);
       expect(c.annotation, theme.id).toBe(c.accent);
       expect(c["link-line"], theme.id).toBe(c["accent-line"]);
       expect(c["annotation-soft"], theme.id).toBe(c["accent-soft"]);
       expect(c["annotation-line"], theme.id).toBe(c["accent-line"]);
+    }
+  });
+
+  it("pairs Ember with Paper and Ink: same page, its own accent, blue links", () => {
+    for (const [ember, base] of [["ember-light", "paper"], ["ember-dark", "ink"]]) {
+      const e = builtInThemes.find((theme) => theme.id === ember)!.colors;
+      const b = builtInThemes.find((theme) => theme.id === base)!.colors;
+      for (const token of ["bg", "fg", "fg-soft", "muted", "muted-2", "border", "rule"] as const) {
+        expect(e[token], `${ember}.${token}`).toBe(b[token]);
+      }
+      expect(e.accent).not.toBe(b.accent);
+      expect(e.link).not.toBe(e.accent);
+      expect(e.annotation).toBe(e.accent);
+      expect(e["link-line"]).not.toBe(e["accent-line"]);
     }
   });
 
