@@ -542,8 +542,9 @@ template owns the visual language.
 ## Theming
 
 The site's colours come from a pair of named themes — one light, one dark.
-Twelve ship with the template (Rosé Pine, Everforest, Catppuccin, GitHub, and
-the template's own Paper/Ink and Ember); pick two in `src/site/config.ts`:
+Eighteen ship with the template (Rosé Pine, Everforest, Catppuccin, GitHub, and
+the template's own Paper/Ink, Ember, Claret, Pine and Indigo); pick two in
+`src/site/config.ts`:
 
 ```ts
 theme: {
@@ -554,7 +555,7 @@ theme: {
 }
 ```
 
-Run the dev server and open `/fixtures/themes` to see all twelve against real
+Run the dev server and open `/fixtures/themes` to see all eighteen against real
 type before choosing. To define your own, add it to `src/site/themes.ts` — only
 `bg`, `fg` and `accent` are required, and `npm run validate` checks whatever you
 write for contrast.

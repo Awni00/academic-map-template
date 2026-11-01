@@ -64,8 +64,8 @@ describe("contrast", () => {
 });
 
 describe("built-in themes", () => {
-  it("ships twelve themes with unique ids", () => {
-    expect(builtInThemes).toHaveLength(12);
+  it("ships eighteen themes with unique ids", () => {
+    expect(builtInThemes).toHaveLength(18);
     const ids = builtInThemes.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -89,10 +89,18 @@ describe("built-in themes", () => {
     }
   );
 
-  // Ember is the one built-in that splits a role off: blue links on a warm
-  // interface. Every other theme leaves both roles on its accent.
+  // The Paper/Ink variants each split one role off their accent; every other
+  // built-in leaves both roles on it.
+  const VARIANTS = {
+    ember: { split: "link" },
+    claret: { split: "link" },
+    pine: { split: "link" },
+    indigo: { split: "annotation" }
+  } as const;
+  const variantOf = (id: string) => VARIANTS[id.replace(/-(light|dark)$/, "") as keyof typeof VARIANTS];
+
   it("leaves the optional roles on the accent unless a theme sets one", () => {
-    for (const theme of builtInThemes.filter((candidate) => !candidate.id.startsWith("ember-"))) {
+    for (const theme of builtInThemes.filter((candidate) => !variantOf(candidate.id))) {
       const c = theme.colors;
       expect(c.link, theme.id).toBe(c.accent);
       expect(c.annotation, theme.id).toBe(c.accent);
@@ -102,19 +110,23 @@ describe("built-in themes", () => {
     }
   });
 
-  it("pairs Ember with Paper and Ink: same page, its own accent, blue links", () => {
-    for (const [ember, base] of [["ember-light", "paper"], ["ember-dark", "ink"]]) {
-      const e = builtInThemes.find((theme) => theme.id === ember)!.colors;
-      const b = builtInThemes.find((theme) => theme.id === base)!.colors;
+  it.each(Object.keys(VARIANTS).flatMap((name) => [`${name}-light`, `${name}-dark`]))(
+    "builds %s on Paper/Ink's page with its own accent and one split-off role",
+    (id) => {
+      const { split } = variantOf(id);
+      const kept = split === "link" ? "annotation" : "link";
+      const v = builtInThemes.find((theme) => theme.id === id)!;
+      const b = builtInThemes.find((theme) => theme.id === (v.appearance === "light" ? "paper" : "ink"))!.colors;
+      const c = v.colors;
       for (const token of ["bg", "fg", "fg-soft", "muted", "muted-2", "border", "rule"] as const) {
-        expect(e[token], `${ember}.${token}`).toBe(b[token]);
+        expect(c[token], `${id}.${token}`).toBe(b[token]);
       }
-      expect(e.accent).not.toBe(b.accent);
-      expect(e.link).not.toBe(e.accent);
-      expect(e.annotation).toBe(e.accent);
-      expect(e["link-line"]).not.toBe(e["accent-line"]);
+      expect(c.accent).not.toBe(b.accent);
+      expect(c["graph-paper"]).toBe(c.accent);
+      expect(c[split]).not.toBe(c.accent);
+      expect(c[kept]).toBe(c.accent);
     }
-  });
+  );
 
   it("keeps text on its own tint readable", () => {
     for (const theme of builtInThemes) {

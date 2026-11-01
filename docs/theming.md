@@ -1,7 +1,7 @@
 # Theming
 
 The site's colours come from a **theme**: a named set of colour tokens plus a
-matching Shiki theme for code blocks. The template ships twelve; a site picks one
+matching Shiki theme for code blocks. The template ships eighteen; a site picks one
 light and one dark, and can define its own.
 
 Ownership: template-owned, except `src/site/themes.ts`, which is yours. See
@@ -33,8 +33,14 @@ Restart the dev server after editing — it reads this at startup.
 | ------------------ | ---------- | ----------------------------- |
 | `paper`            | light      | The template's own warm white |
 | `ink`              | dark       | The template's own near-black |
-| `ember-light`      | light      | Paper with a vermilion accent |
-| `ember-dark`       | dark       | Ink with an ember accent      |
+| `ember-light`      | light      | Paper, vermilion, blue links  |
+| `ember-dark`       | dark       | Ink, ember, blue links        |
+| `claret-light`     | light      | Paper, wine red, navy links   |
+| `claret-dark`      | dark       | Ink, rose, blue links         |
+| `pine-light`       | light      | Paper, pine green, blue links |
+| `pine-dark`        | dark       | Ink, sea green, blue links    |
+| `indigo-light`     | light      | Paper, indigo, coral terms    |
+| `indigo-dark`      | dark       | Ink, lavender, coral terms    |
 | `dawn`             | light      | Rosé Pine Dawn                |
 | `rose-pine`        | dark       | Rosé Pine                     |
 | `everforest-light` | light      | Everforest Light              |
@@ -314,7 +320,7 @@ maintaining two files. `EmbedFrame` takes the same prop for light-only iframes.
 
 | File                                         | Owner    | Role                                   |
 | -------------------------------------------- | -------- | -------------------------------------- |
-| `src/config/defaults/themes.ts`              | template | The twelve built-in themes             |
+| `src/config/defaults/themes.ts`              | template | The eighteen built-in themes           |
 | `src/site/themes.ts`                         | **site** | Your themes                            |
 | `src/site/config.ts`                         | **site** | Which two are active                   |
 | `src/config/resolve.ts`                      | template | Builds the registry, resolves the pair |

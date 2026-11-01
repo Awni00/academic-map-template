@@ -3,7 +3,7 @@ import type { ThemeInput } from "../config/types";
 /**
  * Site-owned themes.
  *
- * The template ships twelve themes (`src/config/defaults/themes.ts`); pick two of
+ * The template ships eighteen themes (`src/config/defaults/themes.ts`); pick two of
  * them with `theme: { light, dark }` in `src/site/config.ts`. Define a theme
  * here only when you want colours the built-ins do not offer. Giving a theme
  * here the same `id` as a built-in replaces it, which is the supported way to
