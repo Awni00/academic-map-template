@@ -1,7 +1,21 @@
-import type { GraphConfigBase, GraphForcesConfig, GraphHoverConfig } from "../../config/types";
+import type {
+  GraphArrows,
+  GraphConfigBase,
+  GraphForcesConfig,
+  GraphHoverConfig
+} from "../../config/types";
 
 const HOVER_LABELS = ["node", "neighbours", "none"] as const;
 const SELECTION_STYLES = ["halo", "ring"] as const;
+const ARROW_MODES = ["never", "always", "highlighted"] as const;
+
+/**
+ * Which edges carry arrowheads: `links.arrows` when set, otherwise the older
+ * `links.directed` switch (true meaning "always").
+ */
+export function arrowMode(links: Pick<GraphConfigBase["links"], "arrows" | "directed">): GraphArrows {
+  return links.arrows ?? (links.directed ? "always" : "never");
+}
 
 /** Strengths are fractions; anything above 1 overshoots and the layout shakes. */
 const FRACTIONS: readonly (keyof GraphForcesConfig)[] = ["groupPull", "crossLinkStrength", "centerPull"];
@@ -60,7 +74,18 @@ export function validateGraphSettings(
     }
   }
 
-  const { width, opacity, curvature } = config.links;
+  const { width, opacity, curvature, arrows, arrow } = config.links;
+  if (arrows !== undefined && !ARROW_MODES.includes(arrows)) {
+    errors.push(
+      `graph.links.arrows is ${JSON.stringify(arrows)}; use one of ${ARROW_MODES.map((value) => `"${value}"`).join(", ")}.`
+    );
+  }
+  for (const key of ["length", "width"] as const) {
+    const value = arrow?.[key];
+    if (typeof value !== "number" || !(value > 0)) {
+      errors.push(`graph.links.arrow.${key} must be a positive number of pixels, got ${JSON.stringify(value)}.`);
+    }
+  }
   if (typeof width !== "number" || !(width > 0)) {
     errors.push(`graph.links.width must be a positive number of pixels, got ${JSON.stringify(width)}.`);
   }

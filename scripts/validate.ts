@@ -12,6 +12,7 @@ import {
 } from "../src/config";
 import { findPlotlyFigureReferences, plotlyHtmlNeedsMathJax } from "../src/lib/article/plotlyValidation";
 import { resolveTocConfig } from "../src/lib/article/toc";
+import { isNavIconName } from "../src/config/navIcons";
 import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../src/lib/graph/types";
 import { parseBibtexWithIssues } from "../src/lib/publications/parseBibtex";
@@ -147,6 +148,13 @@ function validateRoutes(): void {
   if (reserved.has(writingRoute)) errors.push(`writingConfig.route conflicts with a reserved route: ${writingConfig.route}`);
   for (const item of siteConfig.nav) {
     if (!item.label || !item.href) errors.push("Navigation items require label and href.");
+    if (item.icon && !isNavIconName(item.icon)) {
+      errors.push(`Navigation item "${item.label}": unknown icon "${item.icon}" (see src/config/navIcons.ts).`);
+    }
+  }
+  const withIcons = siteConfig.nav.filter((item) => item.icon).length;
+  if (withIcons > 0 && withIcons < siteConfig.nav.length) {
+    warnings.push("Some navigation items have an icon and some do not; the menu shows icons only when every item has one.");
   }
 }
 

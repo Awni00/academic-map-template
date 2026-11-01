@@ -1,6 +1,6 @@
 import type { TopicsDensity } from "../../../config/writing";
 import type { EntryNode } from "../../../lib/graph/types";
-import EntryRow from "./EntryRow";
+import EntryRow from "../browser/EntryRow";
 
 type PreviewListProps = {
   entries: EntryNode[];
@@ -15,7 +15,7 @@ export default function PreviewList({ entries, pageSize, density, hubUrl }: Prev
   const overflow = total > pageSize;
   return (
     <>
-      <ul className="topics-list">
+      <ul className="wb-rows">
         {shown.map((entry) => (
           <EntryRow key={entry.id} entry={entry} density={density} />
         ))}
@@ -26,7 +26,7 @@ export default function PreviewList({ entries, pageSize, density, hubUrl }: Prev
             {shown.length} of {total}
           </span>
           <a className="topics-preview-footer__link" href={hubUrl}>
-            Open hub for full list →
+            Open hub for the full list →
           </a>
         </div>
       )}

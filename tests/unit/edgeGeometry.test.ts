@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  curvedArrow,
   curvedEdge,
   edgeGeometry,
   signedArea,
@@ -160,5 +161,39 @@ describe("curvedEdge", () => {
 
   it("draws nothing when the glyphs meet", () => {
     expect(curvedEdge({ x: 0, y: 0 }, { x: 12, y: 0 }, radii)).toBeNull();
+  });
+});
+
+describe("curvedArrow", () => {
+  const options = {
+    sourceRadius: 5,
+    targetRadius: 8,
+    curvature: 0.1,
+    bidirectional: false,
+    arrow: { length: 5, width: 1.5 }
+  };
+
+  it("keeps the bow of the undirected curve", () => {
+    const arrow = curvedArrow({ x: 0, y: 0 }, { x: 100, y: 0 }, options)!;
+    const plain = curvedEdge({ x: 0, y: 0 }, { x: 100, y: 0 }, options)!;
+    // The shaft bends the same way as the plain edge.
+    expect(Math.sign(arrow.shaft.control.y)).toBe(Math.sign(plain.control.y));
+    expect(arrow.shaft.control.y).not.toBe(0);
+  });
+
+  it("puts the tip on the target's rim and stops the shaft at the head's base", () => {
+    const arrow = curvedArrow({ x: 0, y: 0 }, { x: 100, y: 0 }, options)!;
+    const [tip] = arrow.heads[0];
+    expect(Math.hypot(tip.x - 100, tip.y)).toBeCloseTo(8);
+    const gap = Math.hypot(arrow.shaft.end.x - tip.x, arrow.shaft.end.y - tip.y);
+    expect(gap).toBeGreaterThan(3);
+    expect(gap).toBeLessThan(7);
+  });
+
+  it("adds a second head for a reciprocal edge, wound the same way", () => {
+    const arrow = curvedArrow({ x: 0, y: 0 }, { x: 100, y: 0 }, { ...options, bidirectional: true })!;
+    expect(arrow.heads).toHaveLength(2);
+    const signs = arrow.heads.map((ring) => Math.sign(signedArea(ring)));
+    expect(new Set(signs).size).toBe(1);
   });
 });

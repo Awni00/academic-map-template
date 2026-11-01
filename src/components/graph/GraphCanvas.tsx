@@ -31,7 +31,9 @@ import {
   type DragMode,
   type Grab
 } from "../../lib/graph/nodeDrag";
-import { curvedEdge, edgeGeometry } from "../../lib/graph/edgeGeometry";
+import { curvedArrow, curvedEdge } from "../../lib/graph/edgeGeometry";
+import { arrowMode } from "../../lib/graph/graphSettings";
+import { placeLabel, wrapLabel, type Box } from "../../lib/graph/labelLayout";
 import type { GraphIndex } from "../../lib/graph/types";
 import type {
   GraphConfigBase,
@@ -158,7 +160,8 @@ const HOVER_DIM_ALPHA = 0.22;
 const HOVER_DIM_EDGE_ALPHA = 0.16;
 /** Edges touching the hovered or selected node, in the accent colour. */
 const LIT_EDGE_ALPHA = 0.85;
-const LIT_EDGE_WIDTH = 1.4;
+/** Edges touching the focused node are this much wider than the rest. */
+const LIT_EDGE_WIDTH_RATIO = 1.4;
 
 
 type ForceGraphComponent = React.ComponentType<any>;
@@ -235,6 +238,10 @@ export default function GraphCanvas({
   // Bumped on every theme switch purely to force a re-render — see the
   // MutationObserver below for why that's what repaints the canvas.
   const [, setThemeVersion] = useState(0);
+  // Labels for the frame being painted: the boxes already taken, and the hover
+  // labels held back to be drawn last, on top of everything (see
+  // `drawHoverLabels`). Reset at the start of every frame.
+  const labelsRef = useRef<FrameLabels>({ taken: [], glyphs: [], deferred: [] });
   // Pixels per graph unit as of the last paint. Glyphs are sized in screen
   // pixels, so hit-testing has to know the zoom to know how big a node is.
   const zoomRef = useRef(1);
@@ -728,14 +735,13 @@ export default function GraphCanvas({
    * edges the same effect is the point: crossings should darken, because that
    * is what makes a dense part of the map look dense.
    *
-   * Undirected edges (the default) are one stroked curve each. Directed edges
-   * keep the filled outline: each edge's shaft and heads go into one path and
-   * are filled once, and `edgeGeometry` winds every ring the same direction so
-   * that single fill unions them rather than punching a hole where they
-   * overlap.
+   * Every edge is one stroked curve. An arrowed edge adds a filled head at
+   * each arrowed end, and `curvedArrow` stops the shaft where a head begins,
+   * so the two never overlap and the join cannot darken.
    *
    * Widths and glyph radii are screen pixels divided by `scale`, the zoom, so
-   * a line is as fine zoomed in as out.
+   * a line is as fine zoomed in as out. A highlighted edge is
+   * `LIT_EDGE_WIDTH_RATIO` times `links.width`, so it follows that setting.
    *
    * Edges touching the focused node go in the accent colour, and are painted
    * first: this runs under `destination-over`, where each later draw lands
@@ -743,14 +749,11 @@ export default function GraphCanvas({
    */
   const drawEdges = useCallback(
     (ctx: CanvasRenderingContext2D, scale: number) => {
-      const { width, opacity, directed, arrow } = linkStyle;
+      const { width, opacity, arrow } = linkStyle;
+      const arrows = arrowMode(linkStyle);
       const edgeColor = resolveColor(linkStyle.color);
       const accent = cssVar("--color-accent");
       const headColor = arrow.color === "edge" ? edgeColor : resolveColor(arrow.color);
-      // Heads only join the shaft's path when they share its colour. Given a
-      // colour of their own they are a separate mark and belong on top, where
-      // compositing over the line is the intent rather than an artefact.
-      const headsShareShaft = headColor === edgeColor;
 
       const ring = (path: Path2D, points: { x: number; y: number }[]) => {
         path.moveTo(points[0].x, points[0].y);
@@ -777,42 +780,39 @@ export default function GraphCanvas({
         const sourceRadius = radiusOf(source, scale);
         const targetRadius = radiusOf(target, scale);
 
-        if (!directed) {
-          const curve = curvedEdge(source, target, {
-            sourceRadius,
-            targetRadius,
-            curvature: linkStyle.curvature
-          });
-          if (!curve) continue;
-          ctx.beginPath();
-          ctx.moveTo(curve.start.x, curve.start.y);
-          ctx.quadraticCurveTo(curve.control.x, curve.control.y, curve.end.x, curve.end.y);
-          ctx.strokeStyle = color;
-          ctx.lineWidth = (lit ? LIT_EDGE_WIDTH : width) / scale;
-          ctx.stroke();
-          continue;
-        }
+        const lineWidth = (lit ? width * LIT_EDGE_WIDTH_RATIO : width) / scale;
+        const curvature = linkStyle.curvature;
+        // "highlighted" puts heads on the focused node's edges only, so the map
+        // stays quiet until the reader asks about one node.
+        const headed = arrows === "always" || (arrows === "highlighted" && lit);
+        const shaft = headed
+          ? curvedArrow(source, target, {
+              sourceRadius,
+              targetRadius,
+              curvature,
+              bidirectional: edge.bidirectional,
+              // Heads grow with the line, so a thick edge keeps a visible point.
+              arrow: {
+                length: (arrow.length * Math.max(1, lineWidth * scale)) / scale,
+                width: (arrow.width * Math.max(1, lineWidth * scale)) / scale
+              }
+            })
+          : null;
+        const curve = headed ? shaft?.shaft : curvedEdge(source, target, { sourceRadius, targetRadius, curvature });
+        if (!curve) continue;
+        ctx.beginPath();
+        ctx.moveTo(curve.start.x, curve.start.y);
+        ctx.quadraticCurveTo(curve.control.x, curve.control.y, curve.end.x, curve.end.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
 
-        const { shaft, heads } = edgeGeometry(source, target, {
-          sourceRadius,
-          targetRadius,
-          width: (lit ? LIT_EDGE_WIDTH : width) / scale,
-          directed,
-          bidirectional: edge.bidirectional,
-          arrow: { ...arrow, length: arrow.length / scale, width: arrow.width / scale }
-        });
-        if (!shaft && heads.length === 0) continue;
-
-        const body = new Path2D();
-        if (shaft) ring(body, shaft);
-        if (headsShareShaft || lit) for (const head of heads) ring(body, head);
-        ctx.fillStyle = color;
-        ctx.fill(body);
-
-        if (!headsShareShaft && !lit && heads.length > 0) {
+        // Heads meet the shaft rather than overlapping it (see `curvedArrow`),
+        // so filling them separately cannot darken the join.
+        if (shaft && shaft.heads.length > 0) {
           const tips = new Path2D();
-          for (const head of heads) ring(tips, head);
-          ctx.fillStyle = headColor;
+          for (const head of shaft.heads) ring(tips, head);
+          ctx.fillStyle = lit ? accent : headColor;
           ctx.fill(tips);
         }
       }
@@ -1087,11 +1087,15 @@ export default function GraphCanvas({
           // drawing beforehand would place edges at the previous tick's
           // positions and let them trail visibly behind a dragged node.
           // `destination-over` puts them back underneath the glyphs.
+          onRenderFramePre={() => {
+            labelsRef.current = { taken: [], glyphs: [], deferred: [] };
+          }}
           onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
             ctx.save();
             ctx.globalCompositeOperation = "destination-over";
             drawEdges(ctx, globalScale);
             ctx.restore();
+            drawHoverLabels(ctx, globalScale, labelsRef.current);
           }}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
             zoomRef.current = globalScale;
@@ -1100,6 +1104,8 @@ export default function GraphCanvas({
               selected: selected === node.id,
               anchored: anchor === node.id,
               focused: focus?.id === node.id,
+              hovered: hoverId === node.id,
+              labels: labelsRef.current,
               // The selected node is exempt: see drawSelectionMark.
               faded: selected !== node.id && !!emphasized && !emphasized.has(node.id),
               dimmed: Boolean(focus?.dims) && !near,
@@ -1138,7 +1144,9 @@ export default function GraphCanvas({
             transform: labelTransform(hover.x, hover.y, width ?? 0, height)
           }}
         >
-          {hover.node.title}
+          {/* Clamped on an inner element: clamping the padded box itself
+              lets a sliver of the next line show in the padding. */}
+          <span className="graph-tooltip__text">{hover.node.title}</span>
         </div>
       )}
     </div>
@@ -1265,6 +1273,9 @@ function drawNode(
     dimmed: boolean;
     /** The hovered or selected node itself. */
     focused: boolean;
+    /** Under the pointer right now. */
+    hovered: boolean;
+    labels: FrameLabels;
     /** Paint this node's label even where its type is hover-only. */
     revealLabel: boolean;
     labelMode: LabelMode;
@@ -1318,53 +1329,187 @@ function drawNode(
     drawSelectionMark(ctx, node, radius, px, "ring", color);
   }
 
-  const named = state.revealLabel || state.selected;
-  if (shouldPaintLabel(node, state.labelMode) || (named && state.labelMode !== "none")) {
-    paintLabel(ctx, node, radius, px, {
-      hub: labelVisibilityFor(node.type) === "always",
-      strong: state.focused || state.selected,
-      // Floored rather than inherited: the glyph says "not what you filtered
-      // for", the name says "you are here", and only the first of those is
-      // worth dimming.
-      alpha: state.dimmed ? HOVER_DIM_ALPHA * 2 : state.faded ? FADED_LABEL_ALPHA : 1
-    });
+  state.labels.glyphs.push({
+    id: node.id,
+    x0: node.x - radius,
+    x1: node.x + radius,
+    y0: node.y - radius,
+    y1: node.y + radius
+  });
+  if (state.labelMode === "none") return;
+  // Floored rather than inherited: the glyph says "not what you filtered for",
+  // the name says "you are here", and only the first of those is worth dimming.
+  const alpha = state.dimmed ? HOVER_DIM_ALPHA * 2 : state.faded ? FADED_LABEL_ALPHA : 1;
+  const hub = labelVisibilityFor(node.type) === "always";
+  const always = shouldPaintLabel(node, state.labelMode);
+  if (hub && always) {
+    paintLabel(ctx, node, radius, px, LABEL_STYLES.hub, alpha, state.labels);
+  } else if (state.hovered) {
+    state.labels.deferred.push({ node, radius, kind: "focus" });
+  } else if (state.selected) {
+    paintLabel(ctx, node, radius, px, LABEL_STYLES.focus, alpha, state.labels);
+  } else if (state.revealLabel) {
+    state.labels.deferred.push({ node, radius, kind: "neighbour" });
+  } else if (always) {
+    paintLabel(ctx, node, radius, px, LABEL_STYLES.neighbour, alpha, state.labels);
   }
 }
 
+type LabelStyle = {
+  size: number;
+  weight: number;
+  family: "--font-body" | "--font-ui";
+  color: "--color-fg" | "--color-fg-soft";
+  /** Widest line, in screen pixels, before the title wraps. */
+  maxWidth: number;
+  maxLines: number;
+  /** Clear space between the glyph and the label, in screen pixels. */
+  gap: number;
+};
+
+type FrameLabels = {
+  taken: Box[];
+  /** Every glyph painted this frame, so hover labels can avoid covering one. */
+  glyphs: (Box & { id: string })[];
+  deferred: { node: any; radius: number; kind: "focus" | "neighbour" }[];
+};
+
 /**
- * A node's name, above or below it.
+ * How each kind of label is set — three styles, one treatment.
  *
  * Hubs are set in the body serif, like the site's headings: they name topics,
- * and are the map's few permanent words. Everything else is named only on
- * hover or selection, in the UI face. Each label sits on a halo of the canvas
- * colour, so an edge running behind it breaks around the text instead of
- * striking through it.
+ * and are the map's few permanent words. The node in focus — hovered or
+ * selected — gets its whole title, wrapped to a short block, in the full text
+ * colour. Its neighbours get one line each in the softer colour, cut with an
+ * ellipsis: context for the focused node, not titles to read in full, and
+ * dropped where they would land on another label or glyph.
+ */
+const LABEL_STYLES = {
+  hub: { size: 14, weight: 600, family: "--font-body", color: "--color-fg", maxWidth: 190, maxLines: 2, gap: 8 },
+  focus: { size: 12.5, weight: 500, family: "--font-ui", color: "--color-fg", maxWidth: 200, maxLines: 3, gap: 7 },
+  neighbour: { size: 11.5, weight: 400, family: "--font-ui", color: "--color-fg-soft", maxWidth: 150, maxLines: 1, gap: 6 }
+} as const satisfies Record<string, LabelStyle>;
+
+const LINE_HEIGHT = 1.28;
+/**
+ * Every label sits on a plate of the canvas colour, slightly translucent, a
+ * few pixels larger than the text, with no border or shadow: it reads as the
+ * canvas making room for the words rather than as an object of its own. A
+ * per-letter halo was enough for one short line, but a wrapped title leaves
+ * gaps between its lines and words, and an edge running through those reads
+ * as a strikethrough.
+ */
+const PLATE_PAD_X = 4;
+const PLATE_PAD_Y = 2;
+const PLATE_ALPHA = 0.9;
+/** Clear space kept between a label and the canvas edge. */
+const LABEL_MARGIN = 6;
+
+/** The part of the graph the canvas currently shows, in graph units. */
+function viewBox(ctx: CanvasRenderingContext2D): Box {
+  const m = ctx.getTransform();
+  return {
+    x0: -m.e / m.a,
+    x1: (ctx.canvas.width - m.e) / m.a,
+    y0: -m.f / m.d,
+    y1: (ctx.canvas.height - m.f) / m.d
+  };
+}
+
+/**
+ * Paint a node's title: wrapped to the style's width, placed above the node
+ * (below it near the top edge), kept inside the canvas, and — with `taken` —
+ * dropped if every position would collide with a label already placed.
+ * Returns whether it was painted.
  */
 function paintLabel(
   ctx: CanvasRenderingContext2D,
   node: any,
   radius: number,
   px: number,
-  style: { hub: boolean; strong: boolean; alpha: number }
-) {
-  const size = style.hub ? 14.5 : 12;
-  const weight = style.hub ? 600 : style.strong ? 500 : 400;
-  const family = cssVar(style.hub ? "--font-body" : "--font-ui", "ui-sans-serif, system-ui, sans-serif");
+  style: LabelStyle,
+  alpha: number,
+  labels: FrameLabels,
+  avoid = false
+): boolean {
+  const family = cssVar(style.family, "ui-sans-serif, system-ui, sans-serif");
   ctx.save();
-  ctx.globalAlpha = style.alpha;
-  ctx.font = `${weight} ${size * px}px ${family}`;
-  ctx.textAlign = "center";
-  ctx.lineJoin = "round";
-  ctx.lineWidth = 4 * px;
-  ctx.strokeStyle = cssVar("--color-bg-soft");
-  ctx.fillStyle = cssVar("--color-fg");
-  const offset = radius + (style.hub ? 9 : 7) * px;
-  const below = node._labelSide === "bottom";
-  ctx.textBaseline = below ? "top" : "bottom";
-  const y = below ? node.y + offset : node.y - offset;
-  ctx.strokeText(node.title, node.x, y);
-  ctx.fillText(node.title, node.x, y);
+  ctx.font = `${style.weight} ${style.size * px}px ${family}`;
+  const lines = wrapLabel(node.title, (text) => ctx.measureText(text).width, style.maxWidth * px, style.maxLines);
+  const lineHeight = style.size * LINE_HEIGHT * px;
+  const padX = PLATE_PAD_X * px;
+  const padY = PLATE_PAD_Y * px;
+  const width = Math.max(...lines.map((line) => ctx.measureText(line).width)) + padX * 2;
+  const height = lines.length * lineHeight + padY * 2;
+  const box = placeLabel(
+    node,
+    { width, height },
+    {
+      radius,
+      gap: style.gap * px,
+      margin: LABEL_MARGIN * px,
+      view: viewBox(ctx),
+      prefer: node._labelSide === "bottom" ? "below" : undefined,
+      taken: avoid
+        ? [...labels.taken, ...labels.glyphs.filter((glyph) => glyph.id !== node.id)]
+        : undefined
+    }
+  );
+  if (!box) {
+    ctx.restore();
+    return false;
+  }
+  labels.taken.push(box);
+
+  ctx.save();
+  ctx.globalAlpha = alpha * PLATE_ALPHA;
+  ctx.fillStyle = cssVar("--color-bg-soft");
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") ctx.roundRect(box.x0, box.y0, width, height, 3 * px);
+  else ctx.rect(box.x0, box.y0, width, height);
+  ctx.fill();
   ctx.restore();
+  ctx.globalAlpha = alpha;
+
+  // Lines run from the edge nearest the node, so the text baseline faces it:
+  // a label above is set from its bottom line up, one below from its top down.
+  const above = box.y1 <= node.y;
+  const cx = (box.x0 + box.x1) / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = above ? "bottom" : "top";
+  ctx.fillStyle = cssVar(style.color);
+  lines.forEach((line, index) => {
+    const y = above
+      ? box.y1 - padY - (lines.length - 1 - index) * lineHeight
+      : box.y0 + padY + index * lineHeight;
+    ctx.fillText(line, cx, y);
+  });
+  ctx.restore();
+  return true;
+}
+
+/**
+ * The labels hovering adds, drawn after every node and edge so they sit on top:
+ * the hovered node's title first, so it always shows, then its neighbours',
+ * nearest first, each skipped if it would land on a label or glyph already
+ * placed.
+ */
+function drawHoverLabels(ctx: CanvasRenderingContext2D, scale: number, labels: FrameLabels) {
+  if (labels.deferred.length === 0) return;
+  const px = 1 / scale;
+  const focus = labels.deferred.find((item) => item.kind === "focus");
+  if (focus) paintLabel(ctx, focus.node, focus.radius, px, LABEL_STYLES.focus, 1, labels);
+  const origin = focus?.node;
+  const neighbours = labels.deferred
+    .filter((item) => item.kind === "neighbour")
+    .sort((a, b) =>
+      origin
+        ? Math.hypot(a.node.x - origin.x, a.node.y - origin.y) - Math.hypot(b.node.x - origin.x, b.node.y - origin.y)
+        : 0
+    );
+  for (const item of neighbours) {
+    paintLabel(ctx, item.node, item.radius, px, LABEL_STYLES.neighbour, 1, labels, true);
+  }
 }
 
 function roundedSquare(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { graphConfig } from "../../src/config";
 import { defaultGraphConfig } from "../../src/config/defaults/graph";
-import { resolveHover, validateGraphSettings } from "../../src/lib/graph/graphSettings";
+import { arrowMode, resolveHover, validateGraphSettings } from "../../src/lib/graph/graphSettings";
 import { siteConfigOverrides } from "../../src/site/config";
 
 const base = {
@@ -45,6 +45,32 @@ describe("validateGraphSettings", () => {
     expect(errors).toMatch(/links\.width/);
     expect(errors).toMatch(/links\.opacity/);
     expect(errors).toMatch(/links\.curvature/);
+  });
+});
+
+describe("arrowMode", () => {
+  it("uses links.arrows when it is set", () => {
+    expect(arrowMode({ arrows: "highlighted", directed: true })).toBe("highlighted");
+    expect(arrowMode({ arrows: "never", directed: true })).toBe("never");
+  });
+
+  it("falls back to the older directed switch", () => {
+    expect(arrowMode({ directed: true })).toBe("always");
+    expect(arrowMode({ directed: false })).toBe("never");
+  });
+});
+
+describe("arrow settings validation", () => {
+  it("names an unknown arrows mode", () => {
+    const links = { ...base.links, arrows: "sometimes" as any };
+    expect(validateGraphSettings({ ...base, links }).join("\n")).toMatch(/graph\.links\.arrows/);
+  });
+
+  it("requires positive arrowhead sizes", () => {
+    const links = { ...base.links, arrow: { ...base.links.arrow, length: 0, width: -1 } };
+    const errors = validateGraphSettings({ ...base, links }).join("\n");
+    expect(errors).toMatch(/arrow\.length/);
+    expect(errors).toMatch(/arrow\.width/);
   });
 });
 

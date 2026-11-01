@@ -23,6 +23,16 @@ export function themeToCss(theme: Theme, selector: string): string {
   lines.push("  --color-surface: var(--color-bg-soft);");
   lines.push("  --color-surface-strong: var(--color-bg-soft-2);");
 
+  // Surfaces that float over the page (menus, sheets) and the scrim behind
+  // them. A dark page cannot be dimmed much further, so there the floating
+  // surface is lifted toward the foreground instead, as elevation does in
+  // dark UIs; a light page keeps its own background and a lighter scrim.
+  const dark = theme.appearance === "dark";
+  lines.push(
+    `  --color-surface-raised: ${dark ? "color-mix(in srgb, var(--color-bg) 91%, var(--color-fg))" : "var(--color-bg)"};`
+  );
+  lines.push(`  --color-scrim: ${dark ? "rgb(0 0 0 / 0.6)" : "rgb(0 0 0 / 0.32)"};`);
+
   for (const [name, value] of Object.entries(theme.shadows)) {
     lines.push(`  --shadow-${name}: ${value};`);
   }

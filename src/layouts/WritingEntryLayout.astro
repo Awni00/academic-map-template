@@ -16,6 +16,7 @@ import Proof from "../components/article/Proof.astro";
 import Statement from "../components/article/Statement.astro";
 import Term from "../components/article/Term.astro";
 import TableOfContents from "../components/article/TableOfContents";
+import ContentsSheet from "../components/article/ContentsSheet";
 import Theorem from "../components/article/Theorem.astro";
 import ToggleFigure from "../components/article/ToggleFigure.astro";
 import ToggleFigurePanel from "../components/article/ToggleFigurePanel.astro";
@@ -35,6 +36,7 @@ import {
   Presentation,
   Tag
 } from "@lucide/astro";
+import { formatDate } from "../lib/dates";
 import { entryToRecord } from "../lib/graph/resolveLinks";
 import {
   effectiveAsides,
@@ -107,13 +109,6 @@ const external = Object.entries(entry.data.external ?? {})
     return { key, href: externalLinkHref(key, href as string), label: meta.label, Icon: meta.icon };
   });
 
-const formatDate = (iso: string | undefined) => {
-  if (!iso) return undefined;
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[m - 1]} ${d}, ${y}`;
-};
 // displayDates customizes only the header; node.date remains canonical elsewhere.
 const displayDateRows = entry.data.displayDates?.map((item) => ({
   label: item.label,
@@ -184,7 +179,7 @@ const left = renderSide("left");
 const right = renderSide("right");
 ---
 
-<BaseLayout title={node.title} description={node.summary} theme={entry.data.theme}>
+<BaseLayout title={node.title} description={node.summary} theme={entry.data.theme} autoHideHeader>
   <article class="writing-shell">
     <div
       class="article-grid"
@@ -295,6 +290,11 @@ const right = renderSide("right");
           )
         }
       </header>
+
+      {/* The contents on narrow screens, where the sidebars collapse. */}
+      {tocSide !== "none" && tocHeadings.length > 1 && (
+        <ContentsSheet client:media="(max-width: 980px)" headings={headings} tocConfig={tocConfig} />
+      )}
 
       {
         renderLeft && (

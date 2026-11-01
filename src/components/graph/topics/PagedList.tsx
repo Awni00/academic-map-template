@@ -1,6 +1,6 @@
 import type { TopicsDensity } from "../../../config/writing";
 import type { EntryNode } from "../../../lib/graph/types";
-import EntryRow from "./EntryRow";
+import EntryRow from "../browser/EntryRow";
 
 type PagedListProps = {
   entries: EntryNode[];
@@ -39,7 +39,7 @@ export default function PagedList({
   const showPager = total > pageSize;
   return (
     <>
-      <ul className="topics-list">
+      <ul className="wb-rows">
         {slice.map((entry) => (
           <EntryRow key={entry.id} entry={entry} density={density} />
         ))}
@@ -87,7 +87,7 @@ export default function PagedList({
             </button>
           </span>
           <a className="topics-pager__open" href={hubUrl}>
-            Open hub for full list →
+            Open hub for the full list →
           </a>
         </div>
       )}

@@ -1,6 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { getEntryType, graphConfig, writingConfig, type EntryType } from "../../config";
+import {
+  getEntryType,
+  graphConfig,
+  writingConfig,
+  type EntryType,
+  type TopicsDensity,
+  type TopicsSort
+} from "../../config";
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
 import { hubMemberCounts } from "../../lib/graph/clusterLayout";
 import { searchWriting, toSearchDocuments } from "../../lib/search/writingSearch";
@@ -8,6 +15,9 @@ import GraphCanvas from "./GraphCanvas";
 import HubList from "./HubList";
 import NodeDetailPanel from "./NodeDetailPanel";
 import NodeIcon, { type NodeShape } from "./NodeIcon";
+import Icon, { type IconName } from "./browser/icons";
+import Toolbar from "./browser/Toolbar";
+import TypeLabel from "./browser/TypeLabel";
 import ListView from "./list/ListView";
 import TopicsView from "./topics/TopicsView";
 
@@ -37,6 +47,8 @@ const CANVAS_HEIGHT_DEFAULT = 600;
 const VIEWS = ["map", "topics", "list"] as const;
 type View = (typeof VIEWS)[number];
 
+const VIEW_LABEL: Record<View, string> = { map: "Map", topics: "Topics", list: "List" };
+
 export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // Initialised to a constant, not to the URL. The server has no `window`, so
   // reading the URL during render makes the first client render disagree with
@@ -64,41 +76,17 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   }, [graph.nodes]);
   const docs = useMemo(() => toSearchDocuments(graph.nodes), [graph.nodes]);
   const hubCounts = useMemo(() => hubMemberCounts(graph.nodes), [graph.nodes]);
-  // Per-view filter sets. Each view applies only the filters it surfaces in
-  // its own UI. Inputs to these filters are still a single shared state
-  // object, so toggling a chip in one view that also exists in another
-  // (e.g. type chips appear in map + list) stays in sync. Filters that do
-  // not have a UI in a given view are simply not applied to that view's
-  // results.
-  //
-  //   View    Applies                              Does NOT apply
-  //   ----    -------                              --------------
-  //   map     query, types, tags                   —
-  //   list    query, types                         tags
-  //   topics  query                                types, tags
-  //
-  // The map *applies* all four, but not by removing anything: on a map an
-  // attribute selection marks nodes, it does not delete them. Removal there
-  // severed the structure that gives the remaining nodes their meaning —
-  // node types are not connected subgraphs, so filtering to "paper" left
-  // three isolated dots — and it re-settled the layout on every click. The
-  // map's results therefore feed `emphasizedIds`, not the node set.
-  const mapSearchResults = useMemo(
+  // One filter for every view: the toolbar is the same in each, so search,
+  // types and tags mean the same thing wherever they are set. Topics and List
+  // show only what matches. The map marks the matches and fades the rest
+  // instead of removing them: node types are not connected subgraphs, so
+  // removal left isolated dots, and handing the canvas a new graph re-settles
+  // the layout on every click.
+  const searchResults = useMemo(
     () => searchWriting(docs, { query: state.query, types: state.types, tags: state.tags }),
     [docs, state.query, state.types, state.tags]
   );
-  const listSearchResults = useMemo(
-    () => searchWriting(docs, { query: state.query, types: state.types }),
-    [docs, state.query, state.types]
-  );
-  const topicsSearchResults = useMemo(
-    () => searchWriting(docs, { query: state.query }),
-    [docs, state.query]
-  );
-  const mapMatchIds = useMemo(
-    () => new Set(mapSearchResults.map((doc) => doc.id)),
-    [mapSearchResults]
-  );
+  const mapMatchIds = useMemo(() => new Set(searchResults.map((doc) => doc.id)), [searchResults]);
   // Nothing removes nodes from the map: an attribute selection marks them and
   // leaves the graph object identical, which is what keeps the layout from
   // re-settling. Handing `GraphCanvas` a new graph rebuilds every node from
@@ -111,6 +99,12 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // disagree about what is being inspected.
   const selected = state.selected ? nodeById.get(state.selected) : undefined;
   const view = (state.view ?? defaultState.view) as View;
+  // Order and density per view, starting from each view's config.
+  const browserConfig = writingConfig.browser;
+  const [topicsSort, setTopicsSort] = useState<TopicsSort>(browserConfig.topics.defaultSort);
+  const [listSort, setListSort] = useState<TopicsSort>(browserConfig.list.defaultSort);
+  const [topicsDensity, setTopicsDensity] = useState<TopicsDensity>(browserConfig.topics.density);
+  const [listDensity, setListDensity] = useState<TopicsDensity>(browserConfig.list.density);
 
   useEffect(() => {
     setState(readStateFromUrl());
@@ -191,130 +185,72 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     patch({ tags: next.size ? [...next] : undefined });
   }
 
-  const listEntries = listSearchResults
+  const matchedEntries = searchResults
     .map((doc) => nodeById.get(doc.id))
     .filter((node): node is EntryNode => Boolean(node));
 
-  const topicsEntries = topicsSearchResults
-    .map((doc) => nodeById.get(doc.id))
-    .filter((node): node is EntryNode => Boolean(node));
+  const sortControls =
+    view === "topics"
+      ? {
+          sort: { options: browserConfig.topics.sortOptions, value: topicsSort, onChange: setTopicsSort },
+          density: browserConfig.topics.showDensityToggle
+            ? { value: topicsDensity, onChange: setTopicsDensity }
+            : undefined
+        }
+      : view === "list"
+        ? {
+            sort: { options: browserConfig.list.sortOptions, value: listSort, onChange: setListSort },
+            density: browserConfig.list.showDensityToggle
+              ? { value: listDensity, onChange: setListDensity }
+              : undefined
+          }
+        : {};
 
-  // The heading's count is the whole collection on the map, where a filter
-  // marks rather than removes; the bar beside the chips reports the matches.
-  // The list and topics views do remove, so there it is the count shown.
-  const mapMatchCount = mapMatchIds.size;
-  const pageCount =
-    view === "map"
-      ? graph.nodes.length
-      : view === "topics"
-        ? topicsEntries.length
-        : listEntries.length;
-  const countLabel = `${pageCount} ${pageCount === 1 ? "page" : "pages"}`;
-
-  const ViewSwitcher = (
-    <div className="graph-seg" role="tablist" aria-label={`${writingConfig.label} view`}>
-      {VIEWS.map((v) => (
-        <button
-          key={v}
-          type="button"
-          role="tab"
-          aria-pressed={view === v}
-          onClick={() => patch({ view: v })}
-        >
-          {v}
-        </button>
-      ))}
-    </div>
-  );
+  const presentTypes = writingConfig.entryTypes.filter((type) => (typeCounts[type] ?? 0) > 0);
 
   return (
-    <section className="graph-browser" aria-label={`${writingConfig.label} browser`}>
+    <section className="graph-browser" data-view={view} aria-label={`${writingConfig.label} browser`}>
       {/* The page's own header, set like every other top-level page's: the
-          serif title and a line beneath it, with the controls that act on the
-          whole collection beside the title. */}
+          serif title, the view switcher beside it, a line of description on
+          wide screens, and then the toolbar every view shares. */}
       <header className="graph-browser__head">
         <h1 className="graph-browser__title">{writingConfig.label}</h1>
-        <div className="graph-browser__controls">
-          <label className="graph-search">
-            <SearchIcon />
-            <input
-              className="graph-input"
-              type="search"
-              value={state.query ?? ""}
-              onChange={(event) => patch({ query: event.target.value || undefined })}
-              placeholder="Search title, tag, type…"
-              aria-label={`Search ${writingConfig.label.toLowerCase()}`}
-            />
-          </label>
-          {ViewSwitcher}
+        <div className="wb-switch" role="tablist" aria-label={`${writingConfig.label} view`}>
+          {VIEWS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              aria-label={VIEW_LABEL[v]}
+              onClick={() => patch({ view: v })}
+            >
+              <Icon name={v as IconName} />
+              <span className="wb-switch__label">{VIEW_LABEL[v]}</span>
+            </button>
+          ))}
         </div>
-        <p className="graph-browser__lede">
-          {writingConfig.description}
-          <span className="graph-browser__count">{countLabel}</span>
-        </p>
+        <p className="graph-browser__lede">{writingConfig.description}</p>
       </header>
+
+      <Toolbar
+        query={state.query ?? ""}
+        onQuery={(query) => patch({ query: query || undefined })}
+        types={state.types ?? []}
+        tags={state.tags ?? []}
+        typeCounts={typeCounts}
+        allTags={tags}
+        onToggleType={toggleType}
+        onToggleTag={toggleTag}
+        onClearFilters={() => patch({ types: undefined, tags: undefined })}
+        matches={matchedEntries.length}
+        total={graph.nodes.length}
+        {...sortControls}
+      />
+
       {view === "map" ? (
         <div className="graph-browser__grid">
           <div className="graph-panel graph-panel--center">
-            <div className="graph-canvas-bar">
-              <div className="graph-filters">
-                {/* Doubles as the canvas legend. Each chip carries the glyph
-                    its type is actually drawn with, so the vocabulary and the
-                    filter are one control rather than two that drift apart —
-                    and it sits in the chrome instead of overlaying the map. */}
-                <div className="graph-typefilter" role="group" aria-label="Filter by type">
-                  {writingConfig.entryTypes
-                    .filter((type) => (typeCounts[type] ?? 0) > 0)
-                    .map((type) => {
-                      const entryType = getEntryType(type);
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          className="graph-button"
-                          aria-pressed={(state.types ?? []).includes(type)}
-                          onClick={() => toggleType(type)}
-                        >
-                          <NodeIcon
-                            shape={entryType.graph.shape as NodeShape}
-                            color={entryType.graph.color as string}
-                          />
-                          {entryType.label}
-                          <span className="graph-button__count">{typeCounts[type]}</span>
-                        </button>
-                      );
-                    })}
-                </div>
-                <TagFilter
-                  tags={tags}
-                  active={state.tags ?? []}
-                  onToggle={toggleTag}
-                  onClear={() => patch({ tags: undefined })}
-                />
-              </div>
-              {/* Only while a filter is on: it reports on the filter, and the
-                  heading already gives the total. A map where everything is
-                  faded looks identical to one that failed to render, so the
-                  zero case is said in words. */}
-              {hasSelection && (
-                <div className="graph-status" role="status">
-                  {mapMatchCount === 0 ? (
-                    <span className="graph-status__empty">No pages match</span>
-                  ) : (
-                    <span>
-                      {mapMatchCount} of {graph.nodes.length}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="graph-status__reset"
-                    onClick={() => patch({ query: undefined, types: undefined, tags: undefined })}
-                  >
-                    Reset
-                  </button>
-                </div>
-              )}
-            </div>
             <div className="graph-canvas" ref={canvasSlotRef}>
               <GraphCanvas
                 graph={graph}
@@ -336,6 +272,15 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 // hub's entries can sit a further hop down a nested hub.
                 onSelect={(id) => patch({ selected: id })}
               />
+              {/* What the glyphs mean, on the map itself. Filtering lives in
+                  the toolbar; this only reads. */}
+              <ul className="graph-legend" aria-label="Legend">
+                {presentTypes.map((type) => (
+                  <li key={type}>
+                    <TypeLabel type={type} />
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
@@ -362,97 +307,17 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
           </aside>
         </div>
       ) : view === "topics" ? (
-        <TopicsView graph={graph} entries={topicsEntries} />
+        <TopicsView graph={graph} entries={matchedEntries} sort={topicsSort} density={topicsDensity} />
       ) : (
         <ListView
-          entries={listEntries}
-          activeTypes={state.types ?? []}
-          onToggleType={toggleType}
-          typeCounts={typeCounts}
+          entries={matchedEntries}
+          sort={listSort}
+          sortOptions={browserConfig.list.sortOptions}
+          onSort={setListSort}
+          density={listDensity}
         />
       )}
     </section>
-  );
-}
-
-/**
- * Tags behind a disclosure rather than spread across a permanent column.
- * They are the weakest of the three filters — the search field already matches
- * on tags — so they earn a button of chrome, not a third of the viewport.
- */
-function TagFilter({
-  tags,
-  active,
-  onToggle,
-  onClear
-}: {
-  tags: string[];
-  active: string[];
-  onToggle: (tag: string) => void;
-  onClear: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    // `pointerdown`, not `click`: a press that starts outside should dismiss
-    // before the canvas underneath treats the release as a node selection.
-    const onPointerDown = (event: PointerEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  if (tags.length === 0) return null;
-
-  return (
-    <div className="graph-tagfilter" ref={ref}>
-      <button
-        type="button"
-        className="graph-button"
-        aria-expanded={open}
-        aria-pressed={active.length > 0}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <TagIcon />
-        tags
-        {active.length > 0 && <span className="graph-button__count">{active.length}</span>}
-        <span className="graph-button__caret" aria-hidden="true">
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className="graph-tagpop">
-          <div className="graph-tagpop__list">
-            {tags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className="graph-button"
-                aria-pressed={active.includes(tag)}
-                onClick={() => onToggle(tag)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-          {active.length > 0 && (
-            <button type="button" className="graph-tagpop__clear" onClick={onClear}>
-              Clear tags
-            </button>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -671,46 +536,3 @@ function DirectionIcon({ direction }: { direction: Direction }) {
   }
 }
 
-function SearchIcon() {
-  return (
-    <svg
-      width={13}
-      height={13}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.2}
-      strokeLinecap="round"
-      aria-hidden="true"
-      className="graph-search__icon"
-    >
-      <circle cx={11} cy={11} r={7} />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
-
-/**
- * Marks the tag filter, which is the one chip in the bar whose label is not
- * accompanied by the glyph its subject is drawn with. Outlined rather than
- * filled, so it reads as a control next to the solid node glyphs beside it.
- */
-function TagIcon() {
-  return (
-    <svg
-      width={12}
-      height={12}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="graph-button__icon"
-    >
-      <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z" />
-      <circle cx={7} cy={7} r={1.3} fill="currentColor" stroke="none" />
-    </svg>
-  );
-}

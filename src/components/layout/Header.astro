@@ -2,28 +2,84 @@
 import ThemeToggle from "./ThemeToggle";
 import { siteConfig } from "../../config/site";
 import { themeConfig } from "../../config/theme";
+import { navIcons } from "./navIcons";
 
+type Props = {
+  /** Slide the phone app bar away while reading down; see BaseLayout. */
+  autoHide?: boolean;
+};
+
+const { autoHide = false } = Astro.props;
 const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+
+const navItems = siteConfig.nav.map((item) => {
+  const href = item.href.replace(/\/$/, "") || "/";
+  const external = /^[a-z][a-z\d+.-]*:/i.test(item.href);
+  return {
+    ...item,
+    current: currentPath === href || (href !== "/" && currentPath.startsWith(`${href}/`)),
+    // A hint for links that leave the site's pages, shown in the menu.
+    kind: /\.pdf$/i.test(item.href) ? "PDF" : external ? "↗" : undefined,
+    Icon: item.icon ? navIcons[item.icon] : undefined
+  };
+});
+// All or nothing, so the labels in the menu always share one left edge.
+const showIcons = navItems.every((item) => item.Icon);
 ---
 
-<header class="site-header">
+<!--
+  One header, two layouts. Inline: the name, the links, the theme toggle. Menu:
+  the name and two buttons, with the links in a sheet that drops from the bar.
+  The script below picks the menu when the links would not fit on one line, so
+  the switch follows the nav's real length and font rather than a breakpoint
+  guessed for the default six items, and on any handheld held sideways, so a
+  phone looks the same in both orientations. Without the script, the inline
+  links wrap.
+-->
+<header class="site-header" data-nav="inline" data-auto-hide={autoHide ? "" : undefined}>
   <div class="site-header__inner">
     <a class="site-brand" href="/">{siteConfig.name}</a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <div class="site-nav__links">
-        {
-          siteConfig.nav.map((item) => {
-            const href = item.href.replace(/\/$/, "") || "/";
-            const isCurrent = currentPath === href || (href !== "/" && currentPath.startsWith(`${href}/`));
-            return (
-              <a href={item.href} aria-current={isCurrent ? "page" : undefined}>
-                {item.label}
-              </a>
-            );
-          })
-        }
-      </div>
+      {
+        navItems.map((item) => (
+          <a href={item.href} aria-current={item.current ? "page" : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="site-header__actions">
       {themeConfig.allowToggle && <ThemeToggle client:load />}
+      <button
+        type="button"
+        class="site-menu-button"
+        popovertarget="site-menu"
+        aria-label="Menu"
+      >
+        <svg class="site-menu-button__open" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg>
+        <svg class="site-menu-button__close" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- A native popover: Esc, outside clicks, and focus return come with it.
+       It spans from the bar to the bottom of the screen, so the area below the
+       panel is its own scrim and the bar above stays live. -->
+  <div id="site-menu" class="site-menu" popover>
+    <nav class="site-menu__panel" aria-label="Primary navigation">
+      {
+        navItems.map((item) => (
+          <a href={item.href} aria-current={item.current ? "page" : undefined}>
+            {showIcons && item.Icon && <item.Icon class="site-menu__icon" aria-hidden="true" />}
+            <span class="site-menu__label">{item.label}</span>
+            {item.kind && <span class="site-menu__kind">{item.kind}</span>}
+          </a>
+        ))
+      }
     </nav>
   </div>
 </header>
@@ -33,28 +89,84 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
     const root = document.documentElement;
     const header = document.querySelector(".site-header");
     if (!header) return;
+    const inner = header.querySelector(".site-header__inner");
+    const links = [...header.querySelectorAll(".site-nav a")];
+    const menu = header.querySelector("#site-menu");
+
+    // A phone or small tablet on its side: touch-first and short.
+    const handheldLandscape = matchMedia("(pointer: coarse) and (max-height: 500px)");
+
+    // Inline while every link sits on the first line; the menu otherwise.
+    // Measured with the inline layout showing, then settled before paint.
+    const fitNav = () => {
+      header.dataset.nav = "inline";
+      const wraps = links.some((link) => link.offsetTop !== links[0].offsetTop);
+      const compact = wraps || handheldLandscape.matches;
+      header.dataset.nav = compact ? "menu" : "inline";
+      if (!compact && menu?.matches(":popover-open")) menu.hidePopover();
+    };
 
     const updateHeaderHeight = () => {
       root.style.setProperty("--site-header-height", `${header.getBoundingClientRect().height}px`);
     };
 
+    fitNav();
     updateHeaderHeight();
+    // Web fonts change the links' widths after first paint.
+    document.fonts?.ready.then(fitNav);
+    handheldLandscape.addEventListener("change", fitNav);
 
-    // On phones the nav is one line that scrolls sideways (globals.css). Start
-    // it with the current page's link in view, not wherever the list begins.
-    const links = header.querySelector(".site-nav__links");
-    const current = links?.querySelector('a[aria-current="page"]');
-    if (links && current && links.scrollWidth > links.clientWidth) {
-      links.scrollLeft +=
-        current.getBoundingClientRect().left - links.getBoundingClientRect().left - 12;
+    // Clicks on the scrim (the popover itself, below the panel) close it.
+    menu?.addEventListener("click", (event) => {
+      if (event.target === menu) menu.hidePopover();
+    });
+
+    if (header.hasAttribute("data-auto-hide")) {
+      // Hide after a deliberate scroll down past the bar; show on any scroll
+      // up. Never while the menu is open or near the top of the page.
+      let lastY = window.scrollY;
+      let ticking = false;
+      const update = () => {
+        ticking = false;
+        const y = window.scrollY;
+        const delta = y - lastY;
+        if (Math.abs(delta) < 6) return;
+        const hide =
+          delta > 0 && y > header.offsetHeight * 2 && !menu?.matches(":popover-open");
+        header.toggleAttribute("data-hidden", hide);
+        lastY = y;
+      };
+      window.addEventListener(
+        "scroll",
+        () => {
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(update);
+          }
+        },
+        { passive: true }
+      );
     }
 
     if ("ResizeObserver" in window) {
-      const observer = new ResizeObserver(updateHeaderHeight);
-      observer.observe(header);
+      let width = 0;
+      new ResizeObserver(() => {
+        if (inner.clientWidth !== width) {
+          width = inner.clientWidth;
+          fitNav();
+        }
+        updateHeaderHeight();
+      }).observe(header);
       return;
     }
 
-    window.addEventListener("resize", updateHeaderHeight, { passive: true });
+    window.addEventListener(
+      "resize",
+      () => {
+        fitNav();
+        updateHeaderHeight();
+      },
+      { passive: true }
+    );
   })();
 </script>

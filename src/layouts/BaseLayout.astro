@@ -15,13 +15,16 @@ type Props = {
   description?: string;
   image?: string;
   theme?: "global" | "system" | "light" | "dark";
+  /** Long reads: let the phone app bar slide away while scrolling down. */
+  autoHideHeader?: boolean;
 };
 
 const {
   title = siteConfig.title,
   description = siteConfig.description,
   image = siteConfig.ogImage,
-  theme = "global"
+  theme = "global",
+  autoHideHeader = false
 } = Astro.props;
 
 const pageTitle = title === siteConfig.title ? title : `${title} | ${siteConfig.name}`;
@@ -121,7 +124,7 @@ const themeScript = `
   <body>
     <div class="site-shell">
       <a class="skip-link" href="#main">Skip to content</a>
-      <Header />
+      <Header autoHide={autoHideHeader} />
       <main id="main" class="site-main">
         <slot />
       </main>

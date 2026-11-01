@@ -74,7 +74,7 @@ test("main static routes render", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Research" })).toBeVisible();
 });
 
-test("mobile navbar uses available row width before wrapping", async ({
+test("tablet navbar keeps every link inline on one row", async ({
   baseURL,
   browser,
 }) => {
@@ -87,7 +87,7 @@ test("mobile navbar uses available row width before wrapping", async ({
     await page.goto("/");
 
     const linkRects = await page
-      .locator(".site-nav__links a")
+      .locator(".site-nav a")
       .evaluateAll((links) =>
         links.map((link) => {
           const rect = link.getBoundingClientRect();
@@ -105,9 +105,125 @@ test("mobile navbar uses available row width before wrapping", async ({
     expect(publications).toBeDefined();
     expect(publications!.top).toBe(home!.top);
     expect(rows.size).toBe(1);
+    await expect(page.locator(".site-menu-button")).toBeHidden();
   } finally {
     await context.close();
   }
+});
+
+test("phone navbar moves every link into the menu sheet", async ({
+  baseURL,
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 375, height: 667 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/publications/");
+    await expect(page.locator(".site-nav")).toBeHidden();
+
+    const button = page.getByRole("button", { name: "Menu" });
+    const box = await button.boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+
+    await button.click();
+    const menu = page.locator("#site-menu");
+    await expect(menu).toBeVisible();
+    const labels = await menu.locator(".site-menu__label").allTextContents();
+    const nav = await page.locator(".site-nav a").allTextContents();
+    expect(labels).toEqual(nav.map((label) => label.trim()));
+    for (const link of await menu.locator("a").all()) {
+      await expect(link).toBeInViewport();
+    }
+    await expect(menu.locator('a[aria-current="page"]')).toHaveText(
+      "Publications",
+    );
+
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(button).toBeFocused();
+
+    // A tap on the scrim below the panel closes it too.
+    await button.click();
+    await page.mouse.click(187, 640);
+    await expect(menu).toBeHidden();
+  } finally {
+    await context.close();
+  }
+});
+
+test("phone app bar hides while reading an entry and stays on the map", async ({
+  baseURL,
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 375, height: 667 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const header = page.locator(".site-header");
+  const scrollBy = async (dy: number) => {
+    await page.evaluate((dy) => window.scrollBy({ top: dy, behavior: "instant" }), dy);
+    await page.waitForTimeout(80);
+  };
+  try {
+    await page.goto("/writing/hub-1/entry-1/");
+    await scrollBy(600);
+    await expect(header).toHaveAttribute("data-hidden", "");
+    await scrollBy(-40);
+    await expect(header).not.toHaveAttribute("data-hidden", "");
+
+    await page.goto("/writing/");
+    await expect(header).not.toHaveAttribute("data-auto-hide", "");
+  } finally {
+    await context.close();
+  }
+});
+
+test("writing toolbar filters every view the same way", async ({ page, isMobile }) => {
+  await page.goto("/writing?view=list");
+  await expect(page.getByRole("tab", { name: "list" })).toHaveAttribute("aria-selected", "true");
+  const rows = page.locator(".wb-row");
+  const all = await rows.count();
+
+  const filters = page.getByRole("button", { name: "Filters" });
+  await filters.click();
+  const panel = page.getByRole("dialog", { name: "Filters" });
+  await expect(panel).toBeVisible();
+  // A card under the button on wide screens, a bottom sheet on phones.
+  const box = (await panel.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  if (isMobile) expect(Math.round(box.y + box.height)).toBe(viewport.height);
+  else expect(box.y).toBeLessThan(viewport.height / 2);
+
+  await panel.getByRole("button", { name: /^Paper/ }).click();
+  await panel.getByRole("button", { name: /^Show \d+ pages?$/ }).click();
+  await expect(panel).toBeHidden();
+  await expect(filters).toContainText("1");
+
+  const papers = await rows.count();
+  expect(papers).toBeGreaterThan(0);
+  expect(papers).toBeLessThan(all);
+  await expect(page.locator(".wb-row__type")).toHaveText(Array(papers).fill("Paper"));
+  // Dates read as dates, not ISO strings.
+  await expect(page.locator(".wb-row__date").first()).toHaveText(/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/);
+
+  // The same filter holds in Topics, and the map reports what it marks.
+  await page.getByRole("tab", { name: "topics" }).click();
+  await expect(page.locator(".topics-hub .wb-row__type").first()).toHaveText("Paper");
+  for (const type of await page.locator(".topics-hub .wb-row__type").allTextContents()) {
+    expect(type).toBe("Paper");
+  }
+  await page.getByRole("tab", { name: "map" }).click();
+  await expect(page.locator(".wb-count")).toHaveText(`${papers} of ${all} pages`);
 });
 
 test("publication abstracts open as configured popups", async ({ page }) => {
@@ -142,7 +258,7 @@ test("publication abstracts open as configured popups", async ({ page }) => {
 test("writing browser supports URL state and preview", async ({ page }) => {
   await page.goto("/writing?view=map");
   await expect(page.getByRole("tab", { name: "map" })).toHaveAttribute(
-    "aria-pressed",
+    "aria-selected",
     "true",
   );
   // The map opens with nothing selected (graph-selection.spec.ts holds the
