@@ -18,7 +18,12 @@ export function arrowMode(links: Pick<GraphConfigBase["links"], "arrows" | "dire
 }
 
 /** Strengths are fractions; anything above 1 overshoots and the layout shakes. */
-const FRACTIONS: readonly (keyof GraphForcesConfig)[] = ["groupPull", "crossLinkStrength", "centerPull"];
+const FRACTIONS: readonly (keyof GraphForcesConfig)[] = [
+  "groupPull",
+  "crossLinkStrength",
+  "hubLinkStrength",
+  "centerPull"
+];
 
 /**
  * The hover behaviour for one map: the site-wide `graph.hover`, with any

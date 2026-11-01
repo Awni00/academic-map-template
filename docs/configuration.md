@@ -115,11 +115,15 @@ export const siteConfigOverrides = {
         hubRepulsion: 140,      // how hard hubs push everything away; larger spreads the groups
         entryRepulsion: 45,     // how hard every other page pushes its neighbours away
         repulsionRange: 220,    // beyond this, two nodes stop pushing on each other
+        hubHubRepulsion: 0,     // how hard hubs push only each other apart (off by default)
+        hubHubRange: 1000,      // beyond this, two hubs stop pushing on each other
         groupDistance: 36,      // how far a page sits from its hub
         groupPull: 0.3,         // how firmly it is held there (0–1)
         linkLength: 40,         // a link inside a group
         crossLinkLength: 80,    // a link between groups
         crossLinkStrength: 0.15,// how much a link between groups draws them together (0–1)
+        hubLinkLength: 80,      // a hub's link to a page outside its folder
+        hubLinkStrength: 0.15,  // how firmly that link holds the page to the hub (0–1)
         minGap: 18,             // clear space kept between any two glyphs
         centerPull: 0.07        // keeps loose groups near the rest (0–1)
       }
@@ -128,9 +132,24 @@ export const siteConfigOverrides = {
 } satisfies SiteConfigOverrides;
 ```
 
+A group is the pages in a hub's folder, held by `groupDistance` and
+`groupPull`. A hub can also list pages that live elsewhere, through its
+`links`; those links get `hubLinkLength` and `hubLinkStrength` rather than the
+cross-link settings. On a site whose topic hubs list their pages instead of
+containing them, these two are what hold each topic together.
+
 A looser map: raise `groupDistance` and `minGap`. Tighter groups: raise
-`groupPull`. Topics further apart: raise `hubRepulsion` or lower
-`crossLinkStrength`. Out-of-range values stop the build with a message naming
+`groupPull`. Topics further apart: raise `hubHubRepulsion` or lower
+`crossLinkStrength`.
+
+`hubRepulsion` is the charge every hub puts on every node near it, its own
+pages included, so raising it to spread the topics also loosens each group,
+and it stops at `repulsionRange` like any other charge. `hubHubRepulsion` acts
+only between pairs of hubs, out to its own `hubHubRange`, so the topics can
+spread across the canvas while their groups stay tight. Links between groups
+still pull related topics back toward each other. It adds to `hubRepulsion`
+rather than replacing it; lower `hubRepulsion` as well to separate the two
+effects fully. Out-of-range values stop the build with a message naming
 the setting.
 
 #### Hover

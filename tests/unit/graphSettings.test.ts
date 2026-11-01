@@ -27,11 +27,18 @@ describe("validateGraphSettings", () => {
   });
 
   it("rejects negative or non-numeric forces, and strengths above 1", () => {
-    const forces = { ...base.layout.forces, minGap: -1, hubRepulsion: "lots" as any, groupPull: 3 };
+    const forces = {
+      ...base.layout.forces,
+      minGap: -1,
+      hubRepulsion: "lots" as any,
+      groupPull: 3,
+      hubLinkStrength: 1.5
+    };
     const errors = validateGraphSettings({ ...base, layout: { ...base.layout, forces } }).join("\n");
     expect(errors).toMatch(/forces\.minGap/);
     expect(errors).toMatch(/forces\.hubRepulsion/);
     expect(errors).toMatch(/forces\.groupPull/);
+    expect(errors).toMatch(/forces\.hubLinkStrength/);
   });
 
   it("names an unknown selection style", () => {

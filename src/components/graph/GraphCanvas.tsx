@@ -18,6 +18,7 @@ import {
 import {
   centerForce,
   clusterForce,
+  hubRepulsionForce,
   parentHubs,
   seedPositions
 } from "../../lib/graph/clusterLayout";
@@ -248,6 +249,10 @@ export default function GraphCanvas({
   // Parent hub of each node, by folder; the cluster layout's one input beyond
   // the links.
   const parents = useMemo(() => parentHubs(graph.nodes), [graph]);
+  const hubIds = useMemo(
+    () => new Set(graph.nodes.filter((node) => isHubType(node.type)).map((node) => node.id)),
+    [graph]
+  );
 
   useEffect(() => {
     let active = true;
@@ -908,6 +913,12 @@ export default function GraphCanvas({
       "cluster",
       cluster ? clusterForce(parents, forces.groupDistance, forces.groupPull) : null
     );
+    fg.d3Force?.(
+      "hubRepulsion",
+      cluster && forces.hubHubRepulsion > 0
+        ? hubRepulsionForce(hubIds, forces.hubHubRepulsion, forces.hubHubRange)
+        : null
+    );
     const charge = fg.d3Force?.("charge");
     if (charge) {
       if (cluster) {
@@ -939,17 +950,24 @@ export default function GraphCanvas({
       } else if (cluster) {
         // Inside a group, links hold pages close; between groups they are
         // long and weak, so a citation across topics leans two groups toward
-        // each other without dragging a page out of its own.
+        // each other without dragging a page out of its own. A hub's link to a
+        // page outside its folder has settings of its own: on a site whose
+        // hubs list their pages rather than contain them, it is the only thing
+        // holding a topic together.
         const id = (end: any) => (typeof end === "object" ? end.id : end);
         const together = (edge: any) => {
           const a = id(edge.source);
           const b = id(edge.target);
           return parents.get(a) === b || parents.get(b) === a || (parents.has(a) && parents.get(a) === parents.get(b));
         };
-        link.distance((edge: any) => (together(edge) ? forces.linkLength : forces.crossLinkLength));
+        const toHub = (edge: any) => hubIds.has(id(edge.source)) || hubIds.has(id(edge.target));
+        link.distance((edge: any) =>
+          together(edge) ? forces.linkLength : toHub(edge) ? forces.hubLinkLength : forces.crossLinkLength
+        );
         link.strength?.((edge: any) => {
           const fewest = Math.min(degree.get(id(edge.source)) ?? 1, degree.get(id(edge.target)) ?? 1);
-          return (together(edge) ? 1 : forces.crossLinkStrength) / Math.max(1, fewest);
+          const strength = together(edge) ? 1 : toHub(edge) ? forces.hubLinkStrength : forces.crossLinkStrength;
+          return strength / Math.max(1, fewest);
         });
       } else {
         link.distance((edge: any) => {
@@ -983,7 +1001,7 @@ export default function GraphCanvas({
     // `height` reaches the anchored forces through `anchorGeometry`, and the
     // cluster's aspect ratio is read once per settle; a resize re-frames
     // without re-running the layout (see below).
-  }, [ForceGraph, graphData, anchor, anchorGeometry, visibility.started, hubLayout, parents, degree, forceConfig, radiusOf]);
+  }, [ForceGraph, graphData, anchor, anchorGeometry, visibility.started, hubLayout, parents, hubIds, degree, forceConfig, radiusOf]);
 
   // Re-frame when the slot changes width. The fit above runs once the
   // simulation settles and is never revisited, so a canvas that gets narrower

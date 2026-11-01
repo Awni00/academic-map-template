@@ -523,6 +523,13 @@ export type GraphForcesConfig = {
   entryRepulsion: number;
   /** Beyond this distance two nodes stop pushing on each other. */
   repulsionRange: number;
+  /**
+   * How hard hubs push one another apart, on top of `hubRepulsion`. Acts only
+   * between hubs, so it spreads the topics without loosening their groups.
+   */
+  hubHubRepulsion: number;
+  /** Beyond this distance two hubs stop pushing on each other. */
+  hubHubRange: number;
   /** How far a page sits from the hub whose folder it lives in. */
   groupDistance: number;
   /** How firmly pages are held at that distance from their hub (0–1). */
@@ -533,6 +540,13 @@ export type GraphForcesConfig = {
   crossLinkLength: number;
   /** How much a link between groups draws them together (0–1). */
   crossLinkStrength: number;
+  /**
+   * Length of a link between a hub and a page outside its folder: how a hub
+   * gathers the pages it lists when they do not live under it.
+   */
+  hubLinkLength: number;
+  /** How firmly such a link holds the page to the hub (0–1). */
+  hubLinkStrength: number;
   /** Clear space kept between any two glyphs. */
   minGap: number;
   /** How firmly everything is drawn toward the middle; keeps loose groups near the rest. */

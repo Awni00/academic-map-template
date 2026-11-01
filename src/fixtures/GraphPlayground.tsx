@@ -36,11 +36,15 @@ const FORCE_SLIDERS: (Slider & { key: keyof GraphForcesConfig })[] = [
   { key: "hubRepulsion", label: "Hub repulsion", min: 0, max: 500, step: 5, hint: "How hard hubs push everything away" },
   { key: "entryRepulsion", label: "Page repulsion", min: 0, max: 200, step: 1, hint: "How hard other pages push apart" },
   { key: "repulsionRange", label: "Repulsion range", min: 50, max: 600, step: 10, hint: "Beyond this, nodes stop pushing" },
+  { key: "hubHubRepulsion", label: "Hub–hub repulsion", min: 0, max: 5000, step: 25, hint: "How hard hubs push only each other apart" },
+  { key: "hubHubRange", label: "Hub–hub range", min: 100, max: 3000, step: 50, hint: "Beyond this, hubs stop pushing each other" },
   { key: "groupDistance", label: "Distance to hub", min: 10, max: 120, step: 1, hint: "How far a page sits from its hub" },
   { key: "groupPull", label: "Pull toward hub", min: 0, max: 1, step: 0.01, hint: "How firmly it is held there" },
   { key: "linkLength", label: "Link length", min: 10, max: 150, step: 1, hint: "A link inside a group" },
   { key: "crossLinkLength", label: "Cross-link length", min: 20, max: 250, step: 1, hint: "A link between groups" },
   { key: "crossLinkStrength", label: "Cross-link strength", min: 0, max: 1, step: 0.01, hint: "How much groups lean together" },
+  { key: "hubLinkLength", label: "Hub-link length", min: 10, max: 250, step: 1, hint: "A hub's link to a page outside its folder" },
+  { key: "hubLinkStrength", label: "Hub-link strength", min: 0, max: 1, step: 0.01, hint: "How firmly a hub holds the pages it lists" },
   { key: "minGap", label: "Minimum gap", min: 0, max: 60, step: 1, hint: "Clear space between glyphs" },
   { key: "centerPull", label: "Centre pull", min: 0, max: 0.3, step: 0.005, hint: "Keeps loose groups near the rest" }
 ];
