@@ -11,8 +11,8 @@
  * Dev-only, routed through `src/pages/fixtures/[fixture].astro`.
  */
 import { themeRegistry } from "../config/theme";
-import { CONTRAST_TARGETS, checkTheme } from "../lib/theme/checkTheme";
-import { contrastRatio, isCheckable } from "../lib/theme/contrast";
+import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../lib/theme/checkTheme";
+import { contrastRatio, isCheckable, isOpaque } from "../lib/theme/contrast";
 import { themeToCss } from "../lib/theme/themeCss";
 
 const themes = [...themeRegistry.values()].sort((a, b) =>
@@ -25,7 +25,10 @@ const css = themes
 
 /** The tokens worth showing as a strip, in the order they read as a palette. */
 const SWATCHES = [
+  "surface-raised",
   "accent",
+  "link",
+  "annotation",
   "danger",
   "warning",
   "success",
@@ -40,7 +43,7 @@ const SWATCHES = [
 ] as const;
 
 /** Roles whose measured ratio is worth printing under each card. */
-const MEASURED = ["fg", "fg-soft", "muted", "muted-2", "accent"] as const;
+const MEASURED = ["fg", "fg-soft", "muted", "muted-2", "accent", "link", "annotation"] as const;
 
 const cards = themes.map((theme) => {
   const report = checkTheme(theme);
@@ -53,7 +56,28 @@ const cards = themes.map((theme) => {
       target: CONTRAST_TARGETS[token]
     };
   });
-  return { theme, report, measurements };
+  // Text on a tint is measured against the tint as it renders over `bg`, which
+  // for every built-in is an opaque literal; the checker handles the rest.
+  const pairs = PAIR_TARGETS.map(({ token, on, target }) => {
+    const value = theme.colors[token];
+    const tint = theme.colors[on];
+    return {
+      token: `${token} on ${on}`,
+      value,
+      ratio: isCheckable(value) && isCheckable(tint) && isOpaque(tint) ? contrastRatio(value, tint) : null,
+      target
+    };
+  });
+  // The weakest text on menus and sheets; the rest of RAISED_TARGETS are
+  // checked by `checkTheme` and named in the status line if they fail.
+  const raised = theme.colors["surface-raised"];
+  const onRaised = (["muted", "accent"] as const).map((token) => ({
+    token: `${token} on surface-raised`,
+    value: theme.colors[token],
+    ratio: isCheckable(raised) && isOpaque(raised) ? contrastRatio(theme.colors[token], raised) : null,
+    target: RAISED_TARGETS[token]
+  }));
+  return { theme, report, measurements: [...measurements, ...pairs, ...onRaised] };
 });
 ---
 
@@ -124,7 +148,39 @@ const cards = themes.map((theme) => {
         color: var(--color-fg-soft);
       }
       .card__prose a {
-        color: var(--color-accent);
+        color: var(--color-link);
+        text-decoration: none;
+        border-bottom: 1px solid var(--color-link-line);
+      }
+      /* Stand-ins for <Term> and <HoverNote>: this page loads no site CSS. */
+      .term {
+        color: var(--color-annotation);
+        text-decoration: underline dotted 1.5px var(--color-annotation-line);
+        text-underline-offset: 0.22em;
+        border-radius: 3px;
+      }
+      .term--plain {
+        text-decoration: none;
+      }
+      .term--open {
+        background: var(--color-annotation-soft);
+        text-decoration-color: var(--color-annotation);
+      }
+      .mark {
+        color: var(--color-annotation);
+        font-size: 0.7em;
+        vertical-align: super;
+        line-height: 0;
+      }
+      .nav {
+        display: flex;
+        gap: 14px;
+        margin: 0 0 12px;
+        font-size: 12.5px;
+        color: var(--color-fg-soft);
+      }
+      .nav span[aria-current] {
+        border-bottom: 1px solid var(--color-accent);
       }
       .card__muted {
         margin: 0 0 14px;
@@ -136,6 +192,45 @@ const cards = themes.map((theme) => {
         flex-wrap: wrap;
         gap: 6px;
         margin-bottom: 14px;
+      }
+      /* A stand-in for the phone menu: the page's floating surface. */
+      .raised {
+        margin: 0 0 14px;
+        padding: 6px;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: var(--color-surface-raised);
+        box-shadow: var(--shadow-md);
+        font-size: 13px;
+      }
+      .raised__row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 10px;
+        border-radius: 6px;
+        color: var(--color-fg);
+      }
+      .raised__row[aria-current] {
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+      }
+      .raised__kind {
+        color: var(--color-muted);
+        font-family: ui-monospace, monospace;
+        font-size: 10.5px;
+      }
+      .pill--hover {
+        border-color: var(--color-accent-line);
+        color: var(--color-accent);
+      }
+      .pub {
+        border: 0.5px solid var(--color-accent-line);
+        border-radius: 3px;
+        padding: 2px 7px;
+        color: var(--color-accent);
+        background: var(--color-accent-soft);
+        font-family: ui-monospace, monospace;
+        font-size: 10.5px;
       }
       .pill {
         border: 1px solid var(--color-border);
@@ -225,15 +320,30 @@ const cards = themes.map((theme) => {
             </div>
             <div class="card__body">
               <h2>{theme.label}</h2>
+              <div class="nav">
+                <span>About</span>
+                <span aria-current="page">Writing</span>
+                <span>Publications</span>
+              </div>
               <p class="card__prose">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. This page belongs to{" "}
-                <a href="#">Hub 1</a> and links to <a href="#">Hub 2</a>.
+                This page belongs to <a href="#">Hub 1</a> and links to <a href="#">Hub 2</a>. A{" "}
+                <span class="term">dotted term</span>, a <span class="term term--plain">bare term</span>,
+                an <span class="term term--open">open term</span>, and a note mark
+                <span class="mark">1</span>.
               </p>
               <p class="card__muted">Secondary text — captions, bylines, dates.</p>
               <div class="pills">
                 <span class="pill">example</span>
                 <span class="pill">sample</span>
-                <span class="pill">paper</span>
+                <span class="pill pill--hover">paper (hover)</span>
+                <span class="pub">pdf</span>
+              </div>
+              <div class="raised">
+                <div class="raised__row" aria-current="page">Home</div>
+                <div class="raised__row">Writing</div>
+                <div class="raised__row">
+                  CV <span class="raised__kind">PDF</span>
+                </div>
               </div>
               <div class="callout">
                 <div class="callout__title">Example summary</div>

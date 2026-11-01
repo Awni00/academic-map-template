@@ -1,5 +1,5 @@
 import type { Theme, ThemeColors } from "../../config/types";
-import { contrastRatio, isCheckable, isDarkBackground, isOpaque } from "./contrast";
+import { contrastRatio, isCheckable, isDarkBackground, isOpaque, parseColor } from "./contrast";
 
 export type ThemeIssue = { theme: string; token: string; message: string };
 export type ThemeReport = { errors: ThemeIssue[]; warnings: ThemeIssue[] };
@@ -19,6 +19,8 @@ export const CONTRAST_TARGETS = {
   muted: 4.5,
   "muted-2": 3,
   accent: 4.5,
+  link: 4.5,
+  annotation: 4.5,
   "danger-text": 4.5,
   "warning-text": 4.5,
   "success-text": 4.5,
@@ -41,6 +43,33 @@ export const CONTRAST_TARGETS = {
 } as const satisfies Partial<Record<keyof ThemeColors, number>>;
 
 /**
+ * Text that also appears on `surface-raised` — the menu, the contents and
+ * filter sheets, the map's inspector — and must stay readable there. These are
+ * interface labels rather than long-form prose, so even `fg` is held to AA.
+ */
+export const RAISED_TARGETS = {
+  fg: 4.5,
+  "fg-soft": 4.5,
+  muted: 4.5,
+  "muted-2": 3,
+  accent: 4.5
+} as const satisfies Partial<Record<keyof ThemeColors, number>>;
+
+/**
+ * Text drawn on a tinted background rather than on `bg`, measured against
+ * that tint: the accent on its own soft fill (publication pills) and an
+ * annotation on its open-state highlight (an open `<Term>` or note mark).
+ */
+export const PAIR_TARGETS = [
+  { token: "accent", on: "accent-soft", target: 4.5 },
+  { token: "annotation", on: "annotation-soft", target: 4.5 }
+] as const satisfies readonly {
+  token: keyof ThemeColors;
+  on: keyof ThemeColors;
+  target: number;
+}[];
+
+/**
  * Separators are meant to be quiet, so they get an advisory floor rather than
  * a hard one — a border that vanishes entirely is usually a mistake, but a
  * faint one can be a deliberate choice.
@@ -54,6 +83,7 @@ const REQUIRED_TOKENS: readonly (keyof ThemeColors)[] = [
   "bg",
   "bg-soft",
   "bg-soft-2",
+  "surface-raised",
   "fg",
   "fg-soft",
   "muted",
@@ -64,6 +94,11 @@ const REQUIRED_TOKENS: readonly (keyof ThemeColors)[] = [
   "accent",
   "accent-soft",
   "accent-line",
+  "link",
+  "link-line",
+  "annotation",
+  "annotation-soft",
+  "annotation-line",
   "danger",
   "danger-text",
   "warning",
@@ -151,6 +186,42 @@ export function checkTheme(theme: Theme): ThemeReport {
     }
   }
 
+  const raised = theme.colors["surface-raised"];
+  if (isCheckable(raised)) {
+    const surface = flatten(raised, background);
+    for (const [token, target] of Object.entries(RAISED_TARGETS)) {
+      const value = theme.colors[token as keyof ThemeColors];
+      if (!isCheckable(value)) continue;
+      const ratio = contrastRatio(value, surface);
+      if (ratio < target) {
+        errors.push(
+          at(
+            token,
+            `${value} on surface-raised ${raised} is ${ratio.toFixed(2)}:1, below the ${target}:1 required`
+          )
+        );
+      }
+    }
+  } else {
+    warnings.push(at("surface-raised", `"${raised}" cannot be contrast-checked; verify it by eye`));
+  }
+
+  for (const { token, on, target } of PAIR_TARGETS) {
+    const value = theme.colors[token];
+    const tint = theme.colors[on];
+    if (!isCheckable(value) || !isCheckable(tint)) continue;
+    const surface = flatten(tint, background);
+    const ratio = contrastRatio(value, surface);
+    if (ratio < target) {
+      errors.push(
+        at(
+          token,
+          `${value} on ${on} ${tint} is ${ratio.toFixed(2)}:1, below the ${target}:1 required`
+        )
+      );
+    }
+  }
+
   for (const [token, target] of Object.entries(BORDER_ADVISORY)) {
     const value = theme.colors[token as keyof ThemeColors];
     if (!isCheckable(value)) continue;
@@ -163,6 +234,17 @@ export function checkTheme(theme: Theme): ThemeReport {
   }
 
   return { errors, warnings };
+}
+
+/** A possibly translucent tint as it renders over the opaque `background`, as hex. */
+function flatten(tint: string, background: string): string {
+  const top = parseColor(tint)!;
+  const back = parseColor(background)!;
+  const channel = (a: number, b: number) =>
+    Math.round(a * top.alpha + b * (1 - top.alpha))
+      .toString(16)
+      .padStart(2, "0");
+  return `#${channel(top.r, back.r)}${channel(top.g, back.g)}${channel(top.b, back.b)}`;
 }
 
 /** Run `checkTheme` across a registry, flattening the reports. */

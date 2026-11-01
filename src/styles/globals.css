@@ -33,7 +33,7 @@ body {
 }
 
 a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration-thickness: 0.06em;
   text-underline-offset: 0.18em;
 }
@@ -474,8 +474,8 @@ html:has(.site-menu:popover-open) {
 }
 
 .site-footer a:hover {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
 }
 
 /* ── Headings & text primitives ─────────────────────────────────────── */
@@ -568,7 +568,7 @@ html:has(.site-menu:popover-open) {
 .cta {
   font-family: var(--font-ui);
   font-size: 14px;
-  color: var(--color-accent);
+  color: var(--color-link);
   cursor: pointer;
   text-decoration: none;
 }
@@ -841,7 +841,7 @@ html:has(.site-menu:popover-open) {
 }
 
 .hero-bio a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: none;
 }
 
@@ -1369,7 +1369,7 @@ html:has(.site-menu:popover-open) {
 }
 
 .news dd a {
-  color: var(--color-accent);
+  color: var(--color-link);
   text-decoration: none;
 }
 

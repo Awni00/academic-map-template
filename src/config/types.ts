@@ -305,7 +305,13 @@ export type ThemeAppearance = "light" | "dark";
 /**
  * Every colour token a theme supplies, without the `--color-` / `--graph-`
  * prefixes those become in CSS. Values may be any CSS colour; `defineTheme`
- * fills omitted ones with `color-mix()` expressions derived from the core.
+ * fills omitted ones with mixes derived from the core.
+ *
+ * `link` and `annotation` are optional roles split off the accent: links in
+ * running text, and the words and marks that open a note (`<Term>`,
+ * `<HoverNote>`). Each falls back to the accent, so a theme that sets neither
+ * looks exactly as it would without them. Everything else interactive — nav,
+ * pills, buttons, the graph — stays on `accent`.
  *
  * The semantic colours come in pairs. The bare token (`warning`) is the
  * palette's real hue and is only used for graphic elements — callout rules,
@@ -318,6 +324,12 @@ export type ThemeColors = {
   bg: string;
   "bg-soft": string;
   "bg-soft-2": string;
+  /**
+   * Menus, sheets and other surfaces that float over the page. A light theme
+   * keeps `bg`; a dark one is lifted toward `fg`, as elevation reads in dark
+   * UIs. Text is drawn on it, so it is contrast-checked like `bg`.
+   */
+  "surface-raised": string;
   fg: string;
   "fg-soft": string;
   muted: string;
@@ -328,6 +340,11 @@ export type ThemeColors = {
   accent: string;
   "accent-soft": string;
   "accent-line": string;
+  link: string;
+  "link-line": string;
+  annotation: string;
+  "annotation-soft": string;
+  "annotation-line": string;
   danger: string;
   "danger-text": string;
   warning: string;
@@ -432,7 +449,7 @@ export type JustifyMinWidth = "all" | "tablet";
 export type HoverNoteMarker = "superscript" | "bracket";
 /** "card" uses the page palette; "inverted" reverses it. */
 export type HoverNoteAppearance = "card" | "inverted";
-/** "dotted" draws a soft dotted underline under a `<Term>`; "none" leaves just the accent colour. */
+/** "dotted" draws a soft dotted underline under a `<Term>`; "none" leaves just the annotation colour. */
 export type TermUnderline = "dotted" | "none";
 
 export type RecentWritingSelect = "featured-first" | "recent" | "featured";

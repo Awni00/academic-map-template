@@ -85,6 +85,43 @@ colors: {
 }
 ```
 
+### Levels of control
+
+You can stop at any of these three levels:
+
+1. **Three colours.** `bg`, `fg` and `accent`. Everything else is derived,
+   and the accent is used for everything interactive.
+2. **Optional roles.** Split two jobs off the accent when you want them to
+   look different:
+
+   | Role         | Paints                                                     | Default    |
+   | ------------ | ---------------------------------------------------------- | ---------- |
+   | `link`       | Links in running text, and their underline                 | `accent`   |
+   | `annotation` | `<Term>` words and `<HoverNote>` marks, and their highlight | `accent`   |
+
+   ```ts
+   colors: {
+     bg: "#fffdf8",
+     fg: "#1b1a17",
+     accent: "#8a3324",
+     link: "#1f5f8b"   // links go blue; terms, nav and pills keep the accent
+   }
+   ```
+
+   The accent keeps everything else: the current nav item, pill and button
+   hovers, the table of contents, publication links, asides, and the graph's
+   highlights.
+
+3. **Full overrides.** Any token in the table below, stated literally. Each
+   role has companions you can set too: `link-line` (link underline),
+   `annotation-soft` (the highlight while a note is open) and
+   `annotation-line` (a term's dotted underline). Left out, they are mixed from
+   their role — or, if the role itself is unset, copied from the accent's own
+   `accent-line` / `accent-soft`.
+
+A role that is not set costs nothing: the site looks exactly as it would
+without it.
+
 Giving a theme the same `id` as a built-in replaces it. That is the supported
 way to retune a shipped theme — do that rather than editing
 `src/config/defaults/themes.ts`, so template updates keep reaching you.
@@ -96,10 +133,11 @@ Each becomes a CSS custom property: `bg` → `--color-bg`, `graph-hub` →
 
 | Group        | Tokens                                                                                                                   |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Surfaces     | `bg`, `bg-soft`, `bg-soft-2`                                                                                             |
+| Surfaces     | `bg`, `bg-soft`, `bg-soft-2`, `surface-raised`                                                                           |
 | Text         | `fg`, `fg-soft`, `muted`, `muted-2`                                                                                      |
 | Lines        | `border`, `border-soft`, `rule`                                                                                          |
 | Accent       | `accent`, `accent-soft`, `accent-line`                                                                                   |
+| Roles        | `link`, `link-line`, `annotation`, `annotation-soft`, `annotation-line`                                                  |
 | Semantics    | `danger`, `warning`, `success`, `info`, `example`, `quote`, each with a `-text` variant                                  |
 | Graph        | `graph-hub`, `graph-sub-hub`, `graph-paper`, `graph-post`, `graph-note`, `graph-teaching`, `graph-project`, `graph-edge` |
 | Placeholders | `placeholder-a`, `placeholder-b`                                                                                         |
@@ -198,11 +236,24 @@ fails the build on anything unreadable:
 | `fg-soft`                                                  | 5.5:1                         | Secondary prose                             |
 | `muted`                                                    | 4.5:1                         | Small UI text; AA                           |
 | `muted-2`                                                  | 3:1                           | Micro-labels only                           |
-| `accent`                                                   | 4.5:1                         | Links are text                              |
+| `accent`, `link`, `annotation`                             | 4.5:1                         | Links, terms and note marks are text        |
 | `*-text`                                                   | 4.5:1                         | Semantic colours used as text               |
 | `danger`, `warning`, `success`, `info`, `example`, `quote` | 3:1                           | Rules and icons                             |
 | `graph-*` nodes                                            | 3:1                           | Graphic objects                             |
 | `border`, `rule`                                           | 1.2:1                         | Advisory warning, not an error              |
+
+Text also appears on `surface-raised`, the surface behind the phone menu, the
+contents and filter sheets and the map's inspector. There `fg`, `fg-soft`,
+`muted` and `accent` must clear 4.5:1 and `muted-2` 3:1. A light theme's
+raised surface is its `bg`. A dark one is lifted up to 9% toward `fg`, so it
+separates from the page, but only as far as those colours stay readable on
+it; a theme whose `muted` is close to its limit gets a smaller lift. Set
+`surface-raised` yourself to choose it.
+
+Two colours are also measured against the tint they sit on rather than `bg`:
+`accent` on `accent-soft` (publication links) and `annotation` on
+`annotation-soft` (a term or note mark while its note is open). Both must
+clear 4.5:1.
 
 Failures name the token and the measured ratio:
 
@@ -210,9 +261,15 @@ Failures name the token and the measured ratio:
 Error: Theme "seminar" token "muted": #c9c9c9 on #fffdf8 is 1.66:1, below the 4.5:1 required
 ```
 
-Derived `color-mix()` values cannot be measured — only a browser can resolve
-them — so they are reported as "verify it by eye" rather than passing silently.
-If you want a token checked, state it as a literal colour.
+Derived tokens are measured too. When the colours they are mixed from are
+literal and opaque, the mix is worked out at build time and emitted as hex. A
+derived grey or tint that would miss its target is nudged back toward the
+colour that clears it — a grey toward `fg`, a highlight toward `bg` — just far
+enough to pass. So if your `fg` and `accent` are readable, nothing you left out
+can fail; most themes clear every target at the usual mix and are not moved. Only
+a mix of something the build cannot read — a `var()`, a translucent colour —
+stays a `color-mix()` for the browser to resolve; those are reported as
+"verify it by eye" rather than passing silently.
 
 Translucent colours are fine for any token except `bg`. They are measured as
 they are actually seen, blended over `bg`, so `rgba(20, 20, 20, 0.15)` on white

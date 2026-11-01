@@ -14,10 +14,13 @@ import type { ThemeInput } from "../config/types";
  * the hued semantics fall back to accessible defaults for the appearance you
  * declare. Fill in more as you want more control.
  *
- * `npm run validate` checks every theme defined here for contrast, so a colour
- * that would be unreadable fails the build with the measured ratio rather than
- * shipping. Derived `color-mix()` values cannot be measured and are reported
- * as "verify by eye".
+ * Two optional roles split jobs off the accent: `link` for links in running
+ * text and `annotation` for `<Term>` words and `<HoverNote>` marks. Each
+ * defaults to the accent. See "Levels of control" in docs/theming.md.
+ *
+ * `npm run validate` checks every theme defined here for contrast, derived
+ * tokens included, so a colour that would be unreadable fails the build with
+ * the measured ratio rather than shipping.
  *
  * The dev server reads this at startup — restart it after editing.
  */
@@ -32,6 +35,7 @@ export const customThemes: readonly ThemeInput[] = [
   //     fg: "#1b1a17",
   //     accent: "#8a3324",
   //     // Optional — anything you leave out is derived from the three above.
+  //     link: "#1f5f8b",
   //     muted: "#6a655c",
   //     "graph-teaching": "#3f6b46"
   //   }
