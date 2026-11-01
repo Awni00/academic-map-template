@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { overlaps, placeLabel, wrapLabel } from "../../src/lib/graph/labelLayout";
+import {
+  overlaps,
+  placeLabel,
+  placeRequiredLabel,
+  screenToGraph,
+  wrapLabel
+} from "../../src/lib/graph/labelLayout";
 
 // Monospace stand-in: every character is 6 units wide.
 const measure = (text: string) => text.length * 6;
@@ -69,5 +75,37 @@ describe("placeLabel", () => {
     expect(below.y0).toBeGreaterThan(node.y);
     expect(placeLabel(node, size, { ...opts, taken: [above, below] })).toBeNull();
     expect(overlaps(above, below)).toBe(false);
+  });
+});
+
+describe("placeRequiredLabel", () => {
+  const view = { x0: 0, y0: 0, x1: 400, y1: 300 };
+  const options = { radius: 10, gap: 8, margin: 6, view };
+  const size = { width: 120, height: 36 };
+  const node = { x: 80, y: 80 };
+
+  it("goes above the node when nothing is in the way", () => {
+    const box = placeRequiredLabel(node, size, options, []);
+    expect(box.y1).toBeLessThanOrEqual(node.y);
+  });
+
+  it("moves below the node when the legend covers the space above", () => {
+    const legend = { x0: 12, y0: 12, x1: 145, y1: 54 };
+    const box = placeRequiredLabel(node, size, options, [legend]);
+    expect(box.y0).toBeGreaterThanOrEqual(node.y);
+    expect(overlaps(box, legend)).toBe(false);
+  });
+
+  it("keeps its usual place when both sides are covered", () => {
+    const everywhere = { x0: 0, y0: 0, x1: 400, y1: 300 };
+    expect(placeRequiredLabel(node, size, options, [everywhere])).toEqual(placeLabel(node, size, options));
+  });
+});
+
+describe("screenToGraph", () => {
+  it("undoes the canvas transform and the device pixel ratio", () => {
+    // Zoom 2 on a 2x screen, origin moved to (100, 50) device pixels.
+    const box = screenToGraph({ x0: 50, y0: 25, x1: 150, y1: 75 }, { a: 4, d: 4, e: 100, f: 50 }, 2);
+    expect(box).toEqual({ x0: 0, y0: 0, x1: 50, y1: 25 });
   });
 });

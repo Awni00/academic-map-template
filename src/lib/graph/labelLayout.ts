@@ -121,6 +121,41 @@ export function placeLabel(
   return null;
 }
 
+/**
+ * Where a label that must always be shown (a hub's) goes: as `placeLabel`
+ * puts it, but clear of `blocked` — whatever is painted over the canvas, like
+ * the legend — when either side of the node is. When neither is, it goes where
+ * it would have anyway: half-covered is better than missing.
+ */
+export function placeRequiredLabel(
+  node: { x: number; y: number },
+  size: { width: number; height: number },
+  options: Omit<Parameters<typeof placeLabel>[2], "taken">,
+  blocked: readonly Box[]
+): Box {
+  const clear = blocked.length ? placeLabel(node, size, { ...options, taken: [...blocked] }) : null;
+  return clear ?? (placeLabel(node, size, options) as Box);
+}
+
+/**
+ * A rectangle in CSS pixels over a canvas, in the units of the canvas's
+ * current transform (`a`, `d` scale and `e`, `f` offset, as `getTransform`
+ * gives them, in device pixels; `dpr` device pixels per CSS pixel).
+ */
+export function screenToGraph(
+  box: Box,
+  transform: { a: number; d: number; e: number; f: number },
+  dpr: number
+): Box {
+  const { a, d, e, f } = transform;
+  return {
+    x0: (box.x0 * dpr - e) / a,
+    x1: (box.x1 * dpr - e) / a,
+    y0: (box.y0 * dpr - f) / d,
+    y1: (box.y1 * dpr - f) / d
+  };
+}
+
 export function overlaps(a: Box, b: Box): boolean {
   return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 }

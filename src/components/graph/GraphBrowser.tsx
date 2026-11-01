@@ -8,6 +8,7 @@ import {
   type TopicsDensity,
   type TopicsSort
 } from "../../config";
+import type { Box } from "../../lib/graph/labelLayout";
 import type { EntryNode, GraphIndex, WritingBrowserState } from "../../lib/graph/types";
 import { hubMemberCounts } from "../../lib/graph/clusterLayout";
 import { searchWriting, toSearchDocuments } from "../../lib/search/writingSearch";
@@ -67,6 +68,9 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   const [sheetInset, setSheetInset] = useState(0);
   const canvasSlotRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
+  const legendRef = useRef<HTMLUListElement | null>(null);
+  // Where the legend sits over the canvas, so labels and the fit avoid it.
+  const [legendBox, setLegendBox] = useState<Box | null>(null);
   const nodeById = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
   const tags = useMemo(() => [...new Set(graph.nodes.flatMap((node) => node.tags))].sort(), [graph.nodes]);
   const typeCounts = useMemo(() => {
@@ -118,6 +122,32 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     query.addEventListener("change", update);
     return () => query.removeEventListener("change", update);
   }, []);
+
+  // Measure the legend against the canvas slot. It wraps with the canvas
+  // width, and is hidden (zero-sized) on a phone, where nothing need avoid it.
+  useLayoutEffect(() => {
+    const legend = legendRef.current;
+    const slot = canvasSlotRef.current;
+    if (view !== "map" || !legend || !slot) return;
+    const measure = () => {
+      const l = legend.getBoundingClientRect();
+      const c = slot.getBoundingClientRect();
+      setLegendBox((current) => {
+        const next =
+          l.width && l.height
+            ? { x0: l.left - c.left, y0: l.top - c.top, x1: l.right - c.left, y1: l.bottom - c.top }
+            : null;
+        const same =
+          current && next && (["x0", "y0", "x1", "y1"] as const).every((key) => Math.abs(current[key] - next[key]) < 0.5);
+        return same || current === next ? current : next;
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(legend);
+    observer.observe(slot);
+    return () => observer.disconnect();
+  }, [view, narrow]);
 
   // Fit the canvas to the window: whatever height is left below the canvas's
   // top edge, less a small gap. Measured from the page top, not the viewport,
@@ -263,6 +293,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
                 labelSide={graphConfig.layout.labelSide}
                 fitPad={narrow ? 30 : 44}
                 bottomInset={narrow ? sheetInset : 0}
+                obstacles={legendBox ? [legendBox] : undefined}
                 zoomControls={!narrow}
                 // One meaning for every node, hubs included. Clicking a hub
                 // used to also dim the map down to its immediate neighbours,
@@ -274,7 +305,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
               />
               {/* What the glyphs mean, on the map itself. Filtering lives in
                   the toolbar; this only reads. */}
-              <ul className="graph-legend" aria-label="Legend">
+              <ul className="graph-legend" aria-label="Legend" ref={legendRef}>
                 {presentTypes.map((type) => (
                   <li key={type}>
                     <TypeLabel type={type} />
