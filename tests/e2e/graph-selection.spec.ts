@@ -142,7 +142,7 @@ test("the map agrees with the panel after a view switch", async ({ page }) => {
   await page.goto("/writing?view=list");
   // The server renders the default view and the URL's view is applied after
   // hydration, so a click before then would be overwritten by it.
-  await expect(page.getByRole("tab", { name: "list" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("tab", { name: "list" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "map" }).click();
   await waitForMap(page);
   await expect(page.locator(".preview-pane")).toContainText(/(Select|Tap) a node on the map/);

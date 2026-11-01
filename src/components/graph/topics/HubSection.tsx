@@ -1,96 +1,46 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { getEntryType, isHubType, type TopicsConfig, type TopicsDensity, type TopicsSort } from "../../../config";
-import type { EntryNode, GraphIndex } from "../../../lib/graph/types";
+import { getEntryType, type TopicsConfig, type TopicsDensity } from "../../../config";
+import type { EntryNode } from "../../../lib/graph/types";
+import Icon from "../browser/icons";
 import PagedList from "./PagedList";
 import PreviewList from "./PreviewList";
-import SortBar from "./SortBar";
-import { DEFAULT_DIR, sortEntries } from "./sort";
 
 type HubSectionProps = {
+  id: string;
   hub: EntryNode;
-  graph: GraphIndex;
-  visibleEntries: Set<string>;
-  nodeById: Map<string, EntryNode>;
+  /** The hub's pages, already filtered and sorted by TopicsView. */
+  entries: EntryNode[];
   config: TopicsConfig;
   density: TopicsDensity;
-  showDensityToggle: boolean;
-  onDensity: (d: TopicsDensity) => void;
 };
 
-function linkedEntriesFor(hub: EntryNode, graph: GraphIndex): string[] {
-  return [
-    ...new Set([...(graph.linkedFrom[hub.id] ?? []), ...(graph.linksTo[hub.id] ?? [])])
-  ].filter((id) => id !== hub.id);
-}
-
-export default function HubSection({
-  hub,
-  graph,
-  visibleEntries,
-  nodeById,
-  config,
-  density,
-  showDensityToggle,
-  onDensity
-}: HubSectionProps) {
-  const [sort, setSort] = useState<TopicsSort>(config.defaultSort);
+export default function HubSection({ id, hub, entries, config, density }: HubSectionProps) {
   const [page, setPage] = useState(1);
-
-  const linked = useMemo(() => {
-    const ids = linkedEntriesFor(hub, graph).filter((id) => visibleEntries.has(id));
-    const entries: EntryNode[] = [];
-    for (const id of ids) {
-      const node = nodeById.get(id);
-      if (node && !isHubType(node.type)) entries.push(node);
-    }
-    return sortEntries(entries, sort);
-  }, [hub, graph, visibleEntries, nodeById, sort]);
-
-  if (linked.length === 0) return null;
+  // A new order or filter starts the hub's list from its first page again.
+  useEffect(() => setPage(1), [entries]);
 
   const showSummary = config.showHubSummaries && Boolean(hub.summary);
 
   return (
-    <section className="topics-hub">
+    <section className="topics-hub" id={id}>
+      <p className="topics-hub__kicker">{getEntryType(hub.type).label}</p>
       <header className="topics-hub__head">
-        <div className="topics-hub__heading">
-          <span className="topics-hub__kicker">{getEntryType(hub.type).label}</span>
-          <a className="topics-hub__title" href={hub.url}>
-            {hub.title}
-          </a>
-        </div>
-        <div className="topics-hub__actions">
-          <a className="topics-hub__open" href={hub.url}>
-            Open hub →
-          </a>
-        </div>
+        <h2 className="topics-hub__title">
+          <a href={hub.url}>{hub.title}</a>
+        </h2>
+        <a className="btn btn--outline btn--small" href={hub.url}>
+          Open hub
+          <Icon name="arrow" className="btn__arrow" />
+        </a>
       </header>
       {showSummary && <p className="topics-hub__sum">{hub.summary}</p>}
-      <div className="topics-hub__meta">
-        <strong>
-          {linked.length} {linked.length === 1 ? "entry" : "entries"}
-        </strong>{" "}
-        linked
-      </div>
-      <SortBar
-        sortOptions={config.sortOptions}
-        activeSort={sort}
-        onSort={(field) => {
-          setSort((current) =>
-            current.field === field
-              ? { field, dir: current.dir === "desc" ? "asc" : "desc" }
-              : { field, dir: DEFAULT_DIR[field] }
-          );
-          setPage(1);
-        }}
-        showDensityToggle={showDensityToggle}
-        density={density}
-        onDensity={onDensity}
-      />
+      <p className="topics-hub__meta">
+        {entries.length} {entries.length === 1 ? "page" : "pages"}
+      </p>
       {config.paginationMode === "paged" ? (
         <PagedList
-          entries={linked}
+          entries={entries}
           pageSize={config.pageSize}
           page={page}
           onPageChange={setPage}
@@ -98,12 +48,7 @@ export default function HubSection({
           hubUrl={hub.url}
         />
       ) : (
-        <PreviewList
-          entries={linked}
-          pageSize={config.pageSize}
-          density={density}
-          hubUrl={hub.url}
-        />
+        <PreviewList entries={entries} pageSize={config.pageSize} density={density} hubUrl={hub.url} />
       )}
     </section>
   );

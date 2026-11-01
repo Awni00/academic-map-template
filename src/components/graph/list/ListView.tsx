@@ -1,188 +1,66 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import {
-  getEntryType,
-  writingConfig,
-  type EntryType,
-  type TopicsDensity,
-  type TopicsSort,
-  type TopicsSortField
-} from "../../../config";
+import type { TopicsDensity, TopicsSort, TopicsSortField } from "../../../config";
 import type { EntryNode } from "../../../lib/graph/types";
-import DensityToggle from "../DensityToggle";
+import EntryRow from "../browser/EntryRow";
 import { DEFAULT_DIR, sortEntries } from "../topics/sort";
 
 type ListViewProps = {
+  /** The pages the toolbar's search and filters leave. */
   entries: EntryNode[];
-  activeTypes: EntryType[];
-  onToggleType: (t: EntryType) => void;
-  typeCounts: Record<string, number>;
+  sort: TopicsSort;
+  sortOptions: readonly TopicsSortField[];
+  onSort: (sort: TopicsSort) => void;
+  density: TopicsDensity;
 };
 
-export default function ListView({
-  entries,
-  activeTypes,
-  onToggleType,
-  typeCounts
-}: ListViewProps) {
-  const config = writingConfig.browser.list;
-  const [sort, setSort] = useState<TopicsSort>(config.defaultSort);
-  const [density, setDensity] = useState<TopicsDensity>(config.density);
-
+/**
+ * Every page in one list. From tablet width up the rows line up as columns
+ * under a sticky header whose labels also sort, the same sort the toolbar's
+ * Sort menu sets; on a phone the header goes and the rows stack.
+ */
+export default function ListView({ entries, sort, sortOptions, onSort, density }: ListViewProps) {
   const sorted = useMemo(() => sortEntries(entries, sort), [entries, sort]);
 
-  const onSort = (field: TopicsSortField) => {
-    setSort((current) =>
-      current.field === field
-        ? { field, dir: current.dir === "desc" ? "asc" : "desc" }
-        : { field, dir: DEFAULT_DIR[field] }
+  const header = (field: TopicsSortField | undefined, label: string, className: string) => {
+    if (!field || !sortOptions.includes(field)) return <span className={className}>{label}</span>;
+    const current = sort.field === field;
+    return (
+      <button
+        type="button"
+        className={className}
+        aria-pressed={current}
+        onClick={() =>
+          onSort(
+            current
+              ? { field, dir: sort.dir === "desc" ? "asc" : "desc" }
+              : { field, dir: DEFAULT_DIR[field] }
+          )
+        }
+      >
+        {label}
+        {current && <span aria-hidden="true">{sort.dir === "desc" ? " ↓" : " ↑"}</span>}
+      </button>
     );
   };
 
+  if (sorted.length === 0) {
+    return <p className="wb-empty">No pages match the search and filters.</p>;
+  }
+
   return (
-    <div className={`listpage listpage--${density}`}>
-      <ListToolbar
-        activeTypes={activeTypes}
-        onToggleType={onToggleType}
-        typeCounts={typeCounts}
-        showTypeFilter={config.showTypeFilter}
-        showDensityToggle={config.showDensityToggle}
-        density={density}
-        onDensity={setDensity}
-      />
-      <div className="listpage-table">
-        <div className="listrow listrow--head">
-          <SortHeader
-            className="lc lc-type"
-            field="type"
-            label="Type"
-            sort={sort}
-            sortable={config.sortOptions.includes("type")}
-            onSort={onSort}
-          />
-          <SortHeader
-            className="lc lc-title"
-            field="title"
-            label="Title"
-            sort={sort}
-            sortable={config.sortOptions.includes("title")}
-            onSort={onSort}
-          />
-          <span className="lc lc-tags">Tags</span>
-          <SortHeader
-            className="lc lc-date"
-            field="date"
-            label="Date"
-            sort={sort}
-            sortable={config.sortOptions.includes("date")}
-            onSort={onSort}
-          />
-        </div>
-        {sorted.map((entry) => (
-          <a key={entry.id} className="listrow" href={entry.url}>
-            <span className="lc lc-type">
-              <span
-                className="swatch"
-                style={{
-                  background: getEntryType(entry.type).graph.color
-                }}
-              />
-              <span className="lc-typelabel">{getEntryType(entry.type).label}</span>
-            </span>
-            <span className="lc lc-title">
-              <span className="lc-titletext">{entry.title}</span>
-              {entry.summary && <span className="lc-summary">{entry.summary}</span>}
-            </span>
-            <span className="lc lc-tags">
-              {entry.tags.slice(0, 3).map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </span>
-            <span className="lc lc-date">{entry.date ?? ""}</span>
-          </a>
-        ))}
+    <div className="listpage wb-rows-host">
+      <div className="wb-colhead">
+        {header("type", "Type", "wb-colhead__type")}
+        {header("title", "Title", "wb-colhead__title")}
+        {header(undefined, "Tags", "wb-colhead__tags")}
+        {header("date", "Date", "wb-colhead__date")}
       </div>
-    </div>
-  );
-}
-
-type SortHeaderProps = {
-  className: string;
-  field: TopicsSortField;
-  label: string;
-  sort: TopicsSort;
-  sortable: boolean;
-  onSort: (field: TopicsSortField) => void;
-};
-
-function SortHeader({ className, field, label, sort, sortable, onSort }: SortHeaderProps) {
-  if (!sortable) return <span className={className}>{label}</span>;
-  const isActive = sort.field === field;
-  const cls = isActive ? `${className} lc--sort is-active` : `${className} lc--sort`;
-  return (
-    <button type="button" className={cls} aria-pressed={isActive} onClick={() => onSort(field)}>
-      {label}
-      {isActive && (
-        <span className="topics-sortbar__arrow" aria-hidden="true">
-          {sort.dir === "desc" ? " ↓" : " ↑"}
-        </span>
-      )}
-    </button>
-  );
-}
-
-type ListToolbarProps = {
-  activeTypes: EntryType[];
-  onToggleType: (t: EntryType) => void;
-  typeCounts: Record<string, number>;
-  showTypeFilter: boolean;
-  showDensityToggle: boolean;
-  density: TopicsDensity;
-  onDensity: (d: TopicsDensity) => void;
-};
-
-function ListToolbar({
-  activeTypes,
-  onToggleType,
-  typeCounts,
-  showTypeFilter,
-  showDensityToggle,
-  density,
-  onDensity
-}: ListToolbarProps) {
-  if (!showTypeFilter && !showDensityToggle) return null;
-  return (
-    <div className="list-toolbar">
-      {showTypeFilter ? (
-        <div className="list-toolbar__types">
-          <span className="topics-sortbar__label">Types</span>
-          <div className="list-toolbar__chips">
-            {writingConfig.entryTypes
-              .filter((t) => (typeCounts[t] ?? 0) > 0)
-              .map((type) => {
-                const entryType = getEntryType(type);
-                const cfg = entryType.graph;
-                const active = activeTypes.includes(type);
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className="graph-button graph-button--type"
-                    style={{ ["--swatch" as any]: cfg?.color }}
-                    aria-pressed={active}
-                    onClick={() => onToggleType(type)}
-                  >
-                    {entryType.label}
-                    <span style={{ color: "var(--color-muted-2)" }}>{typeCounts[type]}</span>
-                  </button>
-                );
-              })}
-          </div>
-        </div>
-      ) : (
-        <span />
-      )}
-      {showDensityToggle && <DensityToggle density={density} onDensity={onDensity} />}
+      <ul className="wb-rows wb-rows--tags">
+        {sorted.map((entry) => (
+          <EntryRow key={entry.id} entry={entry} density={density} showTags />
+        ))}
+      </ul>
     </div>
   );
 }

@@ -16,12 +16,12 @@ export const defaultSiteConfig = {
     scholar: "https://scholar.google.com/"
   },
   nav: [
-    { label: "Home", href: "/" },
-    { label: "Writing", href: "/writing" },
-    { label: "Publications", href: "/publications" },
-    { label: "Research", href: "/research" },
-    { label: "Teaching", href: "/teaching" },
-    { label: "CV", href: "/cv.pdf" }
+    { label: "Home", href: "/", icon: "house" },
+    { label: "Writing", href: "/writing", icon: "waypoints" },
+    { label: "Publications", href: "/publications", icon: "book-open" },
+    { label: "Research", href: "/research", icon: "flask-conical" },
+    { label: "Teaching", href: "/teaching", icon: "graduation-cap" },
+    { label: "CV", href: "/cv.pdf", icon: "file-text" }
   ],
   homepage: {
     hero: {

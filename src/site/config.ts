@@ -41,13 +41,15 @@ export const siteConfigOverrides: SiteConfigOverrides = {
   //     scholar: "https://scholar.google.com/"
   //   },
   //   // Replaces the default nav entirely — list every item you want.
+  //   // `icon` shows in the phone menu (names: src/config/navIcons.ts); give
+  //   // every item one, or leave them all out for a text-only menu.
   //   nav: [
-  //     { label: "Home", href: "/" },
-  //     { label: "Writing", href: "/writing" },
-  //     { label: "Publications", href: "/publications" },
-  //     { label: "Research", href: "/research" },
-  //     { label: "Teaching", href: "/teaching" },
-  //     { label: "CV", href: "/cv.pdf" }
+  //     { label: "Home", href: "/", icon: "house" },
+  //     { label: "Writing", href: "/writing", icon: "waypoints" },
+  //     { label: "Publications", href: "/publications", icon: "book-open" },
+  //     { label: "Research", href: "/research", icon: "flask-conical" },
+  //     { label: "Teaching", href: "/teaching", icon: "graduation-cap" },
+  //     { label: "CV", href: "/cv.pdf", icon: "file-text" }
   //   ],
   //   // Homepage sections. Each can be switched off with `enabled: false`.
   //   homepage: {

@@ -1,4 +1,5 @@
 import type { BundledTheme } from "shiki";
+import type { NavIconName } from "./navIcons";
 
 export type EntryType = string;
 
@@ -76,6 +77,12 @@ export type TopicsSortDir = "asc" | "desc";
 export type TopicsSort = { field: TopicsSortField; dir: TopicsSortDir };
 export type PublicationAbstractDisplay = "inline" | "popup" | "hidden";
 
+/**
+ * The Topics and List views of the writing browser. Both share its toolbar:
+ * `sortOptions` are the choices in its Sort menu (and, in List, the column
+ * labels that sort), and `showDensityToggle` adds a row-density switch to that
+ * menu. Filters are the toolbar's, the same in every view.
+ */
 export type TopicsConfig = {
   showHubSummaries: boolean;
   density: TopicsDensity;
@@ -89,6 +96,10 @@ export type TopicsConfig = {
 export type ListConfig = {
   density: TopicsDensity;
   showDensityToggle: boolean;
+  /**
+   * @deprecated Ignored. Type filters now live in the toolbar's Filters panel,
+   * shared by every view. Kept so existing configs still type-check.
+   */
   showTypeFilter: boolean;
   defaultSort: TopicsSort;
   sortOptions: readonly TopicsSortField[];
@@ -221,7 +232,11 @@ export type SiteConfig = {
    * `linkedin`, `orcid`, …) take a URL; anything else may be a `CustomLink`.
    */
   links: Record<string, string | CustomLink>;
-  nav: readonly { label: string; href: string }[];
+  /**
+   * The header's links. `icon` (a name from `navIconNames`) is drawn beside
+   * the label in the phone menu; give every item one, or the menu shows none.
+   */
+  nav: readonly { label: string; href: string; icon?: NavIconName }[];
   homepage: {
     hero: HeroConfig;
     researchSummary: { enabled: boolean; source: string };

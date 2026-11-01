@@ -240,6 +240,32 @@ export const siteConfigOverrides = {
 } satisfies SiteConfigOverrides;
 ```
 
+## Navigation
+
+`site.nav` lists the header's links, in order. Arrays replace the default, so
+list every item you want:
+
+```ts
+nav: [
+  { label: "Home", href: "/", icon: "house" },
+  { label: "Writing", href: "/writing", icon: "waypoints" },
+  { label: "CV", href: "/cv.pdf", icon: "file-text" }
+]
+```
+
+The header shows the links inline while they fit on one line beside the site
+name. When they do not, and on any phone held sideways, it becomes an app bar:
+the name, the theme toggle, and a menu button that opens the links as a sheet.
+The switch follows the nav's real length, so a short nav stays inline even on
+a phone.
+
+`icon` is optional: a [Lucide](https://lucide.dev/icons) name from the list in
+`src/config/navIcons.ts`, drawn beside the label in that menu. Give every item
+an icon or none of them; with some missing the menu shows none, so the labels
+keep one edge, and `npm run validate` warns. To use an icon not on the list,
+add its name there and its component in `src/components/layout/navIcons.ts`.
+Links to a PDF are marked "PDF" in the menu, and links off the site "↗".
+
 ## Homepage Hero
 
 The homepage opens with a "margin card": your photo, a short caption (name,

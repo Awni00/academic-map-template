@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "validate": "tsx scripts/validate.ts",
     "new:entry": "tsx scripts/new-entry.ts",
+    "gallery": "tsx scripts/gallery.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
