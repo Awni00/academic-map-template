@@ -35,11 +35,18 @@ export const defaultGraphConfig = {
       hubRepulsion: 140,
       entryRepulsion: 45,
       repulsionRange: 220,
+      // Off by default: hubs spread only through the shared charge above.
+      hubHubRepulsion: 0,
+      hubHubRange: 1000,
       groupDistance: 36,
       groupPull: 0.3,
       linkLength: 40,
       crossLinkLength: 80,
       crossLinkStrength: 0.15,
+      // The same as a cross link until a site sets them, so a hub's listed
+      // pages are held no differently from any other link between groups.
+      hubLinkLength: 80,
+      hubLinkStrength: 0.15,
       minGap: 18,
       centerPull: 0.07
     }

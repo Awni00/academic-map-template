@@ -4,6 +4,7 @@ import {
   centerForce,
   clusterForce,
   hubMemberCounts,
+  hubRepulsionForce,
   parentHubs,
   seedPositions
 } from "../../src/lib/graph/clusterLayout";
@@ -75,6 +76,34 @@ describe("clusterForce", () => {
     expect(far.vx).toBeLessThan(0);
     expect(pinned.vx).toBe(0);
     expect(pinned.vy).toBe(0);
+  });
+});
+
+describe("hubRepulsionForce", () => {
+  it("pushes hubs apart and leaves pages and pinned hubs alone", () => {
+    const a = { id: "a", x: 0, y: 0, vx: 0, vy: 0 };
+    const b = { id: "b", x: 100, y: 0, vx: 0, vy: 0 };
+    const pinned = { id: "c", x: 0, y: 100, vx: 0, vy: 0, fx: 0 };
+    const page = { id: "a/one", x: 10, y: 0, vx: 0, vy: 0 };
+    const force = hubRepulsionForce(new Set(["a", "b", "c"]), 500, 1000);
+    force.initialize([a, b, pinned, page]);
+    force(1);
+    expect(a.vx).toBeLessThan(0);
+    expect(b.vx).toBeGreaterThan(0);
+    expect(a.vy).toBeLessThan(0);
+    expect(pinned.vx).toBe(0);
+    expect(pinned.vy).toBe(0);
+    expect(page.vx).toBe(0);
+  });
+
+  it("stops at its range", () => {
+    const a = { id: "a", x: 0, y: 0, vx: 0, vy: 0 };
+    const b = { id: "b", x: 300, y: 0, vx: 0, vy: 0 };
+    const force = hubRepulsionForce(new Set(["a", "b"]), 500, 200);
+    force.initialize([a, b]);
+    force(1);
+    expect(a.vx).toBe(0);
+    expect(b.vx).toBe(0);
   });
 });
 

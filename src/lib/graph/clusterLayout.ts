@@ -130,6 +130,54 @@ export function clusterForce(parents: Map<string, string>, distance: number, str
 }
 
 /**
+ * Repulsion between hubs alone, with its own strength and reach.
+ *
+ * The shared many-body charge cannot do this job: a hub's charge pushes every
+ * node in range, its own members included, so raising it to spread the topics
+ * also loosens each group. This acts only between pairs of hubs, so the topics
+ * can be spread across the canvas while their groups stay tight, and links
+ * between groups still lean related topics toward each other.
+ *
+ * Same falloff and units as d3's many-body force (a push of `strength / d` per
+ * unit of alpha), so `strength` reads on the same scale as `hubRepulsion`.
+ * Beyond `range` two hubs stop pushing. Pinned hubs are not moved, but still
+ * push the others.
+ */
+export function hubRepulsionForce(hubs: ReadonlySet<string>, strength: number, range: number) {
+  let members: SimNode[] = [];
+  const force = (alpha: number) => {
+    if (strength <= 0) return;
+    for (let i = 0; i < members.length; i += 1) {
+      for (let j = i + 1; j < members.length; j += 1) {
+        const a = members[i];
+        const b = members[j];
+        let dx = (b.x ?? 0) - (a.x ?? 0);
+        let dy = (b.y ?? 0) - (a.y ?? 0);
+        // Two hubs on the same spot have no direction to push along; split
+        // them along a fixed one rather than a random one, for a repeatable map.
+        if (dx === 0 && dy === 0) dx = 1e-3 * (j - i);
+        let d2 = dx * dx + dy * dy;
+        if (d2 > range * range) continue;
+        d2 = Math.max(d2, 1);
+        const k = (strength * alpha) / d2;
+        if (a.fx == null) {
+          a.vx = (a.vx ?? 0) - dx * k;
+          a.vy = (a.vy ?? 0) - dy * k;
+        }
+        if (b.fx == null) {
+          b.vx = (b.vx ?? 0) + dx * k;
+          b.vy = (b.vy ?? 0) + dy * k;
+        }
+      }
+    }
+  };
+  force.initialize = (nodes: SimNode[]) => {
+    members = nodes.filter((node) => hubs.has(node.id));
+  };
+  return force;
+}
+
+/**
  * A gentle pull of every node toward the origin, stronger across the canvas's
  * short side.
  *
