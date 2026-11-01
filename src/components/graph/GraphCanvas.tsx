@@ -34,7 +34,13 @@ import {
 } from "../../lib/graph/nodeDrag";
 import { curvedArrow, curvedEdge } from "../../lib/graph/edgeGeometry";
 import { arrowMode } from "../../lib/graph/graphSettings";
-import { placeLabel, wrapLabel, type Box } from "../../lib/graph/labelLayout";
+import {
+  placeLabel,
+  placeRequiredLabel,
+  screenToGraph,
+  wrapLabel,
+  type Box
+} from "../../lib/graph/labelLayout";
 import type { GraphIndex } from "../../lib/graph/types";
 import type {
   GraphConfigBase,
@@ -103,6 +109,12 @@ type GraphCanvasProps = {
    * bottom sheet — so the fit centres the graph in what stays visible.
    */
   bottomInset?: number;
+  /**
+   * Rectangles of the canvas that something painted over it covers — the
+   * legend — in CSS pixels from the canvas's top-left. Labels are placed clear
+   * of them, and the fit keeps glyphs out from under any along the top edge.
+   */
+  obstacles?: Box[];
   /** Show +, −, and fit buttons in the corner of the canvas. */
   zoomControls?: boolean;
   /** What hovering a node does. Defaults to the site's `graph.hover`. */
@@ -180,6 +192,7 @@ export default function GraphCanvas({
   hubLayout = "force",
   fitPad,
   bottomInset = 0,
+  obstacles,
   zoomControls = false,
   hover: hoverConfig = graphConfig.hover,
   selectionStyle = graphConfig.selection.style,
@@ -242,7 +255,11 @@ export default function GraphCanvas({
   // Labels for the frame being painted: the boxes already taken, and the hover
   // labels held back to be drawn last, on top of everything (see
   // `drawHoverLabels`). Reset at the start of every frame.
-  const labelsRef = useRef<FrameLabels>({ taken: [], glyphs: [], deferred: [] });
+  const labelsRef = useRef<FrameLabels>({ taken: [], glyphs: [], deferred: [], blocked: [] });
+  // Read at paint time, so a legend that changes size reaches the next frame
+  // without re-creating the canvas callbacks.
+  const obstaclesRef = useRef<Box[]>([]);
+  obstaclesRef.current = obstacles ?? [];
   // Pixels per graph unit as of the last paint. Glyphs are sized in screen
   // pixels, so hit-testing has to know the zoom to know how big a node is.
   const zoomRef = useRef(1);
@@ -848,8 +865,12 @@ export default function GraphCanvas({
     if (!anchorNode || typeof anchorNode.x !== "number") {
       const box = boundingBox(nodes);
       if (!box) return;
+      // Keep the top row of glyphs below anything covering the top edge.
+      const covered = Math.max(0, ...(obstacles ?? []).map((box) => box.y1));
+      const glyph = Math.max(0, ...nodes.map((node) => radiusOf(node)));
+      const headroom = Math.max(LABEL_HEADROOM, covered + glyph + 4 - padding);
       const usableW = width - padding * 2;
-      const usableH = height - bottomInset - padding * 2 - LABEL_HEADROOM;
+      const usableH = height - bottomInset - padding * 2 - headroom;
       const zoom = Math.max(
         0.05,
         Math.min(
@@ -861,7 +882,7 @@ export default function GraphCanvas({
       // `centerAt` puts a point at the middle of the whole canvas. Shifting it
       // by half the covered strip, less half the label headroom, centres the
       // graph in the part the reader can actually see.
-      const shiftPx = (bottomInset - LABEL_HEADROOM) / 2;
+      const shiftPx = (bottomInset - headroom) / 2;
       fg.centerAt?.(box.cx, box.cy + shiftPx / zoom, duration);
       fg.zoom?.(zoom, duration);
       return;
@@ -1105,8 +1126,15 @@ export default function GraphCanvas({
           // drawing beforehand would place edges at the previous tick's
           // positions and let them trail visibly behind a dragged node.
           // `destination-over` puts them back underneath the glyphs.
-          onRenderFramePre={() => {
-            labelsRef.current = { taken: [], glyphs: [], deferred: [] };
+          onRenderFramePre={(ctx: CanvasRenderingContext2D) => {
+            const transform = ctx.getTransform();
+            const dpr = ctx.canvas.width / Math.max(1, ctx.canvas.clientWidth);
+            labelsRef.current = {
+              taken: [],
+              glyphs: [],
+              deferred: [],
+              blocked: obstaclesRef.current.map((box) => screenToGraph(box, transform, dpr))
+            };
           }}
           onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
             ctx.save();
@@ -1390,6 +1418,8 @@ type FrameLabels = {
   /** Every glyph painted this frame, so hover labels can avoid covering one. */
   glyphs: (Box & { id: string })[];
   deferred: { node: any; radius: number; kind: "focus" | "neighbour" }[];
+  /** `obstacles`, in graph units for this frame. No label goes on one. */
+  blocked: Box[];
 };
 
 /**
@@ -1459,20 +1489,19 @@ function paintLabel(
   const padY = PLATE_PAD_Y * px;
   const width = Math.max(...lines.map((line) => ctx.measureText(line).width)) + padX * 2;
   const height = lines.length * lineHeight + padY * 2;
-  const box = placeLabel(
-    node,
-    { width, height },
-    {
-      radius,
-      gap: style.gap * px,
-      margin: LABEL_MARGIN * px,
-      view: viewBox(ctx),
-      prefer: node._labelSide === "bottom" ? "below" : undefined,
-      taken: avoid
-        ? [...labels.taken, ...labels.glyphs.filter((glyph) => glyph.id !== node.id)]
-        : undefined
-    }
-  );
+  const options = {
+    radius,
+    gap: style.gap * px,
+    margin: LABEL_MARGIN * px,
+    view: viewBox(ctx),
+    prefer: node._labelSide === "bottom" ? ("below" as const) : undefined
+  };
+  const box = avoid
+    ? placeLabel(node, { width, height }, {
+        ...options,
+        taken: [...labels.taken, ...labels.glyphs.filter((glyph) => glyph.id !== node.id), ...labels.blocked]
+      })
+    : placeRequiredLabel(node, { width, height }, options, labels.blocked);
   if (!box) {
     ctx.restore();
     return false;
