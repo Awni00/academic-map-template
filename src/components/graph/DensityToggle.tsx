@@ -13,23 +13,15 @@ type Props = {
   onDensity: (d: TopicsDensity) => void;
 };
 
+/** Row density for Topics and List; shown in the Sort panel when enabled. */
 export default function DensityToggle({ density, onDensity }: Props) {
   return (
-    <span className="density-toggle">
-      <span className="topics-sortbar__label">View</span>
-      <span className="topics-sortbar__group">
-        {DENSITIES.map((d) => (
-          <button
-            key={d}
-            type="button"
-            className={d === density ? "topics-sortbar__btn is-active" : "topics-sortbar__btn"}
-            aria-pressed={d === density}
-            onClick={() => onDensity(d)}
-          >
-            {DENSITY_LABEL[d]}
-          </button>
-        ))}
-      </span>
+    <span className="density-toggle" role="group" aria-label="Row density">
+      {DENSITIES.map((d) => (
+        <button key={d} type="button" aria-pressed={d === density} onClick={() => onDensity(d)}>
+          {DENSITY_LABEL[d]}
+        </button>
+      ))}
     </span>
   );
 }

@@ -12,6 +12,21 @@ The template is designed to stay static-first and sync-friendly:
 - Downstream sites can keep this repository as an upstream remote and merge
   template improvements over time.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/gallery/writing-map-dark.jpg">
+  <img alt="The writing map at desktop, tablet, and phone sizes" src="docs/gallery/writing-map.jpg">
+</picture>
+
+One design across desktop, tablet, and phone: the writing collection as a map,
+topics, or a list behind one toolbar; articles with a contents sheet on narrow
+screens; and a header that becomes an app bar on phones. More in the
+[gallery](docs/gallery/README.md).
+
+<p>
+  <img alt="Homepage at three sizes" src="docs/gallery/home.jpg" width="49%">
+  <img alt="An article at three sizes" src="docs/gallery/article.jpg" width="49%">
+</p>
+
 ## Requirements
 
 - Node `>=22.12.0`

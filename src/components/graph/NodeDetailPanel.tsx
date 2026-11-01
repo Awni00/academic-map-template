@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { getEntryType } from "../../config";
+import { formatDate } from "../../lib/dates";
 import type { EntryNode } from "../../lib/graph/types";
 
 type NodeDetailPanelProps = {
@@ -56,7 +57,11 @@ export default function NodeDetailPanel({
           {type.label}
         </span>
         {isCurrent && <span className="node-panel__here">This page</span>}
-        {showDate && node.date && <span className="node-panel__date">{node.date}</span>}
+        {showDate && node.date && (
+          <time className="node-panel__date" dateTime={node.date}>
+            {formatDate(node.date)}
+          </time>
+        )}
       </div>
       {/*
         Not a heading. On an entry page its text starts as — and often is — the

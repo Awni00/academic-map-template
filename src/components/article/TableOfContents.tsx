@@ -27,6 +27,19 @@ export default function TableOfContents({ headings, tocConfig = DEFAULT_TOC_CONF
 
   if (items.length === 0) return <p className="muted">No headings yet.</p>;
 
+  return <TocList items={items} activeId={activeId} />;
+}
+
+/** The list itself, shared by the sidebar and the phone's contents sheet. */
+export function TocList({
+  items,
+  activeId,
+  onNavigate
+}: {
+  items: Heading[];
+  activeId: string | null;
+  onNavigate?: () => void;
+}) {
   return (
     <ul className="toc toc--strip" aria-label="Table of contents">
       {items.map((heading) => (
@@ -38,6 +51,7 @@ export default function TableOfContents({ headings, tocConfig = DEFAULT_TOC_CONF
           <a
             href={`#${heading.slug}`}
             aria-current={activeId === heading.slug ? "true" : undefined}
+            onClick={onNavigate}
           >
             <span className="toc-dot" aria-hidden="true" />
             <span className="toc-tip">{heading.text}</span>
@@ -54,7 +68,7 @@ export default function TableOfContents({ headings, tocConfig = DEFAULT_TOC_CONF
  * id is the topmost heading whose top has crossed the readable boundary
  * below the sticky site header.
  */
-function useScrollSpy(slugs: string[]): string | null {
+export function useScrollSpy(slugs: string[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {

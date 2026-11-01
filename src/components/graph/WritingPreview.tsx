@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { graphConfig } from "../../config";
+import { getEntryType, graphConfig } from "../../config";
 import type { GraphHoverConfig } from "../../config/types";
 import { resolveHover } from "../../lib/graph/graphSettings";
 import { hubMemberCounts } from "../../lib/graph/clusterLayout";
@@ -9,6 +9,8 @@ import { writingEntryUrl } from "../../lib/routes/paths";
 import GraphCanvas from "./GraphCanvas";
 import HubList from "./HubList";
 import NodeDetailPanel from "./NodeDetailPanel";
+import NodeIcon, { type NodeShape } from "./NodeIcon";
+import Icon from "./browser/icons";
 
 /**
  * The "Explore Writing" widget that sits on the homepage below the hero.
@@ -138,9 +140,6 @@ export default function WritingPreview({
             {description}
           </p>
         </div>
-        <a className="cta" href={clickTarget}>
-          Open full map →
-        </a>
       </header>
 
       {needsGraph && (
@@ -170,14 +169,29 @@ export default function WritingPreview({
 
       {needsCards && (
         <div className="writing-preview__cards">
-          {graph.hubs.map((hub) => (
-            <a className="topic-card" href={writingEntryUrl(hub.id)} key={hub.id}>
-              <strong>{hub.title}</strong>
-              {hub.summary && <p className="muted">{hub.summary}</p>}
-            </a>
-          ))}
+          {graph.hubs.map((hub) => {
+            const hubType = getEntryType(hub.type);
+            return (
+              <a className="topic-card" href={writingEntryUrl(hub.id)} key={hub.id}>
+                <strong>
+                  <NodeIcon shape={hubType.graph.shape as NodeShape} color={hubType.graph.color as string} />
+                  {hub.title}
+                  <span className="topic-card__count">{hubCounts.get(hub.id) ?? 0}</span>
+                </strong>
+                {hub.summary && <p className="muted">{hub.summary}</p>}
+              </a>
+            );
+          })}
         </div>
       )}
+
+      {/* The section's way onward: beside the heading on wide screens, the
+          closing action under the section on a phone (graph.css). */}
+      <a className="btn btn--tonal writing-preview__cta" href={clickTarget}>
+        <Icon name="map" />
+        Open full map
+        <Icon name="arrow" className="btn__arrow" />
+      </a>
     </section>
   );
 }

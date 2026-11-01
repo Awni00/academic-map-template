@@ -6,27 +6,31 @@
  * 680px. See README → "Homepage: Explore Writing widget". */
 
 .writing-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head cta"
+    "body body";
+  align-items: center;
+  column-gap: 24px;
   padding: 28px 0 8px;
   margin-bottom: 16px;
 }
 
 .writing-preview__header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 24px;
+  grid-area: head;
+  max-width: 60ch;
   margin-bottom: 18px;
 }
 
-.writing-preview__header > div {
-  flex: 1;
-  min-width: 0;
-  max-width: 60ch;
+.writing-preview__cta {
+  grid-area: cta;
+  align-self: start;
 }
 
-.writing-preview__header .cta {
-  flex-shrink: 0;
-  white-space: nowrap;
+.writing-preview > .writing-preview__graph,
+.writing-preview > .writing-preview__cards {
+  grid-area: body;
 }
 
 .writing-preview__header strong {
@@ -121,6 +125,24 @@
 
 /* View toggle, mobile (≤680px) — keyed off `mobileMode`. */
 @media (max-width: 680px) {
+  /* The way onward closes the section, full width, where the thumb is. */
+  .writing-preview {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "head"
+      "body"
+      "cta";
+  }
+
+  /* Through the parent, to outrank .btn's own size (globals.css loads later). */
+  .writing-preview > .writing-preview__cta {
+    display: flex;
+    width: 100%;
+    min-height: 46px;
+    margin-top: 14px;
+    font-size: 15px;
+  }
+
   .writing-preview--mobile-graph       > .writing-preview__graph { display: grid;  }
   .writing-preview--mobile-graph       > .writing-preview__cards { display: none;  }
   .writing-preview--mobile-topic-cards > .writing-preview__graph { display: none;  }
@@ -170,12 +192,22 @@
 }
 
 .topic-card strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 15px;
   margin-bottom: 4px;
   letter-spacing: -0.005em;
+}
+
+.topic-card__count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--color-muted-2);
 }
 
 .topic-card .muted {
@@ -185,219 +217,403 @@
   margin: 0;
 }
 
-/* ── Writing browser shell ──────────────────────────────────────────── */
+/* ── Writing browser ────────────────────────────────────────────────── */
 
-/* In the site column, like the header, footer, and every other page: the map
-   is a page of the site, not a separate app laid over it. GraphBrowser sizes
-   the canvas to the window, so the whole frame fits on one screen. */
+/* In the site column, like the header, footer, and every other page: the
+   browser is a page of the site, not a separate app laid over it. The three
+   views share one head and one toolbar, so switching view never moves a
+   control; only what is below the toolbar changes. Page chrome follows the
+   viewport (phone ≤ 599px, tablet, desktop > 980px — the map's JS uses the
+   same 980), while the entry rows follow their own width (.wb-rows-host). */
 .graph-browser {
   width: min(100% - 2 * var(--page-gutter), var(--content-wide));
   margin: 0 auto;
-  padding: 30px 0 28px;
+  padding: 28px 0 28px;
 }
 
-/* The page header: title and controls on one line, the description beneath.
-   Same type as .page-header h1, so /writing reads as a sibling of
-   /publications. */
+/* Title and view switcher on one line, the description beneath. Same type as
+   .page-header h1, so /writing reads as a sibling of /publications. */
 .graph-browser__head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "title controls"
-    "lede lede";
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 24px;
-  margin-bottom: 18px;
+  gap: 4px 16px;
 }
 
 .graph-browser__title {
-  grid-area: title;
+  margin: 0 auto 0 0;
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 42px;
   line-height: 1.08;
   letter-spacing: -0.018em;
   color: var(--color-fg);
-  margin: 0 0 8px;
-}
-
-.graph-browser__controls {
-  grid-area: controls;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .graph-browser__lede {
-  grid-area: lede;
+  flex-basis: 100%;
+  margin: 4px 0 0;
   font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.5;
   color: var(--color-muted);
-  margin: 0;
 }
 
-.graph-browser__count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-muted-2);
-  margin-left: 8px;
-  white-space: nowrap;
+.wb-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke-width: 1.8;
 }
 
-.graph-search {
-  position: relative;
+/* View switcher: icon and label; icons alone on a phone. */
+.wb-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg-soft-2);
+}
+
+.wb-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  min-width: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--color-muted);
+  font: 500 13.5px var(--font-ui);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-quiet), background var(--dur-fast) var(--ease-quiet);
+}
+
+.wb-switch button:hover {
+  color: var(--color-fg);
+}
+
+.wb-switch button[aria-selected="true"] {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--color-border);
+}
+
+/* Toolbar: search, Filters, Sort, the filters that are on, the count. */
+.wb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 16px;
+}
+
+.wb-search {
+  flex: 0 1 300px;
+  min-width: 0;
+  height: 40px;
   display: flex;
   align-items: center;
-}
-
-.graph-search__icon {
-  position: absolute;
-  left: 9px;
-  color: var(--color-muted-2);
-  pointer-events: none;
-}
-
-.graph-search .graph-input {
-  width: 220px;
-  height: 32px;
-  padding-left: 28px;
-}
-
-/* The browser's own clear control is a second, smaller "Reset". */
-.graph-search .graph-input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-}
-
-/* Two columns: the map, and the panel for whatever is selected in it.
-   There is no third column of controls — topic navigation happens on the
-   hub glyphs themselves and the filters live in the canvas bar, so nothing
-   here restates in text what the map already shows in ink. */
-.graph-browser__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 288px;
+  gap: 8px;
+  padding: 0 12px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--color-bg);
-  overflow: hidden;
-}
-
-/* Search */
-.graph-input {
-  display: block;
-  width: 100%;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-family: var(--font-ui);
-  color: var(--color-fg);
-  font-size: 13px;
-  outline: none;
-}
-
-.graph-input::placeholder {
   color: var(--color-muted-2);
+  transition: border-color var(--dur-fast) var(--ease-quiet), box-shadow var(--dur-fast) var(--ease-quiet);
 }
 
-.graph-input:focus {
-  border-color: var(--color-accent-line);
+.wb-search:focus-within {
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
-/* Type pills row */
-.graph-button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.graph-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
-  text-transform: lowercase;
-  color: var(--color-muted);
-  background: var(--color-bg);
-  border: 0.5px solid var(--color-border);
-  border-radius: 3px;
-  padding: 2px 7px;
-  cursor: pointer;
-  transition: color var(--dur-fast) var(--ease-quiet),
-    border-color var(--dur-fast) var(--ease-quiet),
-    background var(--dur-fast) var(--ease-quiet);
-}
-
-.graph-button:hover {
+.wb-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: none;
   color: var(--color-fg);
-  border-color: var(--color-rule);
+  font: 14px var(--font-ui);
 }
 
-.graph-button[aria-pressed="true"] {
-  color: var(--color-accent);
-  border-color: var(--color-accent-line);
-  background: var(--color-accent-soft);
-}
-
-.graph-button--type::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--swatch, var(--color-muted));
-  flex: 0 0 auto;
-}
-
-.graph-button__count {
+.wb-search input::placeholder {
   color: var(--color-muted-2);
 }
 
-.graph-button[aria-pressed="true"] .graph-button__count {
-  color: inherit;
-}
-
-.graph-button__caret {
-  font-size: 8px;
-  line-height: 1;
-}
-
-.graph-button__icon {
-  display: block;
-  flex: 0 0 auto;
-}
-
-/* Segmented control (focus / view) */
-.graph-seg {
+.wb-tool {
+  position: relative;
+  height: 40px;
   display: inline-flex;
-  box-sizing: border-box;
-  height: 32px;
-  background: var(--color-bg-soft-2);
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
-  padding: 2px;
-}
-
-.graph-seg button {
-  border: 0;
-  background: transparent;
-  color: var(--color-muted);
-  font-family: var(--font-ui);
-  font-size: 12px;
-  padding: 3px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-quiet),
-    color var(--dur-fast) var(--ease-quiet);
-}
-
-.graph-seg button[aria-pressed="true"] {
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   background: var(--color-bg);
   color: var(--color-fg);
+  font: 500 13.5px var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-quiet);
+}
+
+.wb-tool:hover {
+  border-color: var(--color-rule);
+}
+
+.wb-tool[aria-expanded="true"] {
+  border-color: var(--color-fg);
+}
+
+.wb-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font: 600 11px/18px var(--font-ui);
+  text-align: center;
+}
+
+.wb-active {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wb-active__chip {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 11px;
+  border: 1px solid var(--color-accent-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font: 500 12.5px var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-active__chip .wb-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.wb-count {
+  margin: 0 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* The panel Filters and Sort open: a card under the button. On a phone it
+   is a bottom sheet instead (see the end of this file). */
+.wb-menu {
+  position: relative;
+}
+
+.wb-menu__scrim {
+  display: none;
+}
+
+.wb-menu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 15;
+  width: 340px;
+  max-width: calc(100vw - 2 * var(--page-gutter));
+  padding: 6px 16px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.wb-menu__panel:has(.wb-sort) {
+  width: 240px;
+}
+
+.wb-panel__label {
+  margin: 10px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.wb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wb-chip {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  color: var(--color-fg-soft);
+  font: 13px var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-chip:hover {
+  border-color: var(--color-rule);
+}
+
+.wb-chip[aria-pressed="true"] {
+  border-color: var(--color-accent-line);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.wb-chip__count {
+  font-size: 11.5px;
+  color: var(--color-muted-2);
+}
+
+.wb-panel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.wb-text-button {
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: 13.5px var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-text-button:hover:not(:disabled) {
+  color: var(--color-fg);
+}
+
+.wb-text-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wb-done {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font: 500 13.5px var(--font-ui);
+  cursor: pointer;
+}
+
+.wb-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% + 20px);
+  min-height: 40px;
+  margin: 0 -10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-fg);
+  font: 14px var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.wb-option:hover {
+  background: var(--color-bg-soft);
+}
+
+.wb-option[aria-pressed="true"] {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.density-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--color-bg-soft-2);
+}
+
+.density-toggle button {
+  flex: 1;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--color-muted);
+  font: 12.5px var(--font-ui);
+  cursor: pointer;
+}
+
+.density-toggle button[aria-pressed="true"] {
+  background: var(--color-bg);
+  color: var(--color-fg);
   box-shadow: var(--shadow-sm);
+}
+
+:is(.wb-switch button, .wb-tool, .wb-chip, .wb-option, .wb-active__chip, .wb-done, .wb-text-button,
+  .density-toggle button, .topics-rail__item):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* An entry type, named the one way the browser names it. */
+.wb-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.wb-empty {
+  padding: 40px 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* The map's frame: the canvas, and the panel for whatever is selected in it.
+   Filters live in the toolbar and the legend on the canvas, so the frame holds
+   nothing but the map and what it describes. */
+.graph-browser__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  overflow: hidden;
 }
 
 /* Center canvas */
@@ -408,138 +624,25 @@
   background: var(--color-bg);
 }
 
-/* One row at every width, so its height never changes: the canvas below is
-   sized to the window once, and a bar that wrapped when the status appeared
-   would push the frame off the bottom of the screen. The chips scroll
-   sideways instead of wrapping (see .graph-typefilter). */
-.graph-canvas-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: 8px 14px;
-  min-height: 46px;
-  box-sizing: border-box;
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--color-border-soft);
-  background: var(--color-bg);
-}
-
-/* Filters live in the bar rather than a column beside the map, and the type
-   chips double as the legend — see the note in GraphBrowser's markup. */
-.graph-filters {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.graph-typefilter {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
-  gap: 4px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  /* Chips are small targets; let the strip settle on one. */
-  scroll-snap-type: x proximity;
-  /* A strip cut short fades out, saying there is more to scroll to. The
-     padding is what fades when it is not cut short, so a chip never does. */
-  padding-right: 16px;
-  margin-right: -16px;
-  mask-image: linear-gradient(to right, #000 calc(100% - 16px), transparent);
-}
-
-.graph-typefilter::-webkit-scrollbar {
-  display: none;
-}
-
-.graph-typefilter .graph-button {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-}
-
-.graph-tagfilter {
-  position: relative;
-  display: flex;
-  flex: 0 0 auto;
-}
-
-.graph-tagpop {
+/* What the glyphs mean, read off the map itself. It only reads, so it lets
+   the pointer through to the canvas. */
+.graph-legend {
   position: absolute;
-  z-index: 5;
-  top: calc(100% + 6px);
-  right: 0;
-  width: max-content;
-  max-width: min(320px, 70vw);
-  max-height: 260px;
-  overflow-y: auto;
-  display: grid;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  box-shadow: var(--shadow-md);
-}
-
-.graph-tagpop__list {
+  top: 12px;
+  left: 12px;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-}
-
-.graph-tagpop__clear {
-  justify-self: start;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--color-muted);
-  cursor: pointer;
-}
-
-.graph-tagpop__clear:hover {
-  color: var(--color-fg);
-}
-
-/* Filter report: only shown while a filter is on. */
-.graph-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--color-muted);
-  white-space: nowrap;
-}
-
-.graph-status__empty {
-  color: var(--color-muted-2);
-  font-family: var(--font-ui);
-  font-style: italic;
-  font-size: 12px;
-}
-
-.graph-status__reset {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--color-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-
-.graph-status__reset:hover {
-  color: var(--color-fg);
+  gap: 4px 14px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 /* d3-zoom calls preventDefault on touch, so without this a vertical swipe that
@@ -1066,228 +1169,323 @@
 
 /* ── Topics view ────────────────────────────────────────────────────── */
 
+/* The hubs as a rail beside their sections: a table of contents that follows
+   the scroll (TopicsView). On a phone the rail goes and the sections stack. */
 .topicspage {
-  background: var(--color-bg);
-  padding: 0 0 64px;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+  padding-bottom: 48px;
+}
+
+.topics-rail {
+  position: sticky;
+  top: calc(var(--site-header-height, 56px) + 16px);
+  display: grid;
+  gap: 2px;
+}
+
+.topics-rail .wb-panel__label {
+  margin: 4px 10px 6px;
+}
+
+.topics-rail__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--color-fg-soft);
+  font: 14px var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.topics-rail__item:hover {
+  background: var(--color-bg-soft);
+}
+
+.topics-rail__item[aria-current] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.topics-rail__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topics-rail__count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--color-muted-2);
 }
 
 .topicspage-body {
-  width: min(100% - 2 * var(--page-gutter), var(--content-wide));
-  margin: 0 auto;
-  padding: 22px 0 0;
+  min-width: 0;
 }
 
 .topics-hub {
-  padding: 30px 0 28px;
+  scroll-margin-top: calc(var(--site-header-height, 56px) + 16px);
+}
+
+.topics-hub + .topics-hub {
+  margin-top: 28px;
+  padding-top: 28px;
   border-top: 1px solid var(--color-rule);
 }
 
-.topics-hub:first-child {
-  border-top: 0;
-  padding-top: 6px;
-}
-
-.topics-hub__head {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 30px;
-  align-items: last baseline;
-  margin-bottom: 4px;
-}
-
 .topics-hub__kicker {
-  display: block;
+  margin: 0 0 2px;
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
-  margin-bottom: 4px;
 }
 
-.topics-hub__title {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 24px;
-  letter-spacing: -0.015em;
-  color: var(--color-fg);
-  text-decoration: none;
-}
-
-.topics-hub__title:hover {
-  color: var(--color-accent);
-}
-
-.topics-hub__actions {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-}
-
-.topics-hub__open {
-  color: var(--color-accent);
-  border-bottom: 1px solid var(--color-accent-line);
-  padding-bottom: 2px;
-  text-decoration: none;
-}
-
-.topics-hub__open:hover {
-  border-bottom-color: var(--color-accent);
-}
-
-.topics-hub__sum {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--color-fg-soft);
-  line-height: 1.55;
-  max-width: 64ch;
-  margin: 6px 0 12px;
-}
-
-.topics-hub__meta {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  color: var(--color-muted);
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border-soft);
-}
-
-.topics-hub__meta strong {
-  color: var(--color-fg);
-  font-weight: 500;
-}
-
-.topics-sortbar {
+.topics-hub__head {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 8px 0 4px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-muted-2);
-}
-
-.topics-sortbar__label {
-  color: var(--color-muted);
-}
-
-.topics-sortbar__group {
-  display: inline-flex;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.topics-sortbar__spacer {
-  flex: 1;
-}
-
-.topics-sortbar__btn {
-  background: none;
-  border: 0;
-  padding: 0;
+.topics-hub__title {
   margin: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: var(--color-muted);
-  cursor: pointer;
-}
-
-.topics-sortbar__btn:hover {
-  color: var(--color-fg);
-}
-
-.topics-sortbar__btn.is-active {
-  color: var(--color-fg);
-  border-bottom: 1px solid var(--color-fg);
-  padding-bottom: 1px;
-}
-
-.topics-sortbar__arrow {
-  margin-left: 2px;
-  opacity: 0.8;
-}
-
-.topics-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.topics-row {
-  display: grid;
-  grid-template-columns: 124px 1fr 84px;
-  gap: 22px;
-  padding: 12px 0;
-  border-top: 1px solid var(--color-border-soft);
-  align-items: baseline;
-}
-
-.topics-row--dense {
-  padding: 6px 0;
-}
-
-.topics-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 2px 9px 2px 7px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-fg-soft);
-  width: max-content;
-}
-
-.topics-chip__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-
-.topics-row__body {
-  min-width: 0;
-}
-
-.topics-row__title {
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.32;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.topics-hub__title a {
   color: var(--color-fg);
   text-decoration: none;
 }
 
-.topics-row--dense .topics-row__title {
-  font-size: 14.5px;
-}
-
-.topics-row__title:hover {
+.topics-hub__title a:hover {
   color: var(--color-accent);
 }
 
-.topics-row__sum {
-  display: block;
+.topics-hub__sum {
+  max-width: 64ch;
+  margin: 6px 0 4px;
   font-family: var(--font-body);
-  font-weight: 400;
-  font-size: 13.5px;
-  color: var(--color-muted);
-  line-height: 1.5;
-  margin-top: 2px;
-  max-width: 62ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-fg-soft);
 }
 
-.topics-row__date {
+.topics-hub__meta {
+  margin: 0 0 6px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+/* ── Entry rows (Topics and List) ───────────────────────────────────── */
+
+/* One row for both views, laid out by the width of the list it is in rather
+   than the screen's: stacked by default, columns from 560px of list. */
+.topicspage-body,
+.wb-rows-host {
+  container: wbrows / inline-size;
+}
+
+.wb-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.wb-row__link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "type date"
+    "main main";
+  gap: 2px 12px;
+  padding: 12px 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.wb-row__link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.wb-row__type {
+  grid-area: type;
+}
+
+.wb-row__date {
+  grid-area: date;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
   text-align: right;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--color-muted);
-  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
+.wb-row__main {
+  grid-area: main;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wb-row__title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16.5px;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  color: var(--color-fg);
+  transition: color var(--dur-fast) var(--ease-quiet);
+}
+
+.wb-row__link:hover .wb-row__title {
+  color: var(--color-accent);
+}
+
+.wb-row__sum {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.wb-row__tags {
+  grid-area: tags;
+  display: none;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 4px;
+}
+
+.wb-row__tags span {
+  padding: 1px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+.wb-row--dense .wb-row__link {
+  padding: 8px 0;
+}
+
+.wb-colhead {
+  display: none;
+}
+
+@container wbrows (min-width: 560px) {
+  .wb-row__link,
+  .wb-colhead {
+    grid-template-columns: 132px minmax(0, 1fr) 112px;
+    grid-template-areas: "type main date";
+    column-gap: 20px;
+  }
+
+  .wb-row__link {
+    padding: 14px 0;
+  }
+
+  .wb-row--dense .wb-row__link {
+    padding: 9px 0;
+  }
+
+  .wb-row__type,
+  .wb-row__date {
+    align-self: start;
+    padding-top: 3px;
+  }
+
+  .wb-row__sum {
+    max-width: 68ch;
+  }
+
+  /* Labels that sort, held under the site header while the list scrolls. */
+  .wb-colhead {
+    position: sticky;
+    top: var(--site-header-height, 56px);
+    z-index: 2;
+    display: grid;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-bg);
+  }
+
+  .wb-colhead > * {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--color-muted);
+  }
+
+  .wb-colhead button {
+    cursor: pointer;
+  }
+
+  .wb-colhead button:hover,
+  .wb-colhead button[aria-pressed="true"] {
+    color: var(--color-fg);
+  }
+
+  .wb-colhead__type { grid-area: type; }
+  .wb-colhead__title { grid-area: main; }
+  .wb-colhead__tags { grid-area: tags; display: none; }
+  .wb-colhead__date { grid-area: date; justify-self: end; }
+
+  .wb-colhead + .wb-rows > .wb-row:first-child {
+    border-top: 0;
+  }
+}
+
+@container wbrows (min-width: 760px) {
+  .wb-rows--tags .wb-row__link,
+  .wb-rows-host .wb-colhead {
+    grid-template-columns: 132px minmax(0, 1fr) 200px 112px;
+    grid-template-areas: "type main tags date";
+  }
+
+  .wb-rows--tags .wb-row__tags {
+    display: flex;
+    padding-top: 3px;
+  }
+
+  .wb-colhead__tags {
+    display: block;
+  }
+}
+
+/* Topic previews and pager, when a hub has more pages than `pageSize`. */
 .topics-preview-footer {
   display: flex;
   align-items: center;
@@ -1386,219 +1584,18 @@
   border-bottom-color: var(--color-accent);
 }
 
-/* ── List view ──────────────────────────────────────────────────────── */
+/* ── Tablet and phone ───────────────────────────────────────────────── */
 
-.listpage {
-  background: var(--color-bg);
-  padding: 0 0 64px;
-}
-
-.listpage-table {
-  width: min(100% - 2 * var(--page-gutter), 1180px);
-  margin: 18px auto 0;
-  font-family: var(--font-ui);
-}
-
-.listrow {
-  display: grid;
-  grid-template-columns: 120px 1fr 200px 100px;
-  gap: 22px;
-  align-items: start;
-  padding: 14px 14px;
-  border-bottom: 1px solid var(--color-border-soft);
-  text-decoration: none;
-  color: inherit;
-  transition: background var(--dur-fast) var(--ease-quiet);
-}
-
-.listrow:hover {
-  background: var(--color-bg-soft);
-}
-
-.listrow--head {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--color-muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.listrow--head:hover {
-  background: transparent;
-}
-
-.lc {
-  min-width: 0;
-}
-
-.lc-type {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding-top: 4px;
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-}
-
-.lc-type .swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.lc-typelabel {
-  color: var(--color-muted);
-  text-transform: capitalize;
-}
-
-.lc-title {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.lc-titletext {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--color-fg);
-  line-height: 1.3;
-  letter-spacing: -0.005em;
-}
-
-.listrow:hover .lc-titletext {
-  color: var(--color-accent);
-}
-
-.lc-summary {
-  font-size: 13px;
-  color: var(--color-muted);
-  line-height: 1.5;
-}
-
-.lc-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding-top: 3px;
-}
-
-.lc-tags span {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-muted);
-  border: 0.5px solid var(--color-border);
-  padding: 1.5px 6px;
-  border-radius: 3px;
-  background: var(--color-bg);
-}
-
-.lc-date {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--color-muted);
-  padding-top: 5px;
-  text-align: right;
-}
-
-/* ── List toolbar (type filter + density) ───────────────────────────── */
-
-.list-toolbar {
-  width: min(100% - 2 * var(--page-gutter), 1180px);
-  margin: 14px auto 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.list-toolbar__types {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-muted-2);
-}
-
-.list-toolbar__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.density-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-muted-2);
-}
-
-/* ── Sortable list-header buttons ───────────────────────────────────── */
-
-.lc--sort {
-  background: none;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: inherit;
-  cursor: pointer;
-  text-align: inherit;
-}
-
-.lc--sort:hover {
-  color: var(--color-fg);
-}
-
-.lc--sort.is-active {
-  color: var(--color-fg);
-}
-
-/* ── Density modifiers on listpage ──────────────────────────────────── */
-
-.listpage--minimal .lc-summary,
-.listpage--dense .lc-summary {
-  display: none;
-}
-
-.listpage--dense .listrow {
-  padding: 8px 14px;
-}
-
-/* ── Mobile ─────────────────────────────────────────────────────────── */
-
-/* Phone and narrow tablet: the map as an app. The header shrinks to a title
-   row and a search row, the frame fills the rest of the screen (GraphBrowser
-   measures it), and the panel becomes a sheet over the bottom of the map:
-   collapsed to say what was tapped, expanded on request for the rest. */
+/* Up to 980px the map is an app: the frame fills the rest of the screen
+   (GraphBrowser measures it), and the panel becomes a sheet over the bottom
+   of the map, collapsed to say what was tapped and expanded on request. */
 @media (max-width: 980px) {
   .graph-browser {
-    padding: 14px 0 12px;
-  }
-
-  .graph-browser__head {
-    grid-template-areas:
-      "title seg"
-      "search search";
-    row-gap: 10px;
-    margin-bottom: 10px;
+    padding: 16px 0 12px;
   }
 
   .graph-browser__title {
-    font-size: 28px;
-    margin: 0;
+    font-size: 30px;
   }
 
   /* The description earns its line on a desktop; on a phone that line is
@@ -1607,36 +1604,23 @@
     display: none;
   }
 
-  .graph-browser__controls {
-    display: contents;
-  }
-
-  .graph-search {
-    grid-area: search;
-  }
-
-  .graph-search .graph-input {
-    width: 100%;
-  }
-
-  .graph-browser__controls .graph-seg {
-    grid-area: seg;
+  .wb-toolbar {
+    margin: 14px 0 12px;
   }
 
   .graph-browser__grid {
     position: relative;
     display: flex;
     flex-direction: column;
-    border-radius: 10px;
   }
 
   .graph-panel--center {
     flex: 1;
   }
 
-  /* On a phone the map *is* the screen, so one finger pans it and two pinch,
-     as in any map app. That gives up scroll-through on the canvas: the page
-     scrolls from the chrome above it instead. Everywhere else keeps `pan-y`
+  /* Here the map *is* the screen, so one finger pans it and two pinch, as in
+     any map app. That gives up scroll-through on the canvas: the page scrolls
+     from the chrome above it instead. Everywhere else keeps `pan-y`
      (.graph-canvas__surface above), because there the canvas sits inside a
      page you scroll past. */
   .graph-browser .graph-canvas__surface {
@@ -1654,7 +1638,8 @@
     max-height: 64%;
     border: 0;
     border-top: 1px solid var(--color-border);
-    border-radius: 14px 14px 0 0;
+    border-radius: 16px 16px 0 0;
+    background: var(--color-surface-raised);
     box-shadow: 0 -8px 24px rgb(0 0 0 / 0.07);
     padding: 8px 16px 14px;
   }
@@ -1690,7 +1675,7 @@
     margin-top: 16px;
   }
 
-  /* Nothing selected: the hint, and the hubs as one swipeable row of chips. */
+  /* Nothing selected: the hint, and the hubs as chips that wrap. */
   .graph-panel--right .preview-prompt {
     font-size: 13px;
     border: 0;
@@ -1707,56 +1692,172 @@
 
   .graph-panel--right .hub-list {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
   }
 
-  .graph-panel--right .hub-list::-webkit-scrollbar {
-    display: none;
+  .graph-panel--right .hub-list li {
+    padding: 0;
   }
 
   .graph-panel--right .hub-list__row {
     width: auto;
-    padding: 5px 11px;
+    min-height: 36px;
+    padding: 0 12px;
     border: 1px solid var(--color-border);
-    border-radius: 999px;
-    gap: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg);
+    gap: 7px;
     white-space: nowrap;
-  }
-
-  .graph-canvas-bar {
-    padding: 8px 10px;
-  }
-
-  .hubsec-head {
-    grid-template-columns: 28px 1fr;
-  }
-
-  .hubsec-meta {
-    grid-column: 1 / -1;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .hubsec-grouprow {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .hubsec-list {
-    grid-template-columns: 1fr;
-  }
-
-  .listrow,
-  .listrow--head {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .lc-date {
-    text-align: left;
   }
 }
 
+/* Tablet: the sheet floats as a card in the corner, leaving the map wide. */
+@media (min-width: 600px) and (max-width: 980px) {
+  .graph-panel--right {
+    left: 12px;
+    right: auto;
+    bottom: 12px;
+    width: min(360px, 100% - 24px);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .topicspage {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+
+/* Phone: icons for the switcher and toolbar buttons (each keeps its name for
+   assistive tech), 44px targets, panels as bottom sheets, and the map from
+   edge to edge. */
+@media (max-width: 599px) {
+  .graph-browser__title {
+    font-size: 28px;
+  }
+
+  .wb-switch button {
+    height: 38px;
+    padding: 0 11px;
+  }
+
+  .wb-switch__label,
+  .wb-tool__label {
+    display: none;
+  }
+
+  .wb-search {
+    flex: 1 1 auto;
+    height: 44px;
+  }
+
+  .wb-search input {
+    font-size: 16px; /* Below 16px, iOS zooms the page on focus. */
+  }
+
+  .wb-tool {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .wb-tool .wb-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+  }
+
+  /* The badge says how many filters are on; the line under the toolbar says
+     what they leave. */
+  .wb-active {
+    display: none;
+  }
+
+  .wb-count {
+    display: none;
+  }
+
+  .wb-toolbar[data-filtering] .wb-count {
+    display: block;
+    flex-basis: 100%;
+    margin: 0;
+  }
+
+  .wb-menu {
+    position: static;
+  }
+
+  .wb-menu__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--color-scrim);
+  }
+
+  .wb-menu__panel,
+  .wb-menu__panel:has(.wb-sort) {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 41;
+    width: auto;
+    max-width: none;
+    max-height: 85dvh;
+    overflow: auto;
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-width: 1px 0 0;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .wb-menu__panel::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 6px;
+    border-radius: 2px;
+    background: var(--color-rule);
+  }
+
+  .wb-chip {
+    height: 40px;
+  }
+
+  .wb-option {
+    min-height: 48px;
+  }
+
+  .wb-done {
+    height: 44px;
+    padding: 0 18px;
+  }
+
+  .graph-browser__grid {
+    margin-inline: calc(-1 * var(--page-gutter));
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+
+  .graph-legend {
+    display: none;
+  }
+
+  .topicspage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topics-rail {
+    display: none;
+  }
+
+  .topics-hub__title {
+    font-size: 22px;
+  }
+}

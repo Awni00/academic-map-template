@@ -96,7 +96,10 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
                   />
                 ))}
               </div>
-              <a class="cta" href="/publications">All publications →</a>
+              <a class="btn btn--outline btn--small publications-more" href="/publications">
+                All publications
+                <svg class="btn__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </a>
             </section>
           )}
           {showNews && (
