@@ -1,0 +1,60 @@
+---
+/**
+ * A paper page built from the real `WritingEntryLayout`, with a synthetic
+ * entry rather than a content file, so the fixture adds no node to the site's
+ * graph. The entry is the hard case for the header: several authors with long
+ * affiliations, a long venue, long date labels, and a BibTeX record with lines
+ * wider than a phone. The body (ArticleBody.astro) holds the article
+ * components.
+ */
+import { getCollection } from "astro:content";
+
+import WritingEntryLayout from "../layouts/WritingEntryLayout.astro";
+import { buildGraphIndex } from "../lib/graph/buildGraph";
+import type { WritingEntryLike } from "../lib/graph/types";
+import ArticleBody from "./ArticleBody.astro";
+
+const entry: WritingEntryLike = {
+  id: "fixtures/article-layout",
+  data: {
+    title: "Article Layout Fixture",
+    type: "paper",
+    date: "2024-02-01",
+    displayDates: [
+      { label: "International Conference on Machine Learning (ICML 2024)", date: "2024-07-21" },
+      { label: "arXiv v1", date: "2024-02-01" }
+    ],
+    summary: "Internal fixture page for the article header, byline and body components.",
+    venue: "International Conference on Machine Learning (ICML 2024)",
+    tags: ["fixture"],
+    authors: [
+      { name: "Example Author", affiliation: "Department of Statistics and Data Science, Example University" },
+      { name: "Second Example Coauthor", affiliation: "Example Institute for Advanced Study" },
+      { name: "Third Coauthor", affiliation: "Example Research Laboratory" }
+    ],
+    external: { arxiv: "https://arxiv.org/abs/0000.00000", code: "https://github.com/example/fixture" },
+    bibtex: [
+      "@inproceedings{example2024fixture,",
+      "  title     = {Article Layout Fixture: A Deliberately Long Title for Testing How BibTeX Lines Wrap},",
+      "  author    = {Example Author and Second Example Coauthor and Third Coauthor},",
+      "  booktitle = {Proceedings of the 41st International Conference on Machine Learning},",
+      "  year      = {2024},",
+      "  url       = {https://example.com/writing/fixtures/article-layout}",
+      "}"
+    ].join("\n")
+  } as WritingEntryLike["data"]
+};
+
+const headings = [
+  { depth: 2, slug: "figures", text: "Figures" },
+  { depth: 2, slug: "embeds", text: "Embeds" },
+  { depth: 2, slug: "math", text: "Math" },
+  { depth: 2, slug: "lists", text: "Lists" },
+  { depth: 2, slug: "end", text: "End" }
+];
+
+const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
+const graph = buildGraphIndex(writingEntries, { collectWarnings: false }).index;
+---
+
+<WritingEntryLayout entry={entry} graph={graph} headings={headings} Content={ArticleBody} />

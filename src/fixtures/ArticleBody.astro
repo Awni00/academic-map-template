@@ -1,0 +1,148 @@
+---
+/**
+ * The body of the article-layout fixture (see ArticleLayout.astro): one of
+ * each article component in the configurations that have broken before —
+ * a width-capped figure beside margin asides, markdown in caption props, a
+ * lazy raster picture, embeds left at their default width, a toggle figure
+ * with long tab labels, display math too wide for the column (in prose, a
+ * callout and a statement), and nested lists.
+ *
+ * The heading ids are listed in ArticleLayout.astro's `headings`, which is
+ * what the contents pill reads; keep the two in step.
+ */
+import katex from "katex";
+
+import Aside from "../components/article/Aside.astro";
+import Callout from "../components/article/Callout.astro";
+import EmbedFrame from "../components/article/EmbedFrame.astro";
+import Figure from "../components/article/Figure.astro";
+import FigureGrid from "../components/article/FigureGrid.astro";
+import Picture from "../components/article/Picture.astro";
+import PlotlyFigure from "../components/article/PlotlyFigure.astro";
+import Statement from "../components/article/Statement.astro";
+import ToggleFigure from "../components/article/ToggleFigure.astro";
+import ToggleFigurePanel from "../components/article/ToggleFigurePanel.astro";
+import wave from "./assets/fixture-wave.png";
+
+const wideTex =
+  "\\mathcal{L}(\\theta) = \\sum_{t=1}^{T} \\mathbb{E}_{x_t \\sim p_\\theta(\\cdot \\mid x_{<t})} \\Big[ \\log \\frac{p_\\theta(x_t \\mid x_{<t})}{q_\\phi(x_t \\mid x_{<t}, z)} \\Big] + \\lambda \\, \\| W_1 W_2 \\cdots W_L \\|_F^2 + \\beta \\, \\mathrm{KL}\\big(q_\\phi(z \\mid x) \\,\\|\\, p(z)\\big)";
+const wideMath = katex.renderToString(wideTex, { displayMode: true, throwOnError: false });
+const shortMath = katex.renderToString("a^2 + b^2 = c^2", { displayMode: true, throwOnError: false });
+---
+
+<p>
+  A fixture page for the article layout. Every block below is one that has rendered wrongly on a
+  real site; each section names the case it holds.
+</p>
+
+<h2 id="figures">Figures</h2>
+
+<Aside>A margin aside, so this page lays out with <code>data-asides="margin"</code>.</Aside>
+
+<Figure
+  class="fixture-capped-figure"
+  src="/figures/example-chart.svg"
+  alt="Example chart, capped at 320px."
+  maxWidth="320px"
+  caption="A figure capped with `maxWidth: 320px`, with *emphasis*, **bold**, a [link](https://example.com) and $x^2$ in the caption prop."
+/>
+
+<FigureGrid
+  class="fixture-caption-grid"
+  columns={2}
+  caption="A grid caption prop with `var₀` in code and $\alpha_t$ in math."
+>
+  <Figure src="/figures/example-chart.svg" alt="Example chart." />
+  <Figure src="/figures/example-grid.svg" alt="Example grid." />
+</FigureGrid>
+
+<Figure class="fixture-lazy-picture">
+  <Picture slot="figure" src={wave} alt="A damped wave, as a lazy raster image." />
+  <Fragment slot="caption">A lazy raster picture. Its box should be 2:1 before the image loads.</Fragment>
+</Figure>
+
+<h2 id="embeds">Embeds</h2>
+
+<PlotlyFigure
+  class="fixture-default-plotly"
+  src="/figures/demo-plotly-example-scatter.html"
+  iframeTitle="Plotly figure at its default width"
+  caption="A PlotlyFigure with no width prop."
+  height="420px"
+  showOpenLink={false}
+/>
+
+<EmbedFrame
+  class="fixture-default-embed"
+  src="/figures/demo-plotly-example-bars.html"
+  title="Embed at its default width"
+  caption="An EmbedFrame with no width prop."
+  height="360px"
+  showOpenLink={false}
+/>
+
+<ToggleFigure class="fixture-toggle" ariaLabel="Fixture toggle variants">
+  <ToggleFigurePanel label="Baseline transformer">
+    <Figure src="/figures/example-chart.svg" alt="Example chart." caption="First panel." />
+  </ToggleFigurePanel>
+  <ToggleFigurePanel label="With relational attention">
+    <Figure src="/figures/example-grid.svg" alt="Example grid." caption="Second panel." />
+  </ToggleFigurePanel>
+  <ToggleFigurePanel label="Symbolic variant">
+    <Figure src="/figures/example-map.svg" alt="Example map." caption="Third panel." />
+  </ToggleFigurePanel>
+</ToggleFigure>
+
+<h2 id="math">Math</h2>
+
+<p>A display equation wider than the column, in prose:</p>
+<Fragment set:html={wideMath} />
+<p>A display equation that fits, which should show no fade:</p>
+<Fragment set:html={shortMath} />
+
+<Callout type="note" title="Inside a callout">
+  <p>The same equation inside a callout:</p>
+  <Fragment set:html={wideMath} />
+</Callout>
+
+<Statement label="Theorem" title="Inside a statement">
+  <p>And inside a statement:</p>
+  <Fragment set:html={wideMath} />
+</Statement>
+
+<h2 id="lists">Lists</h2>
+
+<ul class="fixture-nested-list">
+  <li>
+    A top-level item
+    <ul>
+      <li>A nested item</li>
+      <li>
+        Another nested item
+        <ul>
+          <li>A third level</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    A second top-level item
+    <ol>
+      <li>A nested numbered item</li>
+      <li>And another</li>
+    </ol>
+  </li>
+</ul>
+
+<ol>
+  <li>
+    A numbered item
+    <ul>
+      <li>With a nested bullet</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="end">End</h2>
+
+<p>The last section, so the contents pill has somewhere to point.</p>
