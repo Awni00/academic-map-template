@@ -353,6 +353,11 @@ as a path under `public/` (`src="/figures/plot.png"`) has its width and height
 read from the file at build time, so its box is reserved before it loads, as
 for an imported image.
 
+`TwoColumns` lays out any two blocks side by side. Give it a `caption` (prop
+or slot) and the pair becomes one figure with the caption underneath; don't
+follow it with an empty `Figure` that holds only the caption. For two images,
+`FigureGrid` is usually the better fit, since it also matches their frames.
+
 Interactive and video embeds use the same outer controls. `EmbedFrame` and
 `PlotlyFigure` fill the column by default (`width="100%"`), so cap them with
 `maxWidth` rather than setting a width. Existing `height` props on both remain
