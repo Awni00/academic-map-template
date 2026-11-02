@@ -49,10 +49,6 @@ export const defaultWritingConfig = {
       defaultDepth: 1,
       maxNodes: 20
     },
-    hubPages: {
-      autoRenderLinkedEntries: true,
-      groupLinkedEntriesBy: "type"
-    },
     toc: {
       default: {
         minDepth: 2,
@@ -64,8 +60,7 @@ export const defaultWritingConfig = {
       default: {
         toc: { where: "left" },
         localGraph: { where: "footer" },
-        linkedFrom: { where: "footer" },
-        related: { where: "footer" }
+        related: { where: "footer", withLocalGraph: false }
       },
       byType: {}
     },

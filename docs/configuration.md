@@ -556,10 +556,10 @@ Common fields:
   sites leave this at the default and opt in per entry with `article.mode` in
   frontmatter; set it here only for a type that is always abstract-only. See
   [Abstract-Only Entries](using-the-template.md#abstract-only-entries).
-- `article.placement`: type-level TOC, local graph, linked-from, and related-entry
+- `article.placement`: type-level TOC, local graph, and Related-list
   placement. To hide the local map for a type, set
   `placement.localGraph.where` to `"none"` — that is the only switch; there is
-  no separate boolean.
+  no separate boolean. See [Article Placement](#article-placement).
 - `article.asides`: default `<Aside>` placement.
 - `article.toc`: type-level heading depth defaults for the article table of
   contents.
@@ -567,6 +567,57 @@ Common fields:
 Replacing `entryTypes` is supported but advanced. Because arrays replace, a site
 that customizes the registry should define the complete intended registry in
 `src/site/config.ts`.
+
+## Article Placement
+
+Each writing page can show three pieces of navigation besides its body:
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `toc.where` | `"left"`, `"right"`, `"none"` | `"left"` (hubs, sub-hubs, teaching: `"none"`) |
+| `localGraph.where` | `"header"`, `"footer"`, `"none"` | `"footer"` (hubs, sub-hubs: `"header"`; teaching: `"none"`) |
+| `related.where` | `"footer"`, `"none"` | `"footer"` |
+| `related.withLocalGraph` | `true`, `false` | `false` |
+
+**Related** lists every entry this page links to or that links to it, once
+each, sorted by title. The local graph draws exactly those links, so the list
+stands in for it: by default it renders only on pages with no local graph
+(`localGraph.where: "none"`). Set `related.withLocalGraph: true` to show it
+under the graph as well, or `related.where: "none"` to never show it. The side
+columns hold only the table of contents.
+
+Placement resolves global default → entry type → site `byType` → frontmatter,
+field by field, so a partial override keeps everything it does not mention:
+
+```ts
+export const siteConfigOverrides = {
+  writing: {
+    entryLayout: {
+      placement: {
+        // Every page: never show the list.
+        default: { related: { where: "none" } },
+        // Hubs: show the list under the header graph too. The hub type's own
+        // `toc: "none"` and `localGraph: "header"` still apply.
+        byType: { hub: { related: { withLocalGraph: true } } }
+      }
+    }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+One entry can override it in frontmatter:
+
+```yaml
+article:
+  placement:
+    related:
+      withLocalGraph: true
+```
+
+Older placement keys still parse so existing content keeps building, and
+`npm run validate` warns about each one: `placement.linkedFrom` is ignored (the
+Related list now covers both directions), and `related.where` `"left"`,
+`"right"`, or `"sidebar"` render as `"footer"`.
 
 ## Article TOC Depth
 

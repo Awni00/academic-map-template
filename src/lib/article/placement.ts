@@ -4,8 +4,8 @@ import {
   type AsidePlacement,
   type EntryType,
   type PlacementGraph,
-  type PlacementNav,
-  type PlacementSpec,
+  type PlacementOverride,
+  type PlacementRelated,
   type PlacementToc
 } from "../../config";
 import type { WritingEntryLike } from "../graph/types";
@@ -17,8 +17,7 @@ import type { WritingEntryLike } from "../graph/types";
 export type ResolvedPlacement = {
   toc: { where: PlacementToc };
   localGraph: { where: PlacementGraph };
-  linkedFrom: { where: PlacementNav };
-  related: { where: PlacementNav };
+  related: { where: PlacementRelated; withLocalGraph: boolean };
 };
 
 /**
@@ -30,9 +29,14 @@ function normalizeToc(value: string | undefined): PlacementToc | undefined {
   if (value === "sidebar") return "right";
   return value as PlacementToc | undefined;
 }
-function normalizeNav(value: string | undefined): PlacementNav | undefined {
-  if (value === "sidebar") return "right";
-  return value as PlacementNav | undefined;
+
+/**
+ * "Related" is footer-only now. Legacy side-rail values ("left", "right",
+ * "sidebar") still parse and land in the footer; `npm run validate` warns.
+ */
+export function normalizeRelated(value: string | undefined): PlacementRelated | undefined {
+  if (value === undefined || value === "none") return value;
+  return "footer";
 }
 
 /**
@@ -43,8 +47,8 @@ function normalizeNav(value: string | undefined): PlacementNav | undefined {
 export function resolvePlacement(entry: WritingEntryLike): ResolvedPlacement {
   const type = entry.data.type as EntryType;
   const placementConfig = writingConfig.entryLayout.placement;
-  const fromDefault = placementConfig.default as Partial<PlacementSpec>;
-  const fromType = (placementConfig.byType as Record<string, Partial<PlacementSpec>>)[type] ?? {};
+  const fromDefault = placementConfig.default as PlacementOverride;
+  const fromType = (placementConfig.byType as Record<string, PlacementOverride>)[type] ?? {};
   const fromFrontmatter = entry.data.article?.placement ?? {};
 
   return {
@@ -62,29 +66,28 @@ export function resolvePlacement(entry: WritingEntryLike): ResolvedPlacement {
         fromDefault.localGraph?.where ??
         "footer"
     },
-    linkedFrom: {
-      where:
-        normalizeNav(fromFrontmatter.linkedFrom?.where) ??
-        fromType.linkedFrom?.where ??
-        fromDefault.linkedFrom?.where ??
-        "footer"
-    },
     related: {
       where:
-        normalizeNav(fromFrontmatter.related?.where) ??
-        fromType.related?.where ??
-        fromDefault.related?.where ??
-        "footer"
+        normalizeRelated(fromFrontmatter.related?.where) ??
+        normalizeRelated(fromType.related?.where) ??
+        normalizeRelated(fromDefault.related?.where) ??
+        "footer",
+      withLocalGraph:
+        fromFrontmatter.related?.withLocalGraph ??
+        fromType.related?.withLocalGraph ??
+        fromDefault.related?.withLocalGraph ??
+        false
     }
   };
 }
 
-/** True iff any section is placed in the given slot. */
-export function hasSlot(
-  placement: ResolvedPlacement,
-  slot: PlacementToc | PlacementGraph | PlacementNav
-): boolean {
-  return Object.values(placement).some((section) => section.where === slot);
+/**
+ * Whether the page renders the "Related" list. The local graph draws the same
+ * links, so by default the list shows only on pages without one.
+ */
+export function showRelatedList(placement: ResolvedPlacement): boolean {
+  if (placement.related.where === "none") return false;
+  return placement.localGraph.where === "none" || placement.related.withLocalGraph;
 }
 
 /**

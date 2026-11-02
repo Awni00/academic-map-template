@@ -42,8 +42,10 @@ import {
   effectiveAsides,
   resolveArticleMode,
   resolveAsides,
-  resolvePlacement
+  resolvePlacement,
+  showRelatedList
 } from "../lib/article/placement";
+import { relatedEntries } from "../lib/article/related";
 import { justifyClasses } from "../lib/article/justify";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
 import { externalLinkHref } from "../lib/publications/identifierUrls";
@@ -77,15 +79,7 @@ const asidesEffective = isAbstract
 
 const justifyClass = justifyClasses(themeConfig.typography.justify, entry.data.article?.justify);
 
-const linksTo = graph.linksTo[node.id] ?? [];
-const linkedFromIds = graph.linkedFrom[node.id] ?? [];
-const relatedIds = [...new Set([...linksTo, ...linkedFromIds])].slice(0, 6);
-const toLinkedItem = (id: string) => {
-  const item = byId.get(id);
-  return item ? { id, title: item.title, url: item.url } : null;
-};
-const linkedFrom = linkedFromIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
-const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const related = showRelatedList(placement) ? relatedEntries(graph, byId, node.id) : [];
 const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
@@ -120,30 +114,19 @@ const dateRows = displayDateRows?.length
     ? [{ date: formatDate(node.date) ?? node.date }]
     : [];
 
-// Slot derivation. The TOC lives in either the left or right grid
-// column; linkedFrom/related can also live there if explicitly placed.
-// An abstract has no heading structure to outline, so the TOC is
-// suppressed regardless of placement config. Linked-from, related, and
-// the local graph stay put — graph context is the point of these pages.
+// Slot derivation. The side columns hold only the TOC, in either the left
+// or right grid column. An abstract has no heading structure to outline, so
+// the TOC is suppressed regardless of placement config. The related list
+// and the local graph stay put — graph context is the point of these pages.
 const tocSide: "left" | "right" | "none" =
   isAbstract || placement.toc.where === "none" ? "none" : placement.toc.where;
-const linkedFromSide = placement.linkedFrom.where;
-const relatedSide = placement.related.where;
 const localGraphInHeader = placement.localGraph.where === "header";
 const localGraphInFooter = placement.localGraph.where === "footer";
-const linkedFromInFooter = linkedFromSide === "footer";
-const relatedInFooter = relatedSide === "footer";
 
-const sideHasContent = (side: "left" | "right"): boolean =>
-  (tocSide === side && tocHeadings.length > 0) ||
-  (linkedFromSide === side && linkedFrom.length > 0) ||
-  (relatedSide === side && related.length > 0);
+const renderLeft = tocSide === "left" && tocHeadings.length > 0;
+const renderRight = tocSide === "right" && tocHeadings.length > 0;
 
-const renderLeft = sideHasContent("left");
-const renderRight = sideHasContent("right");
-
-const renderFooter =
-  localGraphInFooter || linkedFromInFooter || relatedInFooter;
+const renderFooter = localGraphInFooter || related.length > 0;
 
 const components = {
   Aside,
@@ -170,13 +153,6 @@ const components = {
   YouTubeVideo
 };
 
-const renderSide = (side: "left" | "right") => ({
-  toc: tocSide === side && tocHeadings.length > 0,
-  linkedFrom: linkedFromSide === side && linkedFrom.length > 0,
-  related: relatedSide === side && related.length > 0
-});
-const left = renderSide("left");
-const right = renderSide("right");
 ---
 
 <BaseLayout title={node.title} description={node.summary} theme={entry.data.theme} autoHideHeader>
@@ -299,32 +275,10 @@ const right = renderSide("right");
       {
         renderLeft && (
           <aside class="article-sidebar article-sidebar--left" aria-label="Article sidebar (left)">
-            {left.toc && (
-              <section class="sidebar-section sidebar-section--toc">
-                <h2>On This Page</h2>
-                <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
-              </section>
-            )}
-            {left.linkedFrom && (
-              <section class="sidebar-section">
-                <h2>Linked from</h2>
-                <ul>
-                  {linkedFrom.map((item) => (
-                    <li><a href={item.url}>{item.title}</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {left.related && (
-              <section class="sidebar-section">
-                <h2>Related</h2>
-                <ul>
-                  {related.map((item) => (
-                    <li><a href={item.url}>{item.title}</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <section class="sidebar-section sidebar-section--toc">
+              <h2>On This Page</h2>
+              <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
+            </section>
           </aside>
         )
       }
@@ -372,32 +326,10 @@ const right = renderSide("right");
       {
         renderRight && (
           <aside class="article-sidebar article-sidebar--right" aria-label="Article sidebar (right)">
-            {right.toc && (
-              <section class="sidebar-section sidebar-section--toc">
-                <h2>On This Page</h2>
-                <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
-              </section>
-            )}
-            {right.linkedFrom && (
-              <section class="sidebar-section">
-                <h2>Linked from</h2>
-                <ul>
-                  {linkedFrom.map((item) => (
-                    <li><a href={item.url}>{item.title}</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {right.related && (
-              <section class="sidebar-section">
-                <h2>Related</h2>
-                <ul>
-                  {related.map((item) => (
-                    <li><a href={item.url}>{item.title}</a></li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            <section class="sidebar-section sidebar-section--toc">
+              <h2>On This Page</h2>
+              <TableOfContents client:load headings={headings} tocConfig={tocConfig} />
+            </section>
           </aside>
         )
       }
@@ -409,8 +341,7 @@ const right = renderSide("right");
         tocConfig={tocConfig}
         tocInFoot={false}
         showLocalGraph={localGraphInFooter}
-        linkedFrom={linkedFromInFooter ? linkedFrom : []}
-        related={relatedInFooter ? related : []}
+        related={related}
         bibtex={(entry.data as { bibtex?: string }).bibtex}
       />
     </div>
