@@ -157,12 +157,16 @@ const hasAny =
 </script>
 
 <style>
+  /* BibTeX keeps its own line breaks and indentation: a long field scrolls
+     sideways (with an edge fade, from overflowHint.ts) rather than wrapping
+     mid-value. The scroller stops short of the Copy button, so no line runs
+     underneath it. */
   .cite-body {
     position: relative;
     min-width: 0;
     background: var(--color-bg-soft);
     border-radius: 6px;
-    padding: 12px 44px 12px 14px;
+    padding: 12px 72px 12px 14px;
   }
   .cite-body__code {
     margin: 0;
@@ -173,9 +177,16 @@ const hasAny =
     font-size: var(--article-caption-size, 13px);
     line-height: 1.6;
     color: var(--color-fg-soft);
-    white-space: pre-wrap;
-    word-break: normal;
-    overflow-wrap: anywhere;
+    white-space: pre;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  /* Phones: the button takes a row of its own above the record, and the
+     record gets the full width. */
+  @media (max-width: 680px) {
+    .cite-body {
+      padding: 40px 14px 12px;
+    }
   }
   .cite-body__copy {
     position: absolute;
