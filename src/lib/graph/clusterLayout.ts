@@ -182,7 +182,7 @@ export function hubRepulsionForce(hubs: ReadonlySet<string>, strength: number, r
         const a = members[i];
         const b = members[j];
         let dx = (b.x ?? 0) - (a.x ?? 0);
-        let dy = (b.y ?? 0) - (a.y ?? 0);
+        const dy = (b.y ?? 0) - (a.y ?? 0);
         // Two hubs on the same spot have no direction to push along; split
         // them along a fixed one rather than a random one, for a repeatable map.
         if (dx === 0 && dy === 0) dx = 1e-3 * (j - i);
