@@ -1879,6 +1879,19 @@ body {
   border-top: 1px solid var(--color-rule);
 }
 
+/* A page with no body yet (a hub before its intro is written) drops the main
+   column, and the footer gives up its own top rule and margin, so the
+   header's divider is the only line between the header and the footer
+   rather than two rules around an empty band. */
+.article-main:not(:has(.article-hero, .article-content > *)) {
+  display: none;
+}
+
+.article-main:not(:has(.article-hero, .article-content > *)) ~ .entry-foot {
+  margin-top: 0;
+  border-top: 0;
+}
+
 .entry-foot-section {
   display: grid;
   grid-template-columns: 140px 1fr;

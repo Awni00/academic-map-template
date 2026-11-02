@@ -45,6 +45,7 @@ import {
   resolvePlacement
 } from "../lib/article/placement";
 import { justifyClasses } from "../lib/article/justify";
+import { relatedRepeatsLinkedFrom } from "../lib/article/linkLists";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
 import { externalLinkHref } from "../lib/publications/identifierUrls";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
@@ -81,12 +82,37 @@ const figureNumbers = entry.data.article?.figureNumbers ?? writingConfig.entryLa
 const linksTo = graph.linksTo[node.id] ?? [];
 const linkedFromIds = graph.linkedFrom[node.id] ?? [];
 const relatedIds = [...new Set([...linksTo, ...linkedFromIds])].slice(0, 6);
-const toLinkedItem = (id: string) => {
-  const item = byId.get(id);
-  return item ? { id, title: item.title, url: item.url } : null;
+type LinkedItem = {
+  id: string;
+  title: string;
+  url: string;
+  date?: string;
+  venue?: string;
+  summary?: string;
+  typeLabel: string;
 };
-const linkedFrom = linkedFromIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
-const related = relatedIds.map(toLinkedItem).filter(Boolean) as Array<{ id: string; title: string; url: string }>;
+const toLinkedItem = (id: string): LinkedItem | null => {
+  const item = byId.get(id);
+  return item
+    ? {
+        id,
+        title: item.title,
+        url: item.url,
+        date: item.date,
+        venue: item.venue,
+        summary: item.summary,
+        typeLabel: getEntryType(item.type).label
+      }
+    : null;
+};
+const linkedFrom = linkedFromIds.map(toLinkedItem).filter((item): item is LinkedItem => item !== null);
+// On a page whose links are all reciprocated (a hub and the members that link
+// back to it), "Related" would list the same pages again under a second label.
+const relatedCandidates = relatedIds.map(toLinkedItem).filter((item): item is LinkedItem => item !== null);
+const related = relatedRepeatsLinkedFrom(relatedCandidates, linkedFrom) ? [] : relatedCandidates;
+// A hub's members are what the page is for, so its "Linked from" list shows
+// them as cards (year, venue, summary) rather than bare titles.
+const memberCards = entryType.role === "hub" || entryType.role === "section";
 const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
@@ -419,6 +445,7 @@ const right = renderSide("right");
         tocInFoot={false}
         showLocalGraph={localGraphInFooter}
         linkedFrom={linkedFromInFooter ? linkedFrom : []}
+        linkedFromAsCards={memberCards}
         related={relatedInFooter ? related : []}
         bibtex={(entry.data as { bibtex?: string }).bibtex}
       />

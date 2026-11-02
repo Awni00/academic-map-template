@@ -17,6 +17,8 @@ export type EntryNode = {
   draft?: boolean;
   /** Frontmatter `featured`; leads the homepage carousel (see `recentWriting.select`). */
   featured?: boolean;
+  /** Frontmatter `venue`, shown on a hub page's member cards. */
+  venue?: string;
 };
 
 export type GraphEdge = {

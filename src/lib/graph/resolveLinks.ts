@@ -70,7 +70,8 @@ export function entryToRecord<TEntry extends WritingEntryLike>(
       updated: entry.data.updated,
       url: writingEntryUrl(entryPath, route),
       draft: entry.data.draft,
-      featured: entry.data.featured
+      featured: entry.data.featured,
+      venue: entry.data.venue
     }
   };
 }
