@@ -347,6 +347,12 @@ Use per-figure overrides for diagrams that need breathing room:
 </Figure>
 ```
 
+`Figure src="…"` renders its image through `Picture`, so it takes the same image
+props: `invertInDarkMode`, `lightSrc`/`darkSrc`, and `priority`. An image given
+as a path under `public/` (`src="/figures/plot.png"`) has its width and height
+read from the file at build time, so its box is reserved before it loads, as
+for an imported image.
+
 Interactive and video embeds use the same outer controls. `EmbedFrame` and
 `PlotlyFigure` fill the column by default (`width="100%"`), so cap them with
 `maxWidth` rather than setting a width. Existing `height` props on both remain
