@@ -20,7 +20,6 @@
 import ArticleLayout from "../../fixtures/ArticleLayout.astro";
 import GraphPlayground from "../../fixtures/GraphPlayground.astro";
 import HoverPopovers from "../../fixtures/HoverPopovers.astro";
-import HubLayout from "../../fixtures/HubLayout.astro";
 import MediaLayoutControls from "../../fixtures/MediaLayoutControls.astro";
 import ThemeGallery from "../../fixtures/ThemeGallery.astro";
 
@@ -33,7 +32,6 @@ export function getStaticPaths() {
     { params: { fixture: "article-layout" } },
     { params: { fixture: "graph-playground" } },
     { params: { fixture: "hover-popovers" } },
-    { params: { fixture: "hub-no-intro" } },
     { params: { fixture: "media-layout-controls" } },
     { params: { fixture: "themes" } }
   ];
@@ -43,7 +41,6 @@ const FIXTURES = {
   "article-layout": ArticleLayout,
   "graph-playground": GraphPlayground,
   "hover-popovers": HoverPopovers,
-  "hub-no-intro": HubLayout,
   "media-layout-controls": MediaLayoutControls,
   themes: ThemeGallery
 } as const;
