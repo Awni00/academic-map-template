@@ -947,6 +947,21 @@
   border-radius: 5px;
 }
 
+/* The neighbourhood in faint outline until the canvas mounts (LocalGraphMap's
+   MapSkeleton): the canvas's height, so nothing shifts when it arrives. */
+.local-graph-map__skeleton {
+  display: block;
+  width: 100%;
+  height: var(--map-height, 240px);
+  fill: var(--color-bg-soft);
+  stroke: var(--color-border);
+  stroke-width: 1.25;
+}
+
+.local-graph-map__skeleton-anchor {
+  fill: var(--color-border);
+}
+
 
 /* Sized to the framed canvas rather than the bare one, so the panel's contents
    share the full height instead of bunching at the top. */
