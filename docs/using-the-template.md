@@ -402,6 +402,12 @@ R(x_0) = \mathbb{E}[(\hat f(x_0) - Y_0)^2].
 $$
 </Statement>
 
+<Statement label="Result" title="sample complexity" accent="info">
+Statements take an `accent`: a palette role (`accent`, `info`, `success`,
+`warning`, `danger`, `example`, `quote`, `fg`, `muted`) that follows the
+theme in light and dark, or any CSS colour.
+</Statement>
+
 <Theorem title="Generalization bound" id="thm:generalization">
 Let $\mathcal{F}$ be a finite function class.
 </Theorem>
