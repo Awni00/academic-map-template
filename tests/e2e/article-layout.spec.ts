@@ -88,6 +88,40 @@ test("BibTeX lines stay whole and scroll sideways", async ({ browser }) => {
   await page.context().close();
 });
 
+test("public-path images reserve their box before they load", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  // Never let the images arrive: the box must come from the markup alone.
+  await context.route(/fixture-wave\.png$/, (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(PATH);
+  for (const selector of [".fixture-public-figure img", ".fixture-public-picture img"]) {
+    const image = page.locator(selector);
+    await expect(image, selector).toHaveAttribute("width", "1200");
+    await expect(image, selector).toHaveAttribute("height", "600");
+    const box = await image.boundingBox();
+    expect(Math.round(box!.width / box!.height), selector).toBe(2);
+  }
+  await context.close();
+});
+
+test("a Figure's src honours invertInDarkMode", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  await expect(page.locator(".fixture-invert-figure img")).toHaveClass(/invert-in-dark/);
+  await page.context().close();
+});
+
+test("a hub with no intro shows member cards, one divider and no repeated list", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
+  await page.goto("/fixtures/hub-no-intro");
+  const labels = await page.locator(".entry-foot-label").allTextContents();
+  expect(labels.map((label) => label.trim())).toEqual(["Linked from"]);
+  expect(await page.locator(".entry-card").count()).toBeGreaterThan(1);
+  await expect(page.locator(".article-main")).toBeHidden();
+  expect(await page.locator(".entry-foot").evaluate((element) => getComputedStyle(element).borderTopStyle)).toBe("none");
+  await context.close();
+});
+
 test.describe("on a phone", () => {
   test("nothing pushes the page wider than the screen", async ({ browser }) => {
     const page = await open(browser, 390, 844);
