@@ -1,6 +1,6 @@
 import type { Theme, ThemeAppearance, ThemeColors } from "../../config/types";
 import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
-import { deltaE, deltaECvd } from "./perception";
+import { deltaE, deltaECvd, oklch, oklchToHex } from "./perception";
 
 /**
  * The colours `<Chart>` and `<Diagram>` draw with, as theme roles.
@@ -83,7 +83,8 @@ export const FIGURE_TARGETS = {
 
 /** Margin the derivations aim for, so a derived colour does not sit exactly on a limit. */
 const ALT_PALE_CONTRAST = 3.2;
-const ALT_DEEP_CONTRAST = 7;
+/** How far a deepened companion moves from its slot (OKLab ΔE ×100). */
+const ALT_DEEP_DISTANCE = 16;
 const SLOT_CONTRAST = 3.2;
 
 /**
@@ -136,7 +137,9 @@ export function fitFigureSlot(
  *
  * A slot with room above 3:1 is paled toward `bg` until it nears 3:1. A slot
  * already close to 3:1, or one that paling would not move far enough to tell
- * apart, is deepened toward `fg` instead, until it reaches 7:1.
+ * apart, is deepened instead: its OKLCH lightness is stepped toward `fg`'s,
+ * hue and chroma held, until it is ΔE 16 from the slot. (Mixing toward `fg`
+ * would grey it out.)
  */
 export function deriveFigureAlt(slot: string, bg: string, fg: string): string {
   if (!isCheckable(slot) || !isCheckable(bg) || !isCheckable(fg)) {
@@ -151,7 +154,16 @@ export function deriveFigureAlt(slot: string, bg: string, fg: string): string {
     }
     if (deltaE(pale, slot) >= 12) return pale;
   }
-  return stepToward(slot, fg, (c) => contrastRatio(c, bg) >= ALT_DEEP_CONTRAST);
+  const [L, C, h] = oklch(slot);
+  const direction = oklch(fg)[0] > L ? 1 : -1;
+  let deep = slot;
+  for (let step = 1; step <= 100; step += 1) {
+    const lightness = L + direction * step * 0.005;
+    if (lightness <= 0 || lightness >= 1) break;
+    deep = oklchToHex(lightness, C, h);
+    if (deltaE(deep, slot) >= ALT_DEEP_DISTANCE && contrastRatio(deep, bg) >= ALT_PALE_CONTRAST) break;
+  }
+  return deep;
 }
 
 /**
