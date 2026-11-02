@@ -1,0 +1,14 @@
+# Where each data file in this folder came from. See docs/figures.md.
+paper: "Entry 4 (starter example)"
+files:
+  example-curves.csv:
+    figure: Example curves in src/content/writing/hub-2/entry-4.mdx
+    used_by: src/site/figures/entry-4/example-curves.ts
+    source:
+      repo: none
+      remote: none
+      commit: none
+      generator: synthetic example values; no source data
+    extracted: 2026-11-02
+    method: by-eye
+    fidelity: not applicable (made-up values for the starter demo)
