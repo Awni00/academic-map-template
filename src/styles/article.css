@@ -1347,11 +1347,24 @@
  * notes and stays empty otherwise (it doesn't get bled into by wide
  * blocks). If an aside happens to sit on the same row as a wide block,
  * they appear side-by-side, which is the intended Distill-style flow.
+ *
+ * The cap keeps a block's own `maxWidth` prop (figures, grids, toggles and
+ * embeds set `--article-layout-max-width`); this selector outranks theirs,
+ * so a bare `100%` here would silently undo it.
  */
 .article-content[data-asides="margin"] > * {
   grid-column: 1;
   min-width: 0;
-  max-width: 100%;
+  max-width: min(100%, var(--article-layout-max-width, 100%));
+}
+
+/* A grid item with auto margins shrinks to its content, where in block flow
+   it would fill the column. For media blocks that content is the wrong
+   measure: an iframe's 300px default, a toggle's tab bar, or an image that
+   has not loaded yet. So they fill the column here too, as they do on pages
+   without margin notes; `width` and `maxWidth` props still apply. */
+.article-content[data-asides="margin"] > :is(.article-figure, .figure-grid, .toggle-figure) {
+  width: var(--article-layout-width, 100%);
 }
 
 .article-content[data-asides="margin"] .aside:not([data-aside-placement="inline"]) {
