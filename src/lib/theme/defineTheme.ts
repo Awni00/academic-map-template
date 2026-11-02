@@ -1,6 +1,7 @@
 import type { Theme, ThemeAppearance, ThemeColors, ThemeInput } from "../../config/types";
 import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS } from "./checkTheme";
 import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
+import { resolveFigureColors } from "./figureColors";
 
 /**
  * Build a complete `Theme` from as little as three colours.
@@ -18,6 +19,9 @@ import { contrastRatio, isCheckable, mixSrgb } from "./contrast";
  * The `link` and `annotation` roles fall back to the accent, and so do their
  * `-line` / `-soft` companions: a theme that sets neither role emits exactly
  * the accent's values. Setting a role derives its companions from it instead.
+ *
+ * The chart palette (`figure-*`) falls back to a fixed set fitted to `bg`,
+ * and each slot's companion shade is derived from it; see `figureColors.ts`.
  *
  * Mixes are resolved to hex here whenever both inputs are opaque literals, so
  * derived tokens are contrast-checked like stated ones. A derived token that
@@ -89,6 +93,7 @@ export function defineTheme(input: ThemeInput): Theme {
   const muted = pick("muted", grey("muted", 38));
   const accentSoft = pick("accent-soft", tint("accent", accent, dark ? 14 : 10));
   const accentLine = pick("accent-line", mix(bg, accent, dark ? 30 : 28));
+  const mutedSecondary = pick("muted-2", grey("muted-2", 55));
   const link = colors.link;
   const annotation = colors.annotation;
 
@@ -101,7 +106,7 @@ export function defineTheme(input: ThemeInput): Theme {
     fg,
     "fg-soft": pick("fg-soft", grey("fg-soft", 12)),
     muted,
-    "muted-2": pick("muted-2", grey("muted-2", 55)),
+    "muted-2": mutedSecondary,
     border: pick("border", mix(bg, fg, 12)),
     "border-soft": pick("border-soft", mix(bg, fg, 7)),
     rule: pick("rule", mix(bg, fg, 20)),
@@ -140,6 +145,9 @@ export function defineTheme(input: ThemeInput): Theme {
     "graph-teaching": pick("graph-teaching", success),
     "graph-project": pick("graph-project", example),
     "graph-edge": pick("graph-edge", mix(bg, fg, 28)),
+    // Chart slots: the theme's own, or a fallback set fitted to `bg`. Their
+    // companions are derived from them; the neutral is the quiet grey.
+    ...resolveFigureColors(colors, input.appearance, bg, fg, mutedSecondary),
     "placeholder-a": pick("placeholder-a", mix(bg, fg, 6)),
     "placeholder-b": pick("placeholder-b", mix(bg, fg, 10))
   };

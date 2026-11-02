@@ -15,6 +15,13 @@ import { defineTheme } from "../../lib/theme/defineTheme";
  * one and nineteen. `npm run validate` re-checks all of this, so a bad edit
  * here fails the build rather than shipping quietly.
  *
+ * Each theme also states six chart colours, `figure-1` … `figure-6`: slot 1
+ * near the theme's accent hue, then blue, ochre, teal, violet, green and red in
+ * that order, skipping any too close to slot 1. Lightness was fitted per theme
+ * so every slot clears 3:1 on `bg`, neighbours stay apart for colour-blind
+ * readers, and white text reads on a slot's strong fill. Their companion
+ * shades and the neutral are derived (see `src/lib/theme/figureColors.ts`).
+ *
  * A site can add to this list without forking it — see `src/site/themes.ts`.
  * Defining a theme there with an id used here replaces this one.
  */
@@ -64,6 +71,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#9333ea",
       "graph-edge": "#b8b6b0",
 
+      "figure-1": "#2c5cc5",
+      "figure-2": "#9d6d03",
+      "figure-3": "#00877d",
+      "figure-4": "#8a5bc4",
+      "figure-5": "#208744",
+      "figure-6": "#9b1f1c",
+
       "placeholder-a": "#efece5",
       "placeholder-b": "#e6e3dc"
     }
@@ -112,6 +126,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#4ade80",
       "graph-project": "#c084fc",
       "graph-edge": "#4a4b50",
+
+      "figure-1": "#8ea7ff",
+      "figure-2": "#d5a049",
+      "figure-3": "#4ec3da",
+      "figure-4": "#b37ee9",
+      "figure-5": "#53cd7c",
+      "figure-6": "#e36364",
 
       "placeholder-a": "#1f2024",
       "placeholder-b": "#25262b"
@@ -164,6 +185,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#9333ea",
       "graph-edge": "#b8b6b0",
 
+      "figure-1": "#b3401a",
+      "figure-2": "#2657b6",
+      "figure-3": "#9d6d03",
+      "figure-4": "#00877d",
+      "figure-5": "#8a5bc4",
+      "figure-6": "#097b38",
+
       "placeholder-a": "#efece5",
       "placeholder-b": "#e6e3dc"
     }
@@ -214,6 +242,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#4ade80",
       "graph-project": "#c084fc",
       "graph-edge": "#4a4b50",
+
+      "figure-1": "#f0915f",
+      "figure-2": "#8daffe",
+      "figure-3": "#c48d25",
+      "figure-4": "#4ec3da",
+      "figure-5": "#b37ee9",
+      "figure-6": "#53cd7c",
 
       "placeholder-a": "#1f2024",
       "placeholder-b": "#25262b"
@@ -266,6 +301,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#9333ea",
       "graph-edge": "#b8b6b0",
 
+      "figure-1": "#8b1e3f",
+      "figure-2": "#1c4d88",
+      "figure-3": "#9d6d03",
+      "figure-4": "#00877d",
+      "figure-5": "#8a5bc4",
+      "figure-6": "#097b38",
+
       "placeholder-a": "#efece5",
       "placeholder-b": "#e6e3dc"
     }
@@ -316,6 +358,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#4ade80",
       "graph-project": "#c084fc",
       "graph-edge": "#4a4b50",
+
+      "figure-1": "#e8879f",
+      "figure-2": "#91b5f4",
+      "figure-3": "#d5a049",
+      "figure-4": "#4ec3da",
+      "figure-5": "#b37ee9",
+      "figure-6": "#53cd7c",
 
       "placeholder-a": "#1f2024",
       "placeholder-b": "#25262b"
@@ -368,6 +417,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#9333ea",
       "graph-edge": "#b8b6b0",
 
+      "figure-1": "#07715c",
+      "figure-2": "#2657b6",
+      "figure-3": "#9d6d03",
+      "figure-4": "#8a5bc4",
+      "figure-5": "#588021",
+      "figure-6": "#9b1f1c",
+
       "placeholder-a": "#efece5",
       "placeholder-b": "#e6e3dc"
     }
@@ -418,6 +474,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#4ade80",
       "graph-project": "#c084fc",
       "graph-edge": "#4a4b50",
+
+      "figure-1": "#66c6a8",
+      "figure-2": "#8daffe",
+      "figure-3": "#d5a049",
+      "figure-4": "#bd88f4",
+      "figure-5": "#7aa549",
+      "figure-6": "#ff9592",
 
       "placeholder-a": "#1f2024",
       "placeholder-b": "#25262b"
@@ -470,6 +533,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#9333ea",
       "graph-edge": "#b8b6b0",
 
+      "figure-1": "#4b3fb3",
+      "figure-2": "#9d6d03",
+      "figure-3": "#249990",
+      "figure-4": "#027132",
+      "figure-5": "#810208",
+      "figure-6": "#ac5107",
+
       "placeholder-a": "#efece5",
       "placeholder-b": "#e6e3dc"
     }
@@ -521,6 +591,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#c084fc",
       "graph-edge": "#4a4b50",
 
+      "figure-1": "#aea8fe",
+      "figure-2": "#4c88d3",
+      "figure-3": "#d5a049",
+      "figure-4": "#32acc3",
+      "figure-5": "#53cd7c",
+      "figure-6": "#e36364",
+
       "placeholder-a": "#1f2024",
       "placeholder-b": "#25262b"
     }
@@ -569,6 +646,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#c97c15", // tuned from #ea9d34
       "graph-project": "#907aa9",
       "graph-edge": "#d6c9bd",
+
+      "figure-1": "#066a8a",
+      "figure-2": "#c17501",
+      "figure-3": "#058379",
+      "figure-4": "#9576b6",
+      "figure-5": "#588021",
+      "figure-6": "#b4637a",
 
       "placeholder-a": "#f2e9e1",
       "placeholder-b": "#e8dcd2"
@@ -619,6 +703,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#eb6f92",
       "graph-edge": "#3a3552",
 
+      "figure-1": "#c4a7e7",
+      "figure-2": "#5591dd",
+      "figure-3": "#e1ad63",
+      "figure-4": "#35b4a7",
+      "figure-5": "#60892c",
+      "figure-6": "#ec7093",
+
       "placeholder-a": "#26233a",
       "placeholder-b": "#2f2b45"
     }
@@ -667,6 +758,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#ba8500", // tuned from #dfa000
       "graph-project": "#dd61b7", // tuned from #df69ba
       "graph-edge": "#cdc8b0",
+
+      "figure-1": "#23749e",
+      "figure-2": "#b17f06",
+      "figure-3": "#058379",
+      "figure-4": "#8559b2",
+      "figure-5": "#7f9104",
+      "figure-6": "#b63b39",
 
       "placeholder-a": "#efebd4",
       "placeholder-b": "#e6e2cc"
@@ -717,6 +815,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#d699b6",
       "graph-edge": "#4f585e",
 
+      "figure-1": "#a5c079",
+      "figure-2": "#5e9ae7",
+      "figure-3": "#d6b26a",
+      "figure-4": "#54bfb4",
+      "figure-5": "#ad80dd",
+      "figure-6": "#e67e80",
+
       "placeholder-a": "#3d484d",
       "placeholder-b": "#475258"
     }
@@ -765,6 +870,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#3f9e2b", // tuned from #40a02b
       "graph-project": "#8839ef",
       "graph-edge": "#bcc0cc",
+
+      "figure-1": "#185eeb",
+      "figure-2": "#ba7409",
+      "figure-3": "#1493a9",
+      "figure-4": "#7d58c2",
+      "figure-5": "#429631",
+      "figure-6": "#ab2f3c",
 
       "placeholder-a": "#dce0e8",
       "placeholder-b": "#ccd0da"
@@ -815,6 +927,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#cba6f7",
       "graph-edge": "#45475a",
 
+      "figure-1": "#89b4fa",
+      "figure-2": "#d0b067",
+      "figure-3": "#48b3a4",
+      "figure-4": "#c9a4f5",
+      "figure-5": "#6faa6b",
+      "figure-6": "#f58ca9",
+
       "placeholder-a": "#313244",
       "placeholder-b": "#3b3d52"
     }
@@ -864,6 +983,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-project": "#8250df",
       "graph-edge": "#c4ccd4",
 
+      "figure-1": "#0969da",
+      "figure-2": "#9f6c0c",
+      "figure-3": "#07848c",
+      "figure-4": "#805fca",
+      "figure-5": "#2d8d44",
+      "figure-6": "#a12629",
+
       "placeholder-a": "#eef1f4",
       "placeholder-b": "#e2e6ea"
     }
@@ -912,6 +1038,13 @@ export const builtInThemes: readonly Theme[] = [
       "graph-teaching": "#3fb950",
       "graph-project": "#bc8cff",
       "graph-edge": "#3d444d",
+
+      "figure-1": "#4493f8",
+      "figure-2": "#d29922",
+      "figure-3": "#3bc6d0",
+      "figure-4": "#b78af7",
+      "figure-5": "#52b85d",
+      "figure-6": "#ce5249",
 
       "placeholder-a": "#1c2129",
       "placeholder-b": "#262c36"
