@@ -51,7 +51,10 @@ const {
   mediaAlign
 } = Astro.props;
 const hasFigureSlot = Astro.slots.has("figure");
-const hasCaptionSlot = Astro.slots.has("caption");
+// A caption slot is rendered up front so that one which renders nothing (a
+// wrapper forwarding a slot its own page never filled) leaves no empty
+// <figcaption> and falls back to the `caption` prop.
+const captionSlotHtml = Astro.slots.has("caption") ? (await Astro.slots.render("caption")).trim() : "";
 const hasDefaultSlot = Astro.slots.has("default");
 const hasImage = Boolean(src || (lightSrc && darkSrc));
 const layoutStyle = buildMediaLayoutStyle(
@@ -99,10 +102,8 @@ const layoutStyle = buildMediaLayoutStyle(
     ) : null
   }
   {
-    hasCaptionSlot ? (
-      <figcaption>
-        <slot name="caption" />
-      </figcaption>
+    captionSlotHtml ? (
+      <figcaption set:html={captionSlotHtml} />
     ) : (
       caption && <figcaption set:html={renderCaption(caption)} />
     )

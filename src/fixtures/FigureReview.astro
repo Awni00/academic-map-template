@@ -1,0 +1,180 @@
+---
+/**
+ * Review page for the figure system: every chart and diagram a site lists,
+ * and, for one redrawn from a published figure, how the post showed it
+ * before ("Before" uses the posts' own components, so the comparison is like
+ * for like at the same width).
+ *
+ * Entries are site content, in `src/site/figure-review/<post>.ts` (types in
+ * `./figure-review/types.ts`). Dev-only, routed through
+ * `src/pages/fixtures/[fixture].astro`.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Chart from "../components/article/Chart.astro";
+import Diagram from "../components/article/Diagram.astro";
+import EmbedFrame from "../components/article/EmbedFrame.astro";
+import Figure from "../components/article/Figure.astro";
+import FigureGrid from "../components/article/FigureGrid.astro";
+import Picture from "../components/article/Picture.astro";
+import PlotlyFigure from "../components/article/PlotlyFigure.astro";
+import type { FigureDefinition } from "../lib/figures";
+import type { DiagramDefinition } from "../lib/figures/diagram";
+import type { PaperReview, ReviewEntry } from "./figure-review/types";
+
+const reviews = Object.values(
+  import.meta.glob<{ default: PaperReview }>("/src/site/figure-review/*.ts", { eager: true })
+)
+  .map((module) => module.default)
+  .filter(Boolean)
+  .sort((a, b) => a.order - b.order);
+
+const definitions = import.meta.glob<{ default: FigureDefinition }>(
+  ["/src/site/figures/**/*.ts", "!/src/site/figures/**/*.client.ts", "!/src/site/figures/**/_*.ts"],
+  { eager: true }
+);
+const diagrams = import.meta.glob<{ default: DiagramDefinition }>(
+  ["/src/site/diagrams/**/*.ts", "!/src/site/diagrams/**/_*.ts"],
+  { eager: true }
+);
+// A narrow figure sits beside its "before"; wider ones stack.
+const isNarrow = (entry: ReviewEntry) =>
+  (entry.kind === "diagram"
+    ? diagrams[`/src/site/diagrams/${entry.figure}.ts`]?.default.size
+    : definitions[`/src/site/figures/${entry.figure}.ts`]?.default.size) === "narrow";
+const anchor = (entry: ReviewEntry) => entry.figure.replaceAll("/", "--");
+const total = reviews.reduce((n, review) => n + review.entries.length, 0);
+
+const title = "Figure review";
+const description =
+  total > 0
+    ? `${total} figures from src/site/figure-review, beside how their posts showed them before where an entry says so. Flip the theme toggle to check dark mode.`
+    : "No entries yet: list figures in src/site/figure-review/<post>.ts to review them here.";
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="page-shell">
+    <header class="page-header">
+      <h1 id="figure-review">{title}</h1>
+      <p class="page-description">{description}</p>
+    </header>
+    <div class="article-content">
+      <nav class="figure-review-toc" aria-label="Papers">
+        {
+          reviews.map((review) => (
+            <a href={`#${review.post}`}>
+              {review.paper} <span>{review.entries.length}</span>
+            </a>
+          ))
+        }
+      </nav>
+
+      {
+        reviews.map((review) => (
+          <section class="figure-review-paper">
+            <h2 id={review.post}>{review.paper}</h2>
+            {review.entries.map((entry) => {
+              const before = entry.before;
+              const nowPanel = !before ? null :
+                before.kind === "image" ? (
+                  <Figure caption="Before">
+                    <Picture
+                      slot="figure"
+                      src={before.src}
+                      alt={entry.alt}
+                      invertInDarkMode={before.invertInDarkMode}
+                    />
+                  </Figure>
+                ) : before.kind === "pdf" ? (
+                  <Figure caption="Before">
+                    <Picture
+                      slot="figure"
+                      src={before.src}
+                      alt={entry.alt}
+                      invertInDarkMode={before.invertInDarkMode}
+                    />
+                  </Figure>
+                ) : before.kind === "plotly" ? (
+                  <>
+                    <p class="figure-review-note">Before</p>
+                    <PlotlyFigure
+                      src={before.src}
+                      iframeTitle={entry.alt}
+                      height={before.height ?? "520px"}
+                      width="100%"
+                      showOpenLink={false}
+                    />
+                  </>
+                ) : before.kind === "embed" ? (
+                  <>
+                    <p class="figure-review-note">Before</p>
+                    <EmbedFrame src={before.src} title={entry.alt} height={before.height} />
+                  </>
+                ) : (
+                  <p class="figure-review-none">Before: {before.reason}</p>
+                );
+              const rebuilt =
+                entry.kind === "diagram" ? (
+                  <Diagram figure={entry.figure} alt={entry.alt} caption={before && "Rebuilt"} />
+                ) : (
+                  <Chart figure={entry.figure} alt={entry.alt} caption={before && "Rebuilt"} />
+                );
+              return (
+                <div class="figure-review-entry" id={anchor(entry)}>
+                  <h3>{entry.label}</h3>
+                  <p class="figure-review-id">
+                    <code>{entry.figure}</code>
+                  </p>
+                  {before && isNarrow(entry) && before.kind !== "none" ? (
+                    <FigureGrid columns={2}>
+                      {nowPanel}
+                      {rebuilt}
+                    </FigureGrid>
+                  ) : (
+                    <>
+                      {nowPanel}
+                      {rebuilt}
+                    </>
+                  )}
+                  {entry.note && <p class="figure-review-note">{entry.note}</p>}
+                </div>
+              );
+            })}
+          </section>
+        ))
+      }
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .figure-review-toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+  }
+
+  .figure-review-toc span {
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .figure-review-paper {
+    margin-top: 48px;
+  }
+
+  .figure-review-entry {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .figure-review-id,
+  .figure-review-note,
+  .figure-review-none {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--color-muted);
+  }
+</style>

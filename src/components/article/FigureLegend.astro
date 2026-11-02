@@ -1,0 +1,62 @@
+---
+/**
+ * The legend shared by <Chart> and <Diagram>: below the figure,
+ * left-aligned, no box. Labels may carry `$…$` TeX. Each label is one
+ * element, so the item's flex gap never splits text from the math beside it.
+ */
+import { DASH, colorToken, type LegendItem } from "../../lib/figures";
+import { texToHtml } from "../../lib/figures/tex";
+
+type Props = { items: LegendItem[] };
+
+const { items } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <ul class="figure-legend" aria-hidden="true">
+      {items.map((item) =>
+        item.key === "ramp" ? (
+          <li class="figure-legend__ramp">
+            <span class="figure-legend__label" set:html={texToHtml(item.label)} />
+            <span>{item.from}</span>
+            <svg width={item.opacities.length * 12} height="10" viewBox={`0 0 ${item.opacities.length * 12} 10`}>
+              {item.opacities.map((opacity, i) => (
+                <rect x={i * 12 + 1} y="0" width="10" height="10" rx="1.5" fill={colorToken(item.color)} fill-opacity={opacity} />
+              ))}
+            </svg>
+            <span>{item.to}</span>
+          </li>
+        ) : (
+          <li>
+            <svg width="16" height="10" viewBox="0 0 16 10" style={`--tone: ${colorToken(item.color)}`}>
+              {item.key === "line" ? (
+                <line
+                  x1="0"
+                  x2="16"
+                  y1="5"
+                  y2="5"
+                  stroke={colorToken(item.color)}
+                  stroke-width="2"
+                  stroke-dasharray={item.dashed === true ? DASH : item.dashed || undefined}
+                />
+              ) : item.key === "dot" ? (
+                <circle cx="8" cy="5" r="4" fill={colorToken(item.color)} />
+              ) : item.key === "region" ? (
+                <rect x="3.5" y="0.5" width="9" height="9" rx="1.5" class="figure-legend__region" />
+              ) : item.key === "arrow" ? (
+                <>
+                  <line x1="0" x2="10" y1="5" y2="5" stroke={colorToken(item.color)} stroke-width="1.25" />
+                  <path d="M16,5L9,1.75L9,8.25Z" fill={colorToken(item.color)} />
+                </>
+              ) : (
+                <rect x="3" y="0" width="10" height="10" rx="1.5" fill={colorToken(item.color)} />
+              )}
+            </svg>
+            <span class="figure-legend__label" set:html={texToHtml(item.label)} />
+          </li>
+        )
+      )}
+    </ul>
+  )
+}
