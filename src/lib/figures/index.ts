@@ -147,7 +147,9 @@ export function withSiteDefaults(options: Plot.PlotOptions): Plot.PlotOptions {
   const margins: Partial<Plot.PlotOptions> = {};
   if (labelled(axes.y)) margins.marginLeft = (options.marginLeft ?? 40) + 14;
   if (labelled(axes.x)) margins.marginBottom = Math.max(options.marginBottom ?? 30, 44);
-  return { ...options, ...axes, ...margins, className: "figure-plot" };
+  // `figure-plot` scopes the chart styles; a definition's own class is kept.
+  const className = ["figure-plot", options.className].filter(Boolean).join(" ");
+  return { ...options, ...axes, ...margins, className };
 }
 
 export function replaceColorSentinels(html: string): string {

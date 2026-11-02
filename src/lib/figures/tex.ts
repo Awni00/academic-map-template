@@ -11,14 +11,21 @@ import { escapeHtml, unescapeHtml } from "./escape";
 
 const macros = resolveMathMacros({ globalMacros: globalMathMacros });
 
-export const hasTex = (text: string) => /\$[^$]+\$/.test(text);
+/**
+ * `$…$` is math, except that a `$` followed by a digit is a dollar amount
+ * ("costs $5 to $10"), as in the posts' inline math.
+ */
+const TEX = /\$(?!\d)[^$]+\$/;
+const TEX_PARTS = /(\$(?!\d)[^$]+\$)/;
+
+export const hasTex = (text: string) => TEX.test(text);
 
 /** Plain text stays text (escaped); each `$…$` becomes KaTeX HTML. */
 export function texToHtml(text: string): string {
   return text
-    .split(/(\$[^$]+\$)/)
+    .split(TEX_PARTS)
     .map((part) =>
-      /^\$[^$]+\$$/.test(part)
+      /^\$(?!\d)[^$]+\$$/.test(part)
         ? katex.renderToString(part.slice(1, -1), {
             throwOnError: false,
             output: "html",
@@ -31,7 +38,7 @@ export function texToHtml(text: string): string {
 }
 
 /** Text without the TeX markup, for alt text and tooltips. */
-export const texToPlain = (text: string) => text.replace(/\$([^$]+)\$/g, "$1");
+export const texToPlain = (text: string) => text.replace(/\$(?!\d)([^$]+)\$/g, "$1");
 
 /**
  * Swap Plot's SVG axis-label text for KaTeX HTML in a foreignObject at the

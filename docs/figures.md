@@ -1,8 +1,9 @@
 # Figures
 
 `<Chart>` and `<Diagram>` draw figures when the site builds and inline them
-as SVG. They ship no JavaScript (unless a chart is interactive), use the
-page's fonts, recolour with the theme toggle, and swap to a phone layout on
+as SVG. They ship no JavaScript beyond a small script for hover tips and
+play-once animation (plus a chart's own module, if it is interactive), use
+the page's fonts, recolour with the theme toggle, and swap to a phone layout on
 narrow screens.
 
 - **Charts** are drawn with [Observable Plot](https://observablehq.com/plot/)
@@ -130,7 +131,7 @@ already fit a phone column and have no phone layout.
   `Plot.ruleY([0], { className: BASELINE })`. Area marks (bands) are drawn at
   the theme's band opacity.
 - **Math.** Axis labels, legend labels and panel titles may carry TeX between
-  `$…$`, rendered with KaTeX at build time with the site's global macros
+  `$…$` (a `$` followed by a digit is a dollar amount, not math), rendered with KaTeX at build time with the site's global macros
   (`src/site/math.ts`). Tick labels and hover tips stay plain text. Charts
   redrawn in the browser (`.client.ts`) don't render TeX.
 - **Axis labels** are centred on their axis, the y label rotated, and the
@@ -350,5 +351,5 @@ uv run --with pymupdf python scripts/figures/extract_curves.py PAPER.pdf PAGE --
 Recovers line-and-band charts from a matplotlib figure: it finds each axes
 from its grid, calibrates x and y against the numeric tick labels, reads each
 coloured line and its translucent band, and names series from the legend.
-Prints CSV (`panel,series,color,x,y,lo,hi`). Check its output against the
+`PAGE` counts from 0. Prints CSV (`panel,series,color,x,y,lo,hi`). Check its output against the
 figure before trusting it.

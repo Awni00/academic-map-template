@@ -32,12 +32,12 @@ export default defineDiagram({
           { x: width / 2, y: 255 }
         ]
       : [
-          { x: 85, y: 80 },
-          { x: width / 2, y: 80 },
-          { x: width - 85, y: 80 }
+          { x: 85, y: 110 },
+          { x: width / 2, y: 110 },
+          { x: width - 85, y: 110 }
         ];
     const node = { ...map, r: 30 };
-    const c = canvas(width, compact ? 300 : 190).raw(STYLE);
+    const c = canvas(width, compact ? 300 : 220).raw(STYLE);
 
     c.raw(`<g class="ex4-step ex4-step-1">`)
       .rect(input.x - box.w / 2, input.y - box.h / 2, box.w, box.h, { tone: 3, radius: 4 })

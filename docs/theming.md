@@ -255,8 +255,9 @@ derived:
   3:1. One already close to 3:1 is deepened instead (its OKLCH lightness
   stepped toward `fg`'s, hue and chroma held) until it is clearly a different
   shade.
-- The **neutral** is `muted-2`, darkened if needed so white text reads on its
-  strong fill.
+- The **neutral** is `muted-2`. In a light theme it is darkened if needed so
+  white text reads on its strong fill; in a dark theme, where the strong fill
+  is darker, it is only lightened if it misses 3:1 on `bg`.
 
 A custom theme that states no slots gets a fallback set (the same blue,
 ochre, teal, violet, green and red), moved toward `fg` where its background
@@ -286,18 +287,20 @@ To change only the chart colours of a built-in theme, spread it:
 import { builtInThemes } from "../config/defaults/themes";
 
 const paper = builtInThemes.find((theme) => theme.id === "paper")!;
+// Drop slot 1's copied companion, so it is derived again from the new slot.
+const { "figure-1-alt": _, ...colors } = paper.colors;
 
 export const customThemes: readonly ThemeInput[] = [
   {
     ...paper,
-    colors: { ...paper.colors, "figure-1": "#8b1e3f" }
+    colors: { ...colors, "figure-1": "#8b1e3f" }
   }
 ];
 ```
 
-Spreading a built-in copies its derived companions too, so restate any
-`figure-N-alt` whose slot you change, or delete it from the copy to have it
-derived again.
+Spreading a built-in copies its derived companions too. Restate or drop the
+`figure-N-alt` of every slot you change, as above, or the slot keeps the old
+slot's companion.
 
 How figures mix these — a diagram region's tint, a block's strong fill, a
 band's opacity — is set per appearance rather than per theme

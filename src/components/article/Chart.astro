@@ -69,7 +69,7 @@ const mono = (definition.mono ?? []).join(" ");
     "data-figure-client": interactive ? "" : undefined
   }}
 >
-  {interactive && <script is:inline type="application/json" data-figure-data set:html={JSON.stringify(data)} />}
+  {interactive && <script is:inline type="application/json" data-figure-data set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />}
   <slot name="caption" slot="caption" />
 </FigureFrame>
 

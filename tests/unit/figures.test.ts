@@ -54,6 +54,7 @@ describe("withSiteDefaults", () => {
     expect(options.marginLeft).toBe(40 + 14);
     expect(options.marginBottom).toBe(44);
     expect(options.className).toBe("figure-plot");
+    expect(withSiteDefaults({ className: "mine" }).className).toBe("figure-plot mine");
   });
 
   it("widens a margin the definition set, rather than replacing it", () => {
@@ -120,7 +121,9 @@ describe("renderFigure", () => {
 describe("TeX in labels", () => {
   it("finds, renders and strips inline math", () => {
     expect(hasTex("plain")).toBe(false);
-    expect(hasTex("costs $5 and $6")).toBe(true);
+    // A dollar amount is not math.
+    expect(hasTex("costs $5 to $10")).toBe(false);
+    expect(texToHtml("costs $5 to $10")).toBe("costs $5 to $10");
     expect(hasTex("$x$")).toBe(true);
     expect(texToPlain("Loss $\\mathcal{L}$")).toBe("Loss \\mathcal{L}");
     const html = texToHtml("At $N=128$ <best>");
