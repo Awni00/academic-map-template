@@ -418,6 +418,16 @@
   font-style: italic;
 }
 
+/* A markdown `---`. Preflight leaves it a 1px rule in the text colour, which
+   reads as a heavy black bar between sections; this is the same hairline as
+   the dividers in the article header and footer. */
+.article-content hr {
+  height: 0;
+  margin: 40px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border-soft);
+}
+
 .article-content ul,
 .article-content ol {
   margin: 0 0 18px;
