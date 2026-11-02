@@ -2,6 +2,7 @@
 import { Picture as AstroPicture } from "astro:assets";
 
 import { isPdfSource, renderPdfFirstPage } from "../../lib/article/pdf";
+import { publicImageSize } from "../../lib/article/publicImage";
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
 
 type Props = {
@@ -56,7 +57,12 @@ const renderedPdf = isPdfSource(src)
 // loads, so the wrapper steps out of layout (`display: contents`) and the
 // image is capped at its natural width directly — the size the wrapper used
 // to give it once loaded.
-const intrinsic = renderedPdf ?? (typeof src === "object" ? src : undefined);
+// A path string under `public/` has no import metadata, so its size is read
+// from the file instead (an art-directed pair is sized by its light image;
+// the two are expected to match).
+const pathSize =
+  renderedPdf || typeof src === "object" ? undefined : await publicImageSize(lightSrc && darkSrc ? lightSrc : src);
+const intrinsic = renderedPdf ?? (typeof src === "object" ? src : pathSize);
 const reservedAspectRatio =
   intrinsic?.width && intrinsic?.height ? `auto ${intrinsic.width} / ${intrinsic.height}` : undefined;
 const naturalMaxWidth = typeof src === "object" && src.width ? `${src.width}px` : undefined;
@@ -94,6 +100,8 @@ const layoutStyle = buildMediaLayoutStyle(
       src={lightSrc}
       data-light-src={lightSrc}
       data-dark-src={darkSrc}
+      width={pathSize?.width}
+      height={pathSize?.height}
       alt={alt}
       loading={loading}
       decoding={decoding}
@@ -128,6 +136,8 @@ const layoutStyle = buildMediaLayoutStyle(
       class={fullClassName}
       style={layoutStyle}
       src={src}
+      width={pathSize?.width}
+      height={pathSize?.height}
       alt={alt}
       loading={loading}
       decoding={decoding}

@@ -347,6 +347,32 @@ Use per-figure overrides for diagrams that need breathing room:
 </Figure>
 ```
 
+`Figure src="…"` renders its image through `Picture`, so it takes the same image
+props: `invertInDarkMode`, `lightSrc`/`darkSrc`, and `priority`. An image given
+as a path under `public/` (`src="/figures/plot.png"`) has its width and height
+read from the file at build time, so its box is reserved before it loads, as
+for an imported image.
+
+Give a table a caption by wrapping it in a figure. Figure and table captions
+share one style, and with figure numbering on (see
+[configuration](configuration.md#figure-numbers)) tables are numbered
+separately:
+
+```mdx
+<Figure kind="table" caption="Accuracy by method.">
+
+| Method | Accuracy |
+| --- | --- |
+| Baseline | 0.81 |
+
+</Figure>
+```
+
+`TwoColumns` lays out any two blocks side by side. Give it a `caption` (prop
+or slot) and the pair becomes one figure with the caption underneath; don't
+follow it with an empty `Figure` that holds only the caption. For two images,
+`FigureGrid` is usually the better fit, since it also matches their frames.
+
 Interactive and video embeds use the same outer controls. `EmbedFrame` and
 `PlotlyFigure` fill the column by default (`width="100%"`), so cap them with
 `maxWidth` rather than setting a width. Existing `height` props on both remain
@@ -389,6 +415,12 @@ The point-wise expected squared loss at a query $x_0$ is
 $$
 R(x_0) = \mathbb{E}[(\hat f(x_0) - Y_0)^2].
 $$
+</Statement>
+
+<Statement label="Result" title="sample complexity" accent="info">
+Statements take an `accent`: a palette role (`accent`, `info`, `success`,
+`warning`, `danger`, `example`, `quote`, `fg`, `muted`) that follows the
+theme in light and dark, or any CSS colour.
 </Statement>
 
 <Theorem title="Generalization bound" id="thm:generalization">

@@ -1,4 +1,6 @@
 ---
+import { CALLOUT_ROLE_COLORS, type CalloutRole } from "./calloutRoles";
+
 type Props = {
   /** Visible environment label, e.g. "Definition", "Lemma", or "Assumption". */
   label?: string;
@@ -6,14 +8,23 @@ type Props = {
   title?: string;
   /** Anchor id for in-document links. */
   id?: string;
-  /** Accent color for the label, title, and left border. Accepts token names or any CSS color. */
+  /**
+   * Accent color for the label, title, and left border: a palette role
+   * (`accent`, `fg`, `muted`, or a callout role — `info`, `success`,
+   * `warning`, `danger`, `example`, `quote`) or any CSS color. A role follows
+   * the site's theme in light and dark; a literal color does not.
+   */
   accent?: string;
 };
 
 const { label, title, id, accent } = Astro.props;
 const displayLabel = label ?? "Statement";
+// The label and title are text, so a callout role maps to its text token
+// (held to 4.5:1), which also serves for the border.
 const accentTokens: Record<string, string> = {
-  accent: "var(--color-accent)",
+  ...Object.fromEntries(
+    (Object.keys(CALLOUT_ROLE_COLORS) as CalloutRole[]).map((role) => [role, CALLOUT_ROLE_COLORS[role].text])
+  ),
   fg: "var(--color-fg)",
   muted: "var(--color-muted)"
 };

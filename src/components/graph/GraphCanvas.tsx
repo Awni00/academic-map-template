@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { getEntryType, graphConfig, isHubType } from "../../config";
 import {
@@ -84,9 +84,14 @@ type GraphCanvasProps = {
    * Which painted labels to draw.
    *   "config" — honour `graphConfig.nodeTypes.{type}.labelVisibility`.
    *   "all"    — paint every node's label.
-   *   "none"   — paint none (used by the per-entry local map).
+   *   "none"   — paint none; hovering a node floats its title instead.
    */
   labelMode?: LabelMode;
+  /**
+   * Drawn in place of the canvas until it mounts: in the server render, and
+   * until the canvas scrolls into view. Defaults to a "Loading graph..." line.
+   */
+  placeholder?: ReactNode;
   /**
    * Side of the node where labels sit. "auto" derives from `hubLayout`.
    */
@@ -187,6 +192,7 @@ export default function GraphCanvas({
   anchor,
   drag = "none",
   labelMode = "config",
+  placeholder,
   labelSide = "auto",
   onSelect,
   hubLayout = "force",
@@ -1164,7 +1170,7 @@ export default function GraphCanvas({
           }}
         />
       ) : (
-        <div className="graph-loading">Loading graph...</div>
+        (placeholder ?? <div className="graph-loading">Loading graph...</div>)
       )}
       {zoomControls && ForceGraph && visibility.started && (
         <div className="graph-zoom" role="group" aria-label="Zoom">

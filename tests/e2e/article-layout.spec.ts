@@ -88,6 +88,28 @@ test("BibTeX lines stay whole and scroll sideways", async ({ browser }) => {
   await page.context().close();
 });
 
+test("public-path images reserve their box before they load", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  // Never let the images arrive: the box must come from the markup alone.
+  await context.route(/fixture-wave\.png$/, (route) => route.abort());
+  const page = await context.newPage();
+  await page.goto(PATH);
+  for (const selector of [".fixture-public-figure img", ".fixture-public-picture img"]) {
+    const image = page.locator(selector);
+    await expect(image, selector).toHaveAttribute("width", "1200");
+    await expect(image, selector).toHaveAttribute("height", "600");
+    const box = await image.boundingBox();
+    expect(Math.round(box!.width / box!.height), selector).toBe(2);
+  }
+  await context.close();
+});
+
+test("a Figure's src honours invertInDarkMode", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  await expect(page.locator(".fixture-invert-figure img")).toHaveClass(/invert-in-dark/);
+  await page.context().close();
+});
+
 test.describe("on a phone", () => {
   test("nothing pushes the page wider than the screen", async ({ browser }) => {
     const page = await open(browser, 390, 844);

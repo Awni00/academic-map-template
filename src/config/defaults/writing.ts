@@ -49,6 +49,7 @@ export const defaultWritingConfig = {
       defaultDepth: 1,
       maxNodes: 20
     },
+    figureNumbers: false,
     toc: {
       default: {
         minDepth: 2,

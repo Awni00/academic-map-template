@@ -5,7 +5,9 @@
  * a width-capped figure beside margin asides, markdown in caption props, a
  * lazy raster picture, embeds left at their default width, a toggle figure
  * with long tab labels, display math too wide for the column (in prose, a
- * callout and a statement), and nested lists.
+ * callout and a statement), nested lists, statement accents, a markdown
+ * rule, figure and table captions, a captioned TwoColumns, a heading long
+ * enough to wrap in the contents, and images given as `public/` paths.
  *
  * The heading ids are listed in ArticleLayout.astro's `headings`, which is
  * what the contents pill reads; keep the two in step.
@@ -22,6 +24,7 @@ import PlotlyFigure from "../components/article/PlotlyFigure.astro";
 import Statement from "../components/article/Statement.astro";
 import ToggleFigure from "../components/article/ToggleFigure.astro";
 import ToggleFigurePanel from "../components/article/ToggleFigurePanel.astro";
+import TwoColumns from "../components/article/TwoColumns.astro";
 import wave from "./assets/fixture-wave.png";
 
 const wideTex =
@@ -142,6 +145,77 @@ const shortMath = katex.renderToString("a^2 + b^2 = c^2", { displayMode: true, t
     </ul>
   </li>
 </ol>
+
+<h2 id="statements">Statements</h2>
+
+<div class="fixture-definition">
+<Statement label="Definition" title="A placeholder definition" accent="accent">
+  <p>Placeholder text for a definition, which uses the theme accent.</p>
+</Statement>
+</div>
+
+<div class="fixture-result">
+<Statement label="Result" title="A placeholder result" accent="#ef4444">
+  <p>Placeholder text for a result, with a literal colour passed as its accent.</p>
+</Statement>
+</div>
+
+<hr class="fixture-rule" />
+
+<h2 id="captions">Captions</h2>
+
+<Figure
+  class="fixture-caption-figure"
+  src="/figures/example-chart.svg"
+  alt="Example chart."
+  maxWidth="480px"
+  caption="A placeholder figure caption with `code` and $x^2$."
+/>
+
+<div class="fixture-caption-table">
+<Figure kind="table" caption="A placeholder table caption, from the caption prop of a table figure.">
+  <table>
+    <thead>
+      <tr><th>Method</th><th>A</th><th>B</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Baseline</td><td>0.10</td><td>0.20</td></tr>
+      <tr><td>Variant</td><td>0.30</td><td>0.40</td></tr>
+    </tbody>
+  </table>
+</Figure>
+</div>
+
+<div class="fixture-two-columns">
+  <TwoColumns caption="A placeholder caption for the two columns, from the `caption` prop.">
+    <Figure slot="left" src="/figures/example-chart.svg" alt="Example chart." />
+    <Figure slot="right" src="/figures/example-grid.svg" alt="Example grid." />
+  </TwoColumns>
+</div>
+
+<h2 id="images">A deliberately long section heading that should wrap onto two lines in the contents</h2>
+
+<Figure
+  class="fixture-invert-figure"
+  src="/figures/example-chart.svg"
+  alt="Example chart, inverted in dark mode."
+  maxWidth="480px"
+  invertInDarkMode
+  caption="A figure with `invertInDarkMode` on its `src`."
+/>
+
+<Figure
+  class="fixture-public-figure"
+  src="/figures/fixture-wave.png"
+  alt="A damped wave, from a public path."
+  maxWidth="480px"
+  caption="A figure whose `src` is a path under `public/`."
+/>
+
+<Figure class="fixture-public-picture" maxWidth="480px">
+  <Picture slot="figure" src="/figures/fixture-wave.png" alt="A damped wave, as a Picture from a public path." />
+  <Fragment slot="caption">A Picture whose <code>src</code> is a path under <code>public/</code>.</Fragment>
+</Figure>
 
 <h2 id="end">End</h2>
 

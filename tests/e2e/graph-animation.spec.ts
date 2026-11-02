@@ -43,7 +43,8 @@ test("footer graph waits for a visible tab and an in-view slot", async ({
   await page.goto("/writing/hub-1/entry-1");
   const graph = page.locator(".local-graph-map");
   await expect(graph).toBeAttached();
-  await expect(graph.locator(".graph-loading")).toBeAttached();
+  // Before it mounts, the map holds its skeleton (LocalGraphMap's MapSkeleton).
+  await expect(graph.locator(".local-graph-map__skeleton")).toBeAttached();
   await page.clock.setSystemTime(new Date(Date.now() + 20_000));
   await visibility(page, "visible");
   await expect(graph.locator("canvas")).toHaveCount(0);

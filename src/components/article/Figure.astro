@@ -1,10 +1,28 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
 import { renderCaption } from "./caption";
+import Picture from "./Picture.astro";
 
 type Props = {
-  src?: string;
+  /**
+   * The image, rendered through <Picture>, so a figure given `src` takes the
+   * same image props as a Picture in its `figure` slot.
+   */
+  src?: string | ImageMetadata;
   alt?: string;
+  /** Invert the image in dark mode (line art on a light background). */
+  invertInDarkMode?: boolean;
+  /** Art-directed light/dark pair, used together in place of `src`. */
+  lightSrc?: string;
+  darkSrc?: string;
+  /** Load eagerly, for an image near the top of the page. */
+  priority?: boolean;
+  /**
+   * What the figure holds, for numbered captions ("Table 2." rather than
+   * "Figure 2."). Put a markdown table in the default slot with
+   * `kind="table"`.
+   */
+  kind?: "figure" | "table";
   caption?: string;
   class?: string;
   style?: string;
@@ -13,6 +31,11 @@ type Props = {
 const {
   src,
   alt = "",
+  invertInDarkMode,
+  lightSrc,
+  darkSrc,
+  priority,
+  kind,
   caption,
   class: className,
   style,
@@ -30,6 +53,7 @@ const {
 const hasFigureSlot = Astro.slots.has("figure");
 const hasCaptionSlot = Astro.slots.has("caption");
 const hasDefaultSlot = Astro.slots.has("default");
+const hasImage = Boolean(src || (lightSrc && darkSrc));
 const layoutStyle = buildMediaLayoutStyle(
   {
     width,
@@ -47,15 +71,26 @@ const layoutStyle = buildMediaLayoutStyle(
 );
 ---
 
-<figure class:list={["article-figure", className]} style={layoutStyle}>
+<figure
+  class:list={["article-figure", className]}
+  style={layoutStyle}
+  data-kind={kind === "table" ? "table" : undefined}
+>
   {
-    hasFigureSlot || src || hasDefaultSlot ? (
+    hasFigureSlot || hasImage || hasDefaultSlot ? (
       <div class="article-figure__body">
         {
           hasFigureSlot ? (
             <slot name="figure" />
-          ) : src ? (
-            <img class="article-picture" src={src} alt={alt} loading="lazy" />
+          ) : hasImage ? (
+            <Picture
+              src={src}
+              alt={alt}
+              invertInDarkMode={invertInDarkMode}
+              lightSrc={lightSrc}
+              darkSrc={darkSrc}
+              priority={priority}
+            />
           ) : (
             <slot />
           )

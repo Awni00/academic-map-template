@@ -302,7 +302,8 @@ field is typed, so your editor will list them.
 
 ## Images that need a dark variant
 
-Pass `lightSrc` and `darkSrc` to `Picture`; the active one is chosen from the
+Pass `lightSrc` and `darkSrc` to `Picture` (or to `Figure`, which passes them
+on to its image); the active one is chosen from the
 site's theme, not the operating system's:
 
 ```mdx

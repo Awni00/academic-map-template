@@ -160,6 +160,13 @@ export type WritingConfig = {
       defaultDepth: number;
       maxNodes: number;
     };
+    /**
+     * Number figure and table captions ("Figure 3.", "Table 1.") in article
+     * bodies. Off by default; an entry's `article.figureNumbers` overrides it.
+     * Only captioned figures count, and a figure grid or toggle figure counts
+     * once.
+     */
+    figureNumbers: boolean;
     toc: {
       default: TocConfig;
       byType: Record<EntryType, TocConfigOverride>;

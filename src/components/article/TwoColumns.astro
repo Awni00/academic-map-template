@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   class?: string;
@@ -8,6 +9,12 @@ type Props = {
   maxWidth?: string;
   gap?: string;
   align?: "start" | "center" | "end" | "stretch";
+  /**
+   * A caption under both columns (inline markdown allowed), or use the
+   * `caption` slot. With one, the pair renders as a single <figure>. For two
+   * images side by side, prefer `FigureGrid`, which also sizes their frames.
+   */
+  caption?: string;
 };
 
 const {
@@ -16,9 +23,12 @@ const {
   width,
   maxWidth,
   gap,
-  align
+  align,
+  caption
 } = Astro.props;
 const hasNamedColumns = Astro.slots.has("left") || Astro.slots.has("right");
+const hasCaptionSlot = Astro.slots.has("caption");
+const hasCaption = hasCaptionSlot || Boolean(caption);
 const layoutStyle = buildMediaLayoutStyle(
   { width, maxWidth },
   {
@@ -31,19 +41,45 @@ const layoutStyle = buildMediaLayoutStyle(
 );
 ---
 
-<div class:list={["two-columns", className]} style={layoutStyle}>
-  {
-    hasNamedColumns ? (
-      <>
-        <div class="two-columns__column">
-          <slot name="left" />
-        </div>
-        <div class="two-columns__column">
-          <slot name="right" />
-        </div>
-      </>
-    ) : (
-      <slot />
-    )
-  }
-</div>
+{
+  hasCaption ? (
+    <figure class:list={["two-columns-figure", className]} style={layoutStyle}>
+      <div class="two-columns">
+        {hasNamedColumns ? (
+          <>
+            <div class="two-columns__column">
+              <slot name="left" />
+            </div>
+            <div class="two-columns__column">
+              <slot name="right" />
+            </div>
+          </>
+        ) : (
+          <slot />
+        )}
+      </div>
+      {hasCaptionSlot ? (
+        <figcaption>
+          <slot name="caption" />
+        </figcaption>
+      ) : (
+        <figcaption set:html={renderCaption(caption!)} />
+      )}
+    </figure>
+  ) : (
+    <div class:list={["two-columns", className]} style={layoutStyle}>
+      {hasNamedColumns ? (
+        <>
+          <div class="two-columns__column">
+            <slot name="left" />
+          </div>
+          <div class="two-columns__column">
+            <slot name="right" />
+          </div>
+        </>
+      ) : (
+        <slot />
+      )}
+    </div>
+  )
+}
