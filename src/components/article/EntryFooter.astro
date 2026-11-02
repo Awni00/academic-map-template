@@ -10,15 +10,7 @@ import type { GraphIndex } from "../../lib/graph/types";
 import type { TocConfig } from "../../config/types";
 
 type Heading = TocHeading;
-type LinkedItem = {
-  id: string;
-  title: string;
-  url: string;
-  date?: string;
-  venue?: string;
-  summary?: string;
-  typeLabel?: string;
-};
+type LinkedItem = { id: string; title: string; url: string };
 
 type Props = {
   graph: GraphIndex;
@@ -30,8 +22,6 @@ type Props = {
   showLocalGraph?: boolean;
   linkedFrom?: LinkedItem[];
   related?: LinkedItem[];
-  /** Show "Linked from" as cards with year, venue and summary (hub pages). */
-  linkedFromAsCards?: boolean;
   bibtex?: string;
 };
 
@@ -44,20 +34,8 @@ const {
   showLocalGraph = false,
   linkedFrom = [],
   related = [],
-  linkedFromAsCards = false,
   bibtex
 } = Astro.props;
-
-// Cards lead with the newest work; undated pages (other hubs, notes) follow.
-const cards = linkedFromAsCards
-  ? [...linkedFrom].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
-  : [];
-// "2024 · ICML 2024" says the year twice; a venue that names it stands alone.
-const cardMeta = (item: LinkedItem) => {
-  const year = item.date?.slice(0, 4);
-  const parts = [year && !item.venue?.includes(year) ? year : undefined, item.venue].filter(Boolean);
-  return parts.length > 0 ? parts.join(" · ") : item.typeLabel;
-};
 
 const tocHeadings = tocInFoot ? filterHeadingsForToc(headings, tocConfig) : [];
 // The linked-from and related lists are suppressed when the map is shown: it already
@@ -106,27 +84,13 @@ const hasAny =
         <div class="entry-foot-section">
           <div class="entry-foot-label">Linked from</div>
           <div class="entry-foot-content">
-            {linkedFromAsCards ? (
-              <ul class="entry-cards">
-                {cards.map((item) => (
-                  <li class="entry-card">
-                    <a class="entry-card__link" href={item.url}>
-                      {cardMeta(item) && <span class="entry-card__meta">{cardMeta(item)}</span>}
-                      <span class="entry-card__title">{item.title}</span>
-                      {item.summary && <span class="entry-card__summary">{item.summary}</span>}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <ul>
-                {linkedFrom.map((item) => (
-                  <li>
-                    <a href={item.url}>{item.title}</a>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul>
+              {linkedFrom.map((item) => (
+                <li>
+                  <a href={item.url}>{item.title}</a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       )}
@@ -193,60 +157,6 @@ const hasAny =
 </script>
 
 <style>
-  /* Hub members. Scoped past `.entry-foot-content ul/li/a`, which lay out a
-     plain link list: the whole card is the link, with no underline. */
-  .entry-foot-content .entry-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
-    gap: 12px;
-  }
-  .entry-foot-content .entry-card {
-    display: block;
-  }
-  .entry-foot-content .entry-card__link {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    height: 100%;
-    box-sizing: border-box;
-    padding: 12px 14px 14px;
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius);
-    background: var(--color-bg);
-    color: var(--color-fg-soft);
-    transition: border-color var(--dur-fast) var(--ease-quiet);
-  }
-  .entry-foot-content .entry-card__link:hover {
-    border-color: var(--color-accent-line, var(--color-border));
-  }
-  .entry-foot-content .entry-card__link:hover .entry-card__title {
-    color: var(--color-link);
-  }
-  .entry-card__meta {
-    font-family: var(--font-mono);
-    font-size: var(--article-label-size, 12px);
-    letter-spacing: 0.04em;
-    color: var(--color-muted);
-  }
-  .entry-card__title {
-    font-family: var(--font-body);
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--color-fg);
-    text-wrap: balance;
-  }
-  .entry-card__summary {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    overflow: hidden;
-    font-size: var(--article-caption-size, 13px);
-    line-height: 1.5;
-    color: var(--color-muted);
-  }
-
   /* BibTeX keeps its own line breaks and indentation: a long field scrolls
      sideways (with an edge fade, from overflowHint.ts) rather than wrapping
      mid-value. The scroller stops short of the Copy button, so no line runs
