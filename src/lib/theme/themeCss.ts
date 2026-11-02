@@ -1,4 +1,5 @@
 import type { Theme, ThemeConfig } from "../../config/types";
+import { FIGURE_MIX } from "./figureColors";
 
 /**
  * Render one theme as a CSS rule.
@@ -30,6 +31,12 @@ export function themeToCss(theme: Theme, selector: string): string {
   const dark = theme.appearance === "dark";
   lines.push(`  --color-scrim: ${dark ? "rgb(0 0 0 / 0.6)" : "rgb(0 0 0 / 0.32)"};`);
 
+  // How figures mix their palette: per appearance, not per theme.
+  const figure = FIGURE_MIX[theme.appearance];
+  lines.push(`  --figure-tint: ${figure.tint}%;`);
+  lines.push(`  --figure-strong: ${figure.strong}%;`);
+  lines.push(`  --figure-band-opacity: ${figure.band};`);
+
   for (const [name, value] of Object.entries(theme.shadows)) {
     lines.push(`  --shadow-${name}: ${value};`);
   }
@@ -39,11 +46,13 @@ export function themeToCss(theme: Theme, selector: string): string {
 
 /**
  * Graph tokens keep the `--graph-` prefix they already have in `entryTypes`
- * config (`color: "var(--graph-hub)"`); everything else becomes `--color-*`.
+ * config (`color: "var(--graph-hub)"`), and figure tokens keep `--figure-`,
+ * which `figures.css` reads; everything else becomes `--color-*`.
  * `placeholder-*` predates both and keeps its bare name.
  */
 function cssTokenName(token: string): string {
   if (token.startsWith("graph-")) return token;
+  if (token.startsWith("figure-")) return token;
   if (token.startsWith("placeholder-")) return token;
   return `color-${token}`;
 }

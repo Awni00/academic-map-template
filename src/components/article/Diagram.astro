@@ -1,0 +1,119 @@
+---
+/**
+ * A diagram drawn at build time from a definition in `src/site/diagrams/`.
+ *
+ *   <Diagram figure="my-post/pipeline" caption="…" />
+ *
+ * Diagrams share the charts' palette, type, line weights and legend, and
+ * are inline SVG, so they recolour with the theme. A medium or full diagram
+ * may draw a phone layout too (its definition sees `compact: true`), swapped
+ * in on narrow columns like a chart's. See docs/figures.md.
+ */
+import FigureFrame from "./FigureFrame.astro";
+import type { FigureSize } from "../../lib/figures";
+import type { DiagramDefinition } from "../../lib/figures/diagram";
+import { figureLayout, findDefinition } from "../../lib/figures/frame";
+
+type Props = {
+  figure: string;
+  alt?: string;
+  caption?: string;
+  /** Overrides the definition's size preset. */
+  size?: FigureSize;
+};
+
+const { figure, alt, caption, size } = Astro.props;
+
+const definitions = import.meta.glob<{ default: DiagramDefinition }>(
+  ["/src/site/diagrams/**/*.ts", "!/src/site/diagrams/**/_*.ts"],
+  { eager: true }
+);
+const definition = findDefinition(definitions, "src/site/diagrams", figure, "Diagram");
+
+const layout = figureLayout(size ?? definition.size);
+const label = alt ?? definition.alt ?? "";
+const wide = definition.draw({ width: layout.width, compact: false }).toSvg(label);
+const compact =
+  layout.compactWidth === null
+    ? null
+    : definition.draw({ width: layout.compactWidth, compact: true }).toSvg(label);
+const { animate } = definition;
+---
+
+<FigureFrame
+  layout={layout}
+  class="figure-diagram"
+  title={definition.title}
+  legend={definition.legend}
+  wide={wide}
+  compact={compact}
+  caption={caption}
+  attrs={{
+    "data-diagram": figure,
+    "data-animated": animate ? "" : undefined,
+    "data-delay": animate ? (animate.delay ?? 400) : undefined
+  }}
+>
+  {
+    animate && (
+      <button type="button" class="figure-diagram__replay" hidden>
+        Replay
+      </button>
+    )
+  }
+  <slot name="caption" slot="caption" />
+</FigureFrame>
+
+<script>
+  // Play-once diagrams: start once half the diagram, or half the viewport,
+  // is covered by it (a diagram taller than twice the viewport can never be
+  // half in view), and offer Replay after the first play. With reduced
+  // motion (or no JS) the static final frame stays and no button shows.
+  const motion = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pending = new WeakMap<HTMLElement, number>();
+
+  const play = (root: HTMLElement) => {
+    pending.delete(root);
+    root.removeAttribute("data-play");
+    void root.offsetWidth;
+    root.setAttribute("data-play", "");
+    const button = root.querySelector<HTMLButtonElement>(".figure-diagram__replay");
+    if (button) button.hidden = false;
+  };
+
+  const inView = (entry: IntersectionObserverEntry) => {
+    if (!entry.isIntersecting) return false;
+    const viewport = entry.rootBounds?.height ?? window.innerHeight;
+    return entry.intersectionRatio >= 0.5 || entry.intersectionRect.height >= viewport * 0.5;
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const root = entry.target as HTMLElement;
+        if (!inView(entry) || pending.has(root)) continue;
+        observer.unobserve(root);
+        pending.set(
+          root,
+          window.setTimeout(() => play(root), Number(root.dataset.delay ?? 400))
+        );
+      }
+    },
+    { threshold: Array.from({ length: 11 }, (_, i) => i / 20) }
+  );
+
+  if (motion) {
+    for (const root of document.querySelectorAll<HTMLElement>(".figure-diagram[data-animated]")) {
+      // Armed: will play. Definitions may show their first frame under
+      // `[data-armed]:not([data-play])`, so the final frame doesn't flash first.
+      root.setAttribute("data-armed", "");
+      root.querySelector<HTMLButtonElement>(".figure-diagram__replay")?.addEventListener("click", () => {
+        // A replay supersedes any first play still waiting to start.
+        observer.unobserve(root);
+        window.clearTimeout(pending.get(root));
+        play(root);
+      });
+      observer.observe(root);
+    }
+  }
+</script>

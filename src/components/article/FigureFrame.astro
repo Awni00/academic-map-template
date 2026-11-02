@@ -1,0 +1,62 @@
+---
+/**
+ * The frame <Chart> and <Diagram> share: the <Figure> around them, the panel
+ * title, the wide drawing and its phone layout, the legend and the caption.
+ * Each component draws its SVG and hands it here; anything else it needs
+ * inside the frame (a data block, a button) goes in the default slot.
+ *
+ * Not used in posts directly.
+ */
+import Figure from "./Figure.astro";
+import FigureLegend from "./FigureLegend.astro";
+import type { LegendItem } from "../../lib/figures";
+import type { FigureLayout } from "../../lib/figures/frame";
+import { texToHtml } from "../../lib/figures/tex";
+import "../../styles/figures.css";
+
+type Props = {
+  layout: FigureLayout;
+  /** Extra classes on the frame, such as `figure-diagram`. */
+  class?: string;
+  title?: string;
+  legend?: LegendItem[];
+  /** The drawing at `layout.width`, as SVG markup. */
+  wide: string;
+  /** The phone layout at `layout.compactWidth`, if any. */
+  compact?: string | null;
+  /** A `caption="…"` prop, rendered by <Figure> as inline Markdown. A caption slot wins over it. */
+  caption?: string;
+  /** `data-*` and other attributes for the frame element. */
+  attrs?: Record<string, string | number | undefined>;
+};
+
+const {
+  layout,
+  class: className,
+  title,
+  legend = [],
+  wide,
+  compact,
+  caption,
+  attrs = {}
+} = Astro.props;
+const { size, width, compactWidth } = layout;
+---
+
+<Figure maxWidth={`${width}px`} caption={caption}>
+  <div
+    slot="figure"
+    class:list={["figure-chart", `figure-chart--${size}`, className]}
+    style={`--figure-width: ${width}px; --figure-compact-width: ${compactWidth ?? width}px`}
+    {...attrs}
+  >
+    {title && <p class="figure-chart__title" set:html={texToHtml(title)} />}
+    <div class="figure-chart__plot">
+      <div class="figure-chart__wide" set:html={wide} />
+      {compact && <div class="figure-chart__compact" set:html={compact} />}
+    </div>
+    <FigureLegend items={legend} />
+    <slot />
+  </div>
+  <slot name="caption" slot="caption" />
+</Figure>

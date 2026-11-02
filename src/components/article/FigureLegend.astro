@@ -1,0 +1,13 @@
+---
+/**
+ * The legend shared by <Chart> and <Diagram>; see `renderLegend`.
+ */
+import type { LegendItem } from "../../lib/figures";
+import { renderLegend } from "../../lib/figures/legend";
+
+type Props = { items: LegendItem[] };
+
+const { items } = Astro.props;
+---
+
+<Fragment set:html={renderLegend(items)} />

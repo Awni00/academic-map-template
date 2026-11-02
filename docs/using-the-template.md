@@ -307,6 +307,8 @@ MDX entries can use built-in technical writing components:
 - `Comparison`
 - `ModelViewer`
 - `PlotlyFigure`
+- `Chart` and `Diagram`: figures drawn at build time from site-owned
+  definitions; see [Figures](figures.md)
 
 ### Media layout controls
 

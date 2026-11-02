@@ -1,0 +1,146 @@
+---
+/**
+ * A chart drawn at build time from a figure definition and its data.
+ *
+ *   <Chart figure="my-post/learning-curves" caption="…" />
+ *
+ * `figure` names a definition in `src/site/figures/` (path without `.ts`);
+ * the definition names its data file in `src/data/figures/`. The chart is
+ * inline SVG, so it uses the page's fonts and recolours with the theme.
+ * A medium or full chart is also drawn at phone width and swapped in on
+ * narrow columns, rather than shrinking its type. See docs/figures.md.
+ *
+ * Marks with a `title` channel get a hover tooltip. A definition with a
+ * sibling `<figure>.client.ts` is interactive: that module mounts when the
+ * chart scrolls into view, and the build-time SVG stays as its fallback.
+ */
+import FigureFrame from "./FigureFrame.astro";
+import type { FigureDefinition, FigureSize } from "../../lib/figures";
+import { figureLayout, findDefinition } from "../../lib/figures/frame";
+import { parseFigureData, renderFigure } from "../../lib/figures/render";
+
+type Props = {
+  figure: string;
+  alt?: string;
+  caption?: string;
+  /** Overrides the definition's size preset. */
+  size?: FigureSize;
+};
+
+const { figure, alt, caption, size } = Astro.props;
+
+const definitions = import.meta.glob<{ default: FigureDefinition }>(
+  ["/src/site/figures/**/*.ts", "!/src/site/figures/**/*.client.ts", "!/src/site/figures/**/_*.ts"],
+  { eager: true }
+);
+const clients = import.meta.glob("/src/site/figures/**/*.client.ts");
+const datasets = import.meta.glob<string>("/src/data/figures/**/*.csv", {
+  eager: true,
+  query: "?raw",
+  import: "default"
+});
+
+const definition = findDefinition(definitions, "src/site/figures", figure, "Chart");
+const csv = datasets[`/src/data/figures/${definition.data}`];
+if (csv === undefined) throw new Error(`<Chart>: no data file at src/data/figures/${definition.data}`);
+
+const data = parseFigureData(csv);
+const layout = figureLayout(size ?? definition.size);
+const label = alt ?? definition.alt ?? "";
+const wide = renderFigure(definition.plot({ data, width: layout.width, compact: false }), label);
+const compact =
+  layout.compactWidth === null
+    ? null
+    : renderFigure(definition.plot({ data, width: layout.compactWidth, compact: true }), label);
+const interactive = `/src/site/figures/${figure}.client.ts` in clients;
+const mono = (definition.mono ?? []).join(" ");
+---
+
+<FigureFrame
+  layout={layout}
+  title={definition.title}
+  legend={definition.legend}
+  wide={wide}
+  compact={compact}
+  caption={caption}
+  attrs={{
+    "data-mono": mono || undefined,
+    "data-figure": figure,
+    "data-figure-client": interactive ? "" : undefined
+  }}
+>
+  {interactive && <script is:inline type="application/json" data-figure-data set:html={JSON.stringify(data).replaceAll("<", "\\u003c")} />}
+  <slot name="caption" slot="caption" />
+</FigureFrame>
+
+<script>
+  import type { FigureClient } from "../../lib/figures";
+
+  // Hover: show a mark's <title> in a styled tip instead of the native one,
+  // which is slow to appear and missing on touch.
+  const tip = document.createElement("div");
+  tip.className = "figure-tip";
+  tip.hidden = true;
+  document.body.append(tip);
+
+  const tipTarget = (node: EventTarget | null) => {
+    if (!(node instanceof Element) || !node.closest(".figure-chart")) return null;
+    for (let el: Element | null = node; el && !el.classList.contains("figure-chart"); el = el.parentElement) {
+      const title = el.querySelector(":scope > title");
+      if (title) {
+        (el as HTMLElement).dataset.tip = title.textContent ?? "";
+        title.remove();
+      }
+      if ((el as HTMLElement).dataset?.tip) return el as HTMLElement;
+    }
+    return null;
+  };
+
+  const place = (event: PointerEvent) => {
+    const gap = 14;
+    const { innerWidth } = window;
+    const box = tip.getBoundingClientRect();
+    const left = Math.min(event.clientX + gap, innerWidth - box.width - 8);
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${event.clientY - box.height - gap}px`;
+  };
+
+  document.addEventListener("pointerover", (event) => {
+    const target = tipTarget(event.target);
+    if (!target) return;
+    tip.textContent = target.dataset.tip ?? "";
+    tip.hidden = false;
+    place(event);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!tip.hidden) place(event);
+  });
+  document.addEventListener("pointerout", (event) => {
+    if (tipTarget(event.target) && !tipTarget(event.relatedTarget)) tip.hidden = true;
+  });
+  window.addEventListener("scroll", () => (tip.hidden = true), { passive: true });
+
+  // Interactive figures: mount each client module when its chart is near the
+  // viewport, so a page of charts loads no extra code until it's needed.
+  const clients = import.meta.glob<{ default: FigureClient }>("/src/site/figures/**/*.client.ts");
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const root = entry.target as HTMLElement;
+        observer.unobserve(root);
+        const load = clients[`/src/site/figures/${root.dataset.figure}.client.ts`];
+        if (!load) continue;
+        const data = JSON.parse(root.querySelector("script[data-figure-data]")?.textContent ?? "[]");
+        load()
+          .then((module) => module.default(root, { data }))
+          .then(() => root.classList.add("is-interactive"))
+          .catch((error) => console.error(`Figure ${root.dataset.figure} failed to mount`, error));
+      }
+    },
+    { rootMargin: "200px" }
+  );
+  for (const root of document.querySelectorAll<HTMLElement>(".figure-chart[data-figure-client]")) {
+    observer.observe(root);
+  }
+</script>

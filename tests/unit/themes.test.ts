@@ -6,7 +6,19 @@ import { darkTheme, lightTheme, themeConfig, themeRegistry } from "../../src/con
 import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
 import { contrastRatio, isCheckable, mixSrgb, parseColor } from "../../src/lib/theme/contrast";
 import { defineTheme } from "../../src/lib/theme/defineTheme";
+import {
+  FALLBACK_SERIES,
+  FIGURE_COLOR_TOKENS,
+  FIGURE_MIX,
+  FIGURE_SERIES_TOKENS,
+  FIGURE_TARGETS,
+  checkFigureColors,
+  deriveFigureAlt,
+  strongFill
+} from "../../src/lib/theme/figureColors";
+import { deltaE, deltaECvd } from "../../src/lib/theme/perception";
 import { siteThemeCss, themeToCss } from "../../src/lib/theme/themeCss";
+import type { Theme } from "../../src/config/types";
 
 describe("contrast", () => {
   it("measures the WCAG reference pairs", () => {
@@ -459,5 +471,109 @@ describe("theme registry", () => {
     expect(darkTheme.id).toBe(themeConfig.dark);
     expect(lightTheme.appearance).toBe("light");
     expect(darkTheme.appearance).toBe("dark");
+  });
+});
+
+describe("figure colours", () => {
+  const paper = builtInThemes.find((theme) => theme.id === "paper")!;
+  const figureErrors = (theme: Theme) =>
+    checkTheme(theme).errors.filter((issue) => issue.token.startsWith("figure-"));
+
+  it("gives every built-in theme a palette that clears every figure check", () => {
+    for (const theme of builtInThemes) {
+      const issues = checkFigureColors(theme);
+      expect(issues, theme.id).toEqual([]);
+      for (const token of FIGURE_COLOR_TOKENS) {
+        expect(contrastRatio(theme.colors[token], theme.colors.bg), `${theme.id} ${token}`).toBeGreaterThanOrEqual(
+          FIGURE_TARGETS.contrast
+        );
+      }
+      for (let i = 0; i + 1 < FIGURE_SERIES_TOKENS.length; i += 1) {
+        const [a, b] = [theme.colors[FIGURE_SERIES_TOKENS[i]], theme.colors[FIGURE_SERIES_TOKENS[i + 1]]];
+        expect(deltaECvd(a, b), `${theme.id} slots ${i + 1}–${i + 2}`).toBeGreaterThanOrEqual(FIGURE_TARGETS.cvdTarget);
+      }
+      for (const token of [...FIGURE_SERIES_TOKENS, "figure-neutral"] as const) {
+        const fill = strongFill(theme.colors[token], theme.appearance)!;
+        expect(contrastRatio("#ffffff", fill), `${theme.id} ${token} strong`).toBeGreaterThanOrEqual(
+          FIGURE_TARGETS.strongText
+        );
+      }
+    }
+  });
+
+  it("derives a three-colour theme's palette, and it passes", () => {
+    for (const appearance of ["light", "dark"] as const) {
+      const theme = defineTheme({
+        id: `three-${appearance}`,
+        label: "Three",
+        appearance,
+        colors:
+          appearance === "light"
+            ? { bg: "#fffdf8", fg: "#1b1a17", accent: "#8a3324" }
+            : { bg: "#1e2030", fg: "#e0e0e0", accent: "#8aadf4" }
+      });
+      expect(checkTheme(theme).errors).toEqual([]);
+      expect(theme.colors["figure-1"]).toBeTruthy();
+      expect(theme.colors["figure-6-alt"]).toMatch(/^#/);
+    }
+  });
+
+  it("keeps stated slots and derives only what is left out", () => {
+    const theme = defineTheme({
+      id: "stated",
+      label: "Stated",
+      appearance: "light",
+      colors: { bg: "#ffffff", fg: "#111111", accent: "#8a3324", "figure-1": "#8a3324", "figure-1-alt": "#c08070" }
+    });
+    expect(theme.colors["figure-1"]).toBe("#8a3324");
+    expect(theme.colors["figure-1-alt"]).toBe("#c08070");
+    expect(theme.colors["figure-2"]).toBe(FALLBACK_SERIES.light[1]);
+  });
+
+  // The override documented in docs/theming.md: spread a built-in in
+  // src/site/themes.ts and change only its chart colours.
+  it("lets a site retune a built-in's chart colours by spreading it", () => {
+    const retuned = defineTheme({ ...paper, colors: { ...paper.colors, "figure-1": "#8b1e3f" } });
+    expect(retuned.colors["figure-1"]).toBe("#8b1e3f");
+    expect(retuned.colors["figure-2"]).toBe(paper.colors["figure-2"]);
+    expect(retuned.colors.accent).toBe(paper.colors.accent);
+    expect(checkTheme(retuned).errors).toEqual([]);
+  });
+
+  it("pales a strong slot for its companion and deepens a weak one", () => {
+    const strong = deriveFigureAlt("#2c5cc5", "#ffffff", "#15161a");
+    const weak = deriveFigureAlt("#9d6d03", "#ffffff", "#15161a");
+    expect(contrastRatio(strong, "#ffffff")).toBeLessThan(contrastRatio("#2c5cc5", "#ffffff"));
+    expect(contrastRatio(strong, "#ffffff")).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(weak, "#ffffff")).toBeGreaterThan(contrastRatio("#9d6d03", "#ffffff"));
+    expect(deltaE(weak, "#9d6d03")).toBeGreaterThanOrEqual(FIGURE_TARGETS.alt);
+  });
+
+  it("fails a slot that vanishes on the page", () => {
+    const theme = { ...paper, colors: { ...paper.colors, "figure-3": "#e0e0e0" } };
+    expect(figureErrors(theme).map((issue) => issue.token)).toContain("figure-3");
+  });
+
+  it("fails neighbours that red–green colour-blind readers cannot tell apart", () => {
+    // A red and a green of the same lightness: distinct to most readers,
+    // nearly identical under protanopia.
+    const theme = { ...paper, colors: { ...paper.colors, "figure-1": "#c0392b", "figure-2": "#5a8a00" } };
+    expect(deltaECvd("#c0392b", "#5a8a00")).toBeLessThan(FIGURE_TARGETS.cvdFloor);
+    expect(figureErrors(theme).some((issue) => issue.message.includes("colour-blind"))).toBe(true);
+  });
+
+  it("fails a tone too light to carry white text on its strong fill", () => {
+    const theme = { ...paper, colors: { ...paper.colors, "figure-2": "#d9a400" } };
+    expect(figureErrors(theme).some((issue) => issue.message.includes("strong fill"))).toBe(true);
+  });
+
+  it("emits the palette as --figure-* and the mixes per appearance", () => {
+    const css = themeToCss(paper, ":root");
+    expect(css).toContain(`--figure-1: ${paper.colors["figure-1"]};`);
+    expect(css).toContain("--figure-6-alt:");
+    expect(css).toContain("--figure-neutral:");
+    expect(css).not.toContain("--color-figure");
+    expect(css).toContain(`--figure-strong: ${FIGURE_MIX.light.strong}%;`);
+    expect(css).toContain(`--figure-band-opacity: ${FIGURE_MIX.light.band};`);
   });
 });

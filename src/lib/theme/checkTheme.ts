@@ -1,5 +1,6 @@
 import type { Theme, ThemeColors } from "../../config/types";
 import { contrastRatio, isCheckable, isDarkBackground, isOpaque, parseColor } from "./contrast";
+import { checkFigureColors, FIGURE_COLOR_TOKENS } from "./figureColors";
 
 export type ThemeIssue = { theme: string; token: string; message: string };
 export type ThemeReport = { errors: ThemeIssue[]; warnings: ThemeIssue[] };
@@ -119,6 +120,7 @@ const REQUIRED_TOKENS: readonly (keyof ThemeColors)[] = [
   "graph-teaching",
   "graph-project",
   "graph-edge",
+  ...FIGURE_COLOR_TOKENS,
   "placeholder-a",
   "placeholder-b"
 ];
@@ -231,6 +233,11 @@ export function checkTheme(theme: Theme): ThemeReport {
         at(token, `${value} on ${background} is ${ratio.toFixed(2)}:1 and may be invisible`)
       );
     }
+  }
+
+  // Chart colours: visible on the page, and told apart from their neighbours.
+  for (const issue of checkFigureColors(theme)) {
+    (issue.severity === "error" ? errors : warnings).push(at(issue.token, issue.message));
   }
 
   return { errors, warnings };

@@ -137,7 +137,7 @@ way to retune a shipped theme — do that rather than editing
 ### The tokens
 
 Each becomes a CSS custom property: `bg` → `--color-bg`, `graph-hub` →
-`--graph-hub`, `placeholder-a` → `--placeholder-a`.
+`--graph-hub`, `figure-1` → `--figure-1`, `placeholder-a` → `--placeholder-a`.
 
 | Group        | Tokens                                                                                                                   |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
@@ -148,6 +148,7 @@ Each becomes a CSS custom property: `bg` → `--color-bg`, `graph-hub` →
 | Roles        | `link`, `link-line`, `annotation`, `annotation-soft`, `annotation-line`                                                  |
 | Semantics    | `danger`, `warning`, `success`, `info`, `example`, `quote`, each with a `-text` variant                                  |
 | Graph        | `graph-hub`, `graph-sub-hub`, `graph-paper`, `graph-post`, `graph-note`, `graph-teaching`, `graph-project`, `graph-edge` |
+| Charts       | `figure-1` … `figure-6`, `figure-1-alt` … `figure-6-alt`, `figure-neutral` (see [Chart colours](#chart-colours))           |
 | Placeholders | `placeholder-a`, `placeholder-b`                                                                                         |
 
 Non-colour tokens — the type scale, spacing, layout widths, radii — are not
@@ -233,6 +234,81 @@ Article-level sizes and line heights are a separate concern again — they live
 in the `--article-*` tokens in `src/styles/article.css`, documented under
 [Article Typography](using-the-template.md#article-typography).
 
+## Chart colours
+
+`<Chart>` and `<Diagram>` ([Figures](figures.md)) draw with seven theme
+roles, which `src/styles/figures.css` reads as CSS variables:
+
+| Role                                 | Used for                                                       | Default when unset                  |
+| ------------------------------------ | -------------------------------------------------------------- | ----------------------------------- |
+| `figure-1` … `figure-6`              | Categorical series, in this fixed order (`SERIES[0]` …)       | A fallback set fitted to `bg`       |
+| `figure-1-alt` … `figure-6-alt`      | A companion shade of each slot (`SERIES_ALT`)                  | Derived from its slot               |
+| `figure-neutral`                     | Baselines, "other" groups, reference lines (`NEUTRAL`)        | `muted-2`                           |
+
+Every built-in theme states its six slots: slot 1 near the theme's accent
+hue, then blue, ochre, teal, violet, green and red in that order, skipping
+any too close to slot 1, each at the lightness that keeps it apart from its
+neighbours on that theme's background. Companions and the neutral are
+derived:
+
+- A **companion** with room above 3:1 is paled toward `bg` until it nears
+  3:1. One already close to 3:1 is deepened instead (its OKLCH lightness
+  stepped toward `fg`'s, hue and chroma held) until it is clearly a different
+  shade.
+- The **neutral** is `muted-2`. In a light theme it is darkened if needed so
+  white text reads on its strong fill; in a dark theme, where the strong fill
+  is darker, it is only lightened if it misses 3:1 on `bg`.
+
+A custom theme that states no slots gets a fallback set (the same blue,
+ochre, teal, violet, green and red), moved toward `fg` where its background
+leaves one under 3:1.
+
+To set your own, in `src/site/themes.ts` (a new theme, or one with a
+built-in's `id` to retune it):
+
+```ts
+colors: {
+  bg: "#ffffff",
+  fg: "#15161a",
+  accent: "#8b1e3f",
+  "figure-1": "#8b1e3f",
+  "figure-2": "#1c4d88",
+  "figure-3": "#9d6d03",
+  "figure-4": "#00877d",
+  "figure-5": "#8a5bc4",
+  "figure-6": "#097b38",
+  "figure-1-alt": "#c07d90"   // optional: companions and neutral derive otherwise
+}
+```
+
+To change only the chart colours of a built-in theme, spread it:
+
+```ts
+import { builtInThemes } from "../config/defaults/themes";
+
+const paper = builtInThemes.find((theme) => theme.id === "paper")!;
+// Drop slot 1's copied companion, so it is derived again from the new slot.
+const { "figure-1-alt": _, ...colors } = paper.colors;
+
+export const customThemes: readonly ThemeInput[] = [
+  {
+    ...paper,
+    colors: { ...colors, "figure-1": "#8b1e3f" }
+  }
+];
+```
+
+Spreading a built-in copies its derived companions too. Restate or drop the
+`figure-N-alt` of every slot you change, as above, or the slot keeps the old
+slot's companion.
+
+How figures mix these — a diagram region's tint, a block's strong fill, a
+band's opacity — is set per appearance rather than per theme
+(`FIGURE_MIX` in `src/lib/theme/figureColors.ts`), and emitted as
+`--figure-tint`, `--figure-strong` and `--figure-band-opacity`.
+
+`npm run validate` checks the palette like the rest of the theme (below).
+
 ## Contrast
 
 `npm run validate` measures every registered theme — built-in and custom — and
@@ -262,6 +338,23 @@ Two colours are also measured against the tint they sit on rather than `bg`:
 `accent` on `accent-soft` (publication links) and `annotation` on
 `annotation-soft` (a term or note mark while its note is open). Both must
 clear 4.5:1.
+
+Chart colours have their own rules, because a series has to be told apart
+from its neighbours as well as seen:
+
+| Check                                                                 | Minimum                       |
+| --------------------------------------------------------------------- | ----------------------------- |
+| Each `figure-N`, `figure-N-alt` and `figure-neutral` against `bg`     | 3:1                           |
+| Adjacent slots under simulated protanopia and deuteranopia            | ΔE 6 (error); ΔE 8 (warning)  |
+| Adjacent slots under normal vision                                    | ΔE 15                         |
+| White text on each slot's and the neutral's strong fill               | 4.5:1                         |
+| A companion against its own slot                                      | ΔE 10 (warning)               |
+
+ΔE is distance in OKLab ×100. Colour-blind vision is simulated with Machado,
+Oliveira and Fernandes (2009) at full severity; the thresholds are calibrated
+to that model (`src/lib/theme/perception.ts`). Only adjacent slots are
+checked, because series take slots in order. Between ΔE 6 and 8, a pair is
+only safe with a second encoding, such as a dash or a direct label.
 
 Failures name the token and the measured ratio:
 
@@ -328,6 +421,7 @@ maintaining two files. `EmbedFrame` takes the same prop for light-only iframes.
 | `src/lib/theme/defineTheme.ts`               | template | Fills in omitted tokens                |
 | `src/lib/theme/themeCss.ts`                  | template | Renders a theme as CSS                 |
 | `src/lib/theme/contrast.ts`, `checkTheme.ts` | template | The contrast rules                     |
+| `src/lib/theme/figureColors.ts`, `perception.ts` | template | Chart colours and their checks     |
 | `src/components/layout/ThemeStyles.astro`    | template | Emits the two blocks into `<head>`     |
 | `src/styles/tokens.css`                      | template | Everything that is _not_ a colour      |
 
