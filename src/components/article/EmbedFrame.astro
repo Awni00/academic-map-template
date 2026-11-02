@@ -73,10 +73,13 @@ const layoutStyle = buildMediaLayoutStyle(
     mediaInset,
     mediaAlign
   },
+  // Full width unless told otherwise: an iframe has no width of its own to
+  // offer beyond the browser's 300px default, so a figure left to size itself
+  // (as it does beside margin asides) shrinks to that.
   // When autoFit is on, do not pin the wrapper to a fixed media height; the
   // `.article-figure__body` then collapses to the iframe once the script sizes
   // it. The iframe keeps `height` as an inline placeholder to avoid a flash.
-  { style, defaults: autoFit ? {} : { mediaHeight: height } }
+  { style, defaults: { width: "100%", ...(autoFit ? {} : { mediaHeight: height }) } }
 );
 const hasCaptionSlot = Astro.slots.has("caption");
 const hasCaption = hasCaptionSlot || Boolean(caption);
