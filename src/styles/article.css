@@ -785,6 +785,35 @@
   overflow-y: hidden;
 }
 
+/* A sideways scroller with more to show fades the edge that hides it.
+   `data-overflow` ("start", "end" or "both") comes from
+   lib/article/overflowHint.ts, wired to display math, toggle tabs and the
+   cite block. A mask rather than an overlay, so it works on any background. */
+[data-overflow-hint][data-overflow] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--overflow-fade-start, 0px),
+    #000 calc(100% - var(--overflow-fade-end, 0px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--overflow-fade-start, 0px),
+    #000 calc(100% - var(--overflow-fade-end, 0px)),
+    transparent
+  );
+}
+
+[data-overflow-hint]:is([data-overflow="start"], [data-overflow="both"]) {
+  --overflow-fade-start: 2.5em;
+}
+
+[data-overflow-hint]:is([data-overflow="end"], [data-overflow="both"]) {
+  --overflow-fade-end: 2.5em;
+}
+
 /* Proof */
 .proof {
   font-size: var(--article-body-size, 18px);

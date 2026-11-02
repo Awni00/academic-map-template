@@ -71,3 +71,10 @@ const components = {
     </div>
   </article>
 </BaseLayout>
+
+<script>
+  // Fade the hidden edge of display math too wide for the column.
+  import { wireOverflowHints } from "../lib/article/overflowHint";
+
+  wireOverflowHints(".article-content .katex-display");
+</script>
