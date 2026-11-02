@@ -10,6 +10,7 @@ import {
   writingConfig,
   type EntryType
 } from "../src/config";
+import { legacyPlacementWarnings } from "../src/lib/article/legacyPlacement";
 import { findPlotlyFigureReferences, plotlyHtmlNeedsMathJax } from "../src/lib/article/plotlyValidation";
 import { resolveTocConfig } from "../src/lib/article/toc";
 import { isNavIconName } from "../src/config/navIcons";
@@ -34,6 +35,7 @@ for (const warning of graphResult.warnings) {
 }
 
 warnings.push(...configWarnings);
+validatePlacementConfig();
 validateRoutes();
 validateShortLinks();
 validateThemes();
@@ -110,11 +112,20 @@ function validateEntries(entries: WritingEntryLike[]): void {
         });
       }
     }
+    warnings.push(...legacyPlacementWarnings(entry.data.article?.placement, entry.id));
     try {
       resolveTocConfig(entry, writingConfig);
     } catch (error) {
       errors.push(`${entry.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+}
+
+function validatePlacementConfig(): void {
+  const placement = writingConfig.entryLayout.placement;
+  warnings.push(...legacyPlacementWarnings(placement.default, "writing.entryLayout.placement.default"));
+  for (const [type, override] of Object.entries(placement.byType)) {
+    warnings.push(...legacyPlacementWarnings(override, `placement for entry type "${type}"`));
   }
 }
 

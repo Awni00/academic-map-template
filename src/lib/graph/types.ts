@@ -134,8 +134,13 @@ export type WritingEntryLike = {
       placement?: {
         toc?: { where?: "left" | "right" | "sidebar" | "none" };
         localGraph?: { where?: "header" | "footer" | "none" };
+        /** Legacy: no longer rendered; `npm run validate` warns. */
         linkedFrom?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
-        related?: { where?: "left" | "right" | "footer" | "sidebar" | "none" };
+        related?: {
+          /** "left" / "right" / "sidebar" are legacy and render as "footer". */
+          where?: "footer" | "none" | "left" | "right" | "sidebar";
+          withLocalGraph?: boolean;
+        };
       };
     };
   };

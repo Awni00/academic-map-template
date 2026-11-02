@@ -1714,6 +1714,11 @@ body {
   gap: 6px;
 }
 
+/* The list under the map when `related.withLocalGraph` shows both. */
+.entry-foot-content .local-graph-map + .entry-foot-related {
+  margin-top: 16px;
+}
+
 .entry-foot-content li {
   display: flex;
   align-items: center;

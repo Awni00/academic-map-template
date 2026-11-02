@@ -9,7 +9,11 @@ export type LabelVisibility = "always" | "hover" | "never";
 
 export type PlacementToc = "left" | "right" | "none";
 export type PlacementGraph = "header" | "footer" | "none";
-export type PlacementNav = "left" | "right" | "footer" | "none";
+/**
+ * Where the "Related" link list goes. Footer-only: side rails are reserved for
+ * the table of contents.
+ */
+export type PlacementRelated = "footer" | "none";
 export type AsidePlacement = "margin" | "inline";
 /**
  * Article presentation mode. "article" is the standard long-form layout;
@@ -28,8 +32,17 @@ export type TocConfigOverride = Partial<TocConfig>;
 export type PlacementSpec = {
   toc: { where: PlacementToc };
   localGraph: { where: PlacementGraph };
-  linkedFrom: { where: PlacementNav };
-  related: { where: PlacementNav };
+  /**
+   * The "Related" list: every entry linked to or from this page. It stands in
+   * for the local graph, so by default it shows only on pages without one;
+   * `withLocalGraph: true` shows it alongside the graph as well.
+   */
+  related: { where: PlacementRelated; withLocalGraph: boolean };
+};
+
+/** A partial `PlacementSpec`, as given by entry types, the site config, or frontmatter. */
+export type PlacementOverride = {
+  [K in keyof PlacementSpec]?: Partial<PlacementSpec[K]>;
 };
 
 export type EntryTypeGraphConfig = {
@@ -54,7 +67,7 @@ export type EntryTypeGraphConfig = {
 
 export type EntryTypeArticleConfig = {
   mode?: ArticleMode;
-  placement?: Partial<PlacementSpec>;
+  placement?: PlacementOverride;
   asides?: AsidePlacement;
   toc?: TocConfigOverride;
 };
@@ -147,17 +160,13 @@ export type WritingConfig = {
       defaultDepth: number;
       maxNodes: number;
     };
-    hubPages: {
-      autoRenderLinkedEntries: boolean;
-      groupLinkedEntriesBy: "type";
-    };
     toc: {
       default: TocConfig;
       byType: Record<EntryType, TocConfigOverride>;
     };
     placement: {
       default: PlacementSpec;
-      byType: Record<EntryType, Partial<PlacementSpec>>;
+      byType: Record<EntryType, PlacementOverride>;
     };
     asides: {
       default: AsidePlacement;

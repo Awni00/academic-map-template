@@ -30,6 +30,7 @@ import type {
   PublicationsConfig,
   SiteConfig,
   Theme,
+  PlacementOverride,
   ThemeConfig,
   TocConfigOverride,
   WritingConfig
@@ -243,10 +244,7 @@ function resolveWritingConfig(): WritingConfig {
       },
       placement: {
         ...base.entryLayout.placement,
-        byType: {
-          ...placementByType,
-          ...base.entryLayout.placement.byType
-        }
+        byType: mergePlacementByType(placementByType, base.entryLayout.placement.byType)
       },
       asides: {
         ...base.entryLayout.asides,
@@ -257,6 +255,27 @@ function resolveWritingConfig(): WritingConfig {
       }
     }
   };
+}
+
+/**
+ * Layer the site's `placement.byType` over the entry types' own placement,
+ * field by field. A site that sets only `byType.hub.related` keeps the hub
+ * type's `toc` and `localGraph` placement rather than replacing it.
+ */
+export function mergePlacementByType(
+  fromTypes: Record<EntryType, PlacementOverride>,
+  fromSite: Record<EntryType, PlacementOverride>
+): Record<EntryType, PlacementOverride> {
+  const merged: Record<EntryType, PlacementOverride> = { ...fromTypes };
+  for (const [type, override] of Object.entries(fromSite)) {
+    const base = merged[type] ?? {};
+    const out: PlacementOverride = { ...base };
+    for (const key of Object.keys(override) as Array<keyof PlacementOverride>) {
+      out[key] = { ...base[key], ...override[key] } as never;
+    }
+    merged[type] = out;
+  }
+  return merged;
 }
 
 export function validateEntryTypes(values: readonly EntryTypeDefinition[]): EntryTypeDefinition[] {

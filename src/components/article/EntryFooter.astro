@@ -8,9 +8,9 @@ import {
 } from "../../lib/article/toc";
 import type { GraphIndex } from "../../lib/graph/types";
 import type { TocConfig } from "../../config/types";
+import type { RelatedItem } from "../../lib/article/related";
 
 type Heading = TocHeading;
-type LinkedItem = { id: string; title: string; url: string };
 
 type Props = {
   graph: GraphIndex;
@@ -20,8 +20,12 @@ type Props = {
   tocConfig?: TocConfig;
   tocInFoot?: boolean;
   showLocalGraph?: boolean;
-  linkedFrom?: LinkedItem[];
-  related?: LinkedItem[];
+  /**
+   * The "Related" list. The layout passes it only when it should render
+   * (see `showRelatedList`); with the map also shown, it sits under the map
+   * in the same section.
+   */
+  related?: RelatedItem[];
   bibtex?: string;
 };
 
@@ -32,20 +36,15 @@ const {
   tocConfig = DEFAULT_TOC_CONFIG,
   tocInFoot = false,
   showLocalGraph = false,
-  linkedFrom = [],
   related = [],
   bibtex
 } = Astro.props;
 
 const tocHeadings = tocInFoot ? filterHeadingsForToc(headings, tocConfig) : [];
-// The linked-from and related lists are suppressed when the map is shown: it already
-// draws those relationships, and `related` is the union of linksTo links and
-// linkedFrom, so the two lists also duplicated each other.
-const showLinkLists = !showLocalGraph;
 const hasAny =
   (tocInFoot && tocHeadings.length > 0) ||
   showLocalGraph ||
-  (showLinkLists && (linkedFrom.length > 0 || related.length > 0)) ||
+  related.length > 0 ||
   Boolean(bibtex);
 ---
 
@@ -66,45 +65,28 @@ const hasAny =
           </div>
         </div>
       )}
-      {showLocalGraph && (
+      {(showLocalGraph || related.length > 0) && (
         <div class="entry-foot-section">
           <div class="entry-foot-label">Related</div>
           <div class="entry-foot-content">
-            <LocalGraphMap
-              client:load
-              graph={graph}
-              currentId={currentId}
-              depth={writingConfig.entryLayout.localGraph.defaultDepth as 1 | 2}
-              maxNodes={writingConfig.entryLayout.localGraph.maxNodes}
-            />
-          </div>
-        </div>
-      )}
-      {showLinkLists && linkedFrom.length > 0 && (
-        <div class="entry-foot-section">
-          <div class="entry-foot-label">Linked from</div>
-          <div class="entry-foot-content">
-            <ul>
-              {linkedFrom.map((item) => (
-                <li>
-                  <a href={item.url}>{item.title}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-      {showLinkLists && related.length > 0 && (
-        <div class="entry-foot-section">
-          <div class="entry-foot-label">Related</div>
-          <div class="entry-foot-content">
-            <ul>
-              {related.map((item) => (
-                <li>
-                  <a href={item.url}>{item.title}</a>
-                </li>
-              ))}
-            </ul>
+            {showLocalGraph && (
+              <LocalGraphMap
+                client:load
+                graph={graph}
+                currentId={currentId}
+                depth={writingConfig.entryLayout.localGraph.defaultDepth as 1 | 2}
+                maxNodes={writingConfig.entryLayout.localGraph.maxNodes}
+              />
+            )}
+            {related.length > 0 && (
+              <ul class="entry-foot-related">
+                {related.map((item) => (
+                  <li>
+                    <a href={item.url}>{item.title}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}
