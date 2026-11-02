@@ -2004,6 +2004,21 @@ body {
     color: var(--color-fg);
     font: 500 13.5px var(--font-ui);
     cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease-quiet),
+      transform var(--dur-fast) var(--ease-quiet),
+      visibility 0s;
+  }
+
+  /* Out of sight (and out of the tab order) until the header scrolls away;
+     ContentsSheet.tsx sets the attribute. */
+  .contents-pill:not([data-revealed]) {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity var(--dur-fast) var(--ease-quiet),
+      transform var(--dur-fast) var(--ease-quiet),
+      visibility 0s var(--dur-fast);
   }
 
   .contents-pill:focus-visible {
