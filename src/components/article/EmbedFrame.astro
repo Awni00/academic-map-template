@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   src: string;
@@ -110,7 +111,7 @@ const shouldRenderCaption = hasCaption || showOpenLink;
               <slot name="caption" />
             </span>
           ) : (
-            caption && <span>{caption}</span>
+            caption && <span set:html={renderCaption(caption)} />
           )
         }
         {showOpenLink && <a href={src}>{linkLabel}</a>}

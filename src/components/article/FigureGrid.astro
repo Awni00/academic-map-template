@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   columns?: 2 | 3 | 4;
@@ -68,7 +69,7 @@ const layoutStyle = buildMediaLayoutStyle(
         <slot name="caption" />
       </figcaption>
     ) : (
-      caption && <figcaption>{caption}</figcaption>
+      caption && <figcaption set:html={renderCaption(caption)} />
     )
   }
 </figure>

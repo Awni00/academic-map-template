@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   src: string;
@@ -52,5 +53,5 @@ const layoutStyle = buildMediaLayoutStyle(
       {poster && <img src={poster} alt={alt} loading="lazy" />}
     </div>
   </div>
-  {caption && <figcaption>{caption}</figcaption>}
+  {caption && <figcaption set:html={renderCaption(caption)} />}
 </figure>

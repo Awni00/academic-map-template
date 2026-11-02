@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   src: string;
@@ -49,5 +50,5 @@ const layoutStyle = buildMediaLayoutStyle(
       <source src={src} />
     </video>
   </div>
-  {caption && <figcaption>{caption}</figcaption>}
+  {caption && <figcaption set:html={renderCaption(caption)} />}
 </figure>
