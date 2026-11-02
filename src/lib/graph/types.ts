@@ -126,6 +126,7 @@ export type WritingEntryLike = {
     article?: {
       mode?: "article" | "abstract";
       justify?: boolean;
+      figureNumbers?: boolean;
       asides?: "margin" | "inline";
       toc?: {
         minDepth?: number;

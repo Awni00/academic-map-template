@@ -637,6 +637,33 @@ article:
     maxDepth: 4
 ```
 
+## Figure Numbers
+
+Captions are unnumbered by default. To prefix them with "Figure 3." and
+"Table 1.", turn numbering on for every entry, or per entry in frontmatter:
+
+```ts
+export const siteConfigOverrides = {
+  writing: {
+    entryLayout: {
+      figureNumbers: true
+    }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+```yaml
+article:
+  figureNumbers: true
+```
+
+Only captioned figures are numbered. A `FigureGrid`, a captioned `TwoColumns`
+or a `ToggleFigure` counts as one figure; the captions of the figures inside
+it are not numbered. Tables are counted separately: wrap the table in
+`<Figure kind="table" caption="…">`, or give an HTML table a `<caption>`.
+Numbers are added by CSS, so a caption that already starts with "Figure:"
+will show both.
+
 ## Content Paths
 
 The resolved config currently expects these source paths:

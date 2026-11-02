@@ -148,6 +148,9 @@ const writing = defineCollection({
         // Justify this entry's prose, overriding
         // theme.typography.justify.enabled.
         justify: z.boolean().optional(),
+        // Number this entry's figure and table captions, overriding
+        // writing.entryLayout.figureNumbers.
+        figureNumbers: z.boolean().optional(),
         // Override aside placement: "margin" floats <Aside> blocks into
         // the right gutter; "inline" renders them as left-bordered blocks.
         asides: z.enum(["margin", "inline"]).optional(),

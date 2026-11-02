@@ -1051,12 +1051,84 @@
   object-fit: var(--article-direct-media-fit, var(--article-media-fit, contain));
 }
 
-.article-figure figcaption {
-  margin-top: 10px;
+/* ── Captions ──────────────────────────────────────────────────────────
+   One style for every caption: figures, figure grids, captioned column
+   pairs, and tables (a `<Figure kind="table">` or an HTML `<caption>`). */
+.article-figure figcaption,
+.figure-grid > figcaption,
+.two-columns-figure > figcaption,
+.article-content table > caption {
   font-family: var(--font-ui);
   font-size: var(--article-caption-size, 13px);
   line-height: 1.55;
   color: var(--color-muted);
+}
+
+.article-figure figcaption {
+  margin-top: 10px;
+}
+
+.article-content table > caption {
+  caption-side: bottom;
+  margin-top: 10px;
+  text-align: left;
+}
+
+/* A table in a Figure takes the figure's spacing and the full column. */
+.article-figure[data-kind="table"] .article-figure__body {
+  justify-items: stretch;
+}
+
+.article-figure[data-kind="table"] table {
+  margin: 0;
+}
+
+/* Optional numbering (`writing.entryLayout.figureNumbers`, or an entry's
+   `article.figureNumbers`): "Figure 3." / "Table 1." before each caption.
+   Only captioned figures count. A grid, a captioned column pair or a toggle
+   figure counts once: its own caption is numbered and the captions of the
+   figures inside it are not (a toggle figure's panels all show its one
+   number). Counters rather than build-time numbers, because each component
+   renders on its own and none knows its position on the page. */
+.article-content[data-figure-numbers="true"] {
+  counter-reset: article-figure article-table;
+}
+
+[data-figure-numbers="true"] :is(.article-figure, .figure-grid, .two-columns-figure) > figcaption::before,
+[data-figure-numbers="true"] .embed-frame > figcaption > span:first-child::before {
+  counter-increment: article-figure;
+  content: "Figure " counter(article-figure) ".";
+  margin-right: 0.45em;
+  color: var(--color-fg-soft);
+  font-weight: 600;
+}
+
+/* An embed's caption is a row (caption, then its "Open" link); the number
+   goes inside the caption text, not before the row. */
+[data-figure-numbers="true"] .embed-frame > figcaption::before,
+[data-figure-numbers="true"] :is(.figure-grid__items, .two-columns) figcaption::before,
+[data-figure-numbers="true"] :is(.figure-grid__items, .two-columns) figcaption > span:first-child::before {
+  counter-increment: none;
+  content: none;
+}
+
+[data-figure-numbers="true"] .toggle-figure:has(figcaption) {
+  counter-increment: article-figure;
+}
+
+[data-figure-numbers="true"] .toggle-figure__panel figcaption::before,
+[data-figure-numbers="true"] .toggle-figure__panel .embed-frame > figcaption > span:first-child::before {
+  counter-increment: none;
+  content: "Figure " counter(article-figure) ".";
+}
+
+[data-figure-numbers="true"] .article-figure[data-kind="table"] > figcaption::before,
+[data-figure-numbers="true"] table > caption::before {
+  counter-increment: article-table;
+  content: "Table " counter(article-table) ".";
+  margin-right: 0.45em;
+  color: var(--color-fg-soft);
+  font-weight: 600;
 }
 
 .wrap-figure {
@@ -1160,10 +1232,6 @@
 
 .figure-grid > figcaption {
   margin-top: 12px;
-  font-family: var(--font-ui);
-  font-size: var(--article-caption-size, 13px);
-  line-height: 1.55;
-  color: var(--color-muted);
 }
 
 .toggle-figure {
@@ -1782,10 +1850,6 @@ body {
 
 .two-columns-figure > figcaption {
   margin-top: 12px;
-  font-family: var(--font-ui);
-  font-size: var(--article-caption-size, 13px);
-  line-height: 1.55;
-  color: var(--color-muted);
 }
 
 .comparison__panel {

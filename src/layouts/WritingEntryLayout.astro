@@ -76,6 +76,7 @@ const asidesEffective = isAbstract
   : effectiveAsides(asidesRequested, placement.toc.where);
 
 const justifyClass = justifyClasses(themeConfig.typography.justify, entry.data.article?.justify);
+const figureNumbers = entry.data.article?.figureNumbers ?? writingConfig.entryLayout.figureNumbers;
 
 const linksTo = graph.linksTo[node.id] ?? [];
 const linkedFromIds = graph.linkedFrom[node.id] ?? [];
@@ -347,12 +348,20 @@ const right = renderSide("right");
           isAbstract ? (
             <section class="abstract-block" aria-label="Abstract">
               <h2 class="abstract-block__label">Abstract</h2>
-              <div class:list={["article-content", ...justifyClass]} data-asides={asidesEffective}>
+              <div
+                class:list={["article-content", ...justifyClass]}
+                data-asides={asidesEffective}
+                data-figure-numbers={figureNumbers ? "true" : undefined}
+              >
                 <Content components={components} />
               </div>
             </section>
           ) : (
-            <div class:list={["article-content", ...justifyClass]} data-asides={asidesEffective}>
+            <div
+              class:list={["article-content", ...justifyClass]}
+              data-asides={asidesEffective}
+              data-figure-numbers={figureNumbers ? "true" : undefined}
+            >
               <Content components={components} />
             </div>
           )

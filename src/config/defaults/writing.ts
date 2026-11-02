@@ -49,6 +49,7 @@ export const defaultWritingConfig = {
       defaultDepth: 1,
       maxNodes: 20
     },
+    figureNumbers: false,
     hubPages: {
       autoRenderLinkedEntries: true,
       groupLinkedEntriesBy: "type"

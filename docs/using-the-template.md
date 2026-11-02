@@ -353,6 +353,21 @@ as a path under `public/` (`src="/figures/plot.png"`) has its width and height
 read from the file at build time, so its box is reserved before it loads, as
 for an imported image.
 
+Give a table a caption by wrapping it in a figure. Figure and table captions
+share one style, and with figure numbering on (see
+[configuration](configuration.md#figure-numbers)) tables are numbered
+separately:
+
+```mdx
+<Figure kind="table" caption="Accuracy by method.">
+
+| Method | Accuracy |
+| --- | --- |
+| Baseline | 0.81 |
+
+</Figure>
+```
+
 `TwoColumns` lays out any two blocks side by side. Give it a `caption` (prop
 or slot) and the pair becomes one figure with the caption underneath; don't
 follow it with an empty `Figure` that holds only the caption. For two images,
