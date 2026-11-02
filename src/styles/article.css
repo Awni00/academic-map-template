@@ -1124,19 +1124,30 @@
 .toggle-figure {
   width: var(--article-layout-width, auto);
   max-width: min(100%, var(--article-layout-max-width, 100%));
+  min-width: 0;
   margin: 32px auto;
 }
 
+/* The tab bar keeps its natural width and scrolls sideways inside the
+   controls when the labels are wider than the column, rather than pushing
+   the figure wider. `safe` centring falls back to the start edge on
+   overflow, so the first tab is never scrolled out of reach. */
 .toggle-figure__controls {
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   margin-bottom: 12px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.toggle-figure__controls::-webkit-scrollbar {
+  display: none;
 }
 
 .toggle-figure__tablist {
   display: inline-flex;
-  max-width: 100%;
+  flex: none;
   gap: 2px;
   padding: 2px;
   border: 0.5px solid var(--color-border);
@@ -1185,9 +1196,17 @@
   gap: 0;
 }
 
+.toggle-figure__panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toggle-figure__panel :is(img, video, iframe, svg) {
+  max-width: 100%;
+}
+
 .toggle-figure[data-toggle-figure-enhanced="true"] .toggle-figure__panel {
   grid-area: 1 / 1;
-  min-width: 0;
 }
 
 .toggle-figure[data-toggle-figure-enhanced="true"] .toggle-figure__panel:not([data-active="true"]) {
@@ -1201,6 +1220,14 @@
 
 .toggle-figure__panel > .article-figure:last-child {
   margin-bottom: 0;
+}
+
+/* Phones: tabs at the size of the site's other UI chips. */
+@media (max-width: 480px) {
+  .toggle-figure__tab {
+    padding: 7px 10px;
+    font-size: 14px;
+  }
 }
 
 .model-viewer {
