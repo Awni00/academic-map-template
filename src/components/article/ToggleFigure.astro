@@ -55,6 +55,8 @@ const layoutStyle = buildMediaLayoutStyle(
 </div>
 
 <script>
+  import { wireOverflowHints } from "../../lib/article/overflowHint";
+
   const SELECTORS = {
     root: "[data-toggle-figure]",
     controls: "[data-toggle-figure-controls]",
@@ -123,6 +125,8 @@ const layoutStyle = buildMediaLayoutStyle(
 
       controls.replaceChildren(tablist);
       controls.hidden = panels.length < 2;
+      // Tabs wider than the column scroll; fade the edge that hides some.
+      wireOverflowHints(SELECTORS.controls, root);
       root.dataset.toggleFigureEnhanced = "true";
 
       const defaultIndex = panels.findIndex((panel) => panel.dataset.value === root.dataset.defaultValue);

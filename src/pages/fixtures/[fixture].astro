@@ -17,6 +17,7 @@
  * This guard is load-bearing. Removing it does not "simplify" anything — it
  * publishes the fixtures.
  */
+import ArticleLayout from "../../fixtures/ArticleLayout.astro";
 import GraphPlayground from "../../fixtures/GraphPlayground.astro";
 import HoverPopovers from "../../fixtures/HoverPopovers.astro";
 import MediaLayoutControls from "../../fixtures/MediaLayoutControls.astro";
@@ -28,6 +29,7 @@ export function getStaticPaths() {
   // below — the names live here and the components live there. Adding a fixture
   // means adding it in both places.
   return [
+    { params: { fixture: "article-layout" } },
     { params: { fixture: "graph-playground" } },
     { params: { fixture: "hover-popovers" } },
     { params: { fixture: "media-layout-controls" } },
@@ -36,6 +38,7 @@ export function getStaticPaths() {
 }
 
 const FIXTURES = {
+  "article-layout": ArticleLayout,
   "graph-playground": GraphPlayground,
   "hover-popovers": HoverPopovers,
   "media-layout-controls": MediaLayoutControls,

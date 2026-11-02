@@ -116,7 +116,7 @@ export default function WritingPreview({
   }, [graph, previewGraph]);
   // Counted over the whole collection, not the preview's subset: the number
   // says how big a topic is, which a capped preview would understate.
-  const hubCounts = useMemo(() => hubMemberCounts(graph.nodes), [graph]);
+  const hubCounts = useMemo(() => hubMemberCounts(graph.nodes, graph.linkedFrom), [graph]);
   const showPanel = interactive && previewGraph.nodes.length > 0;
 
   const needsGraph = desktopMode === "graph" || mobileMode === "graph";
@@ -176,7 +176,9 @@ export default function WritingPreview({
                 <strong>
                   <NodeIcon shape={hubType.graph.shape as NodeShape} color={hubType.graph.color as string} />
                   {hub.title}
-                  <span className="topic-card__count">{hubCounts.get(hub.id) ?? 0}</span>
+                  {(hubCounts.get(hub.id) ?? 0) > 0 && (
+                    <span className="topic-card__count">{hubCounts.get(hub.id)}</span>
+                  )}
                 </strong>
                 {hub.summary && <p className="muted">{hub.summary}</p>}
               </a>

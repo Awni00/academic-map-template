@@ -41,6 +41,37 @@ describe("hubMemberCounts", () => {
     expect(counts.get("b")).toBe(2);
     expect(counts.has("b/sub")).toBe(false);
   });
+
+  it("counts pages that link to a hub, as its page lists them", () => {
+    // A flat site: papers in a folder of their own, joined to topics by links.
+    const flat = [
+      { id: "theory", path: "theory", type: "hub" },
+      { id: "reasoning", path: "reasoning", type: "hub" },
+      { id: "papers/p1", path: "papers/p1", type: "paper" },
+      { id: "papers/p2", path: "papers/p2", type: "paper" }
+    ];
+    const counts = hubMemberCounts(flat, {
+      theory: ["papers/p1", "papers/p2", "reasoning"],
+      reasoning: ["papers/p2"]
+    });
+    expect(counts.get("theory")).toBe(2);
+    expect(counts.get("reasoning")).toBe(1);
+  });
+
+  it("counts a page once however it belongs, and credits sub-hub links to the top hub", () => {
+    const counts = hubMemberCounts(nodes, {
+      a: ["a/one", "loose"],
+      "b/sub": ["loose"],
+      "a/one": ["a/two"]
+    });
+    expect(counts.get("a")).toBe(3);
+    expect(counts.get("b")).toBe(3);
+  });
+
+  it("leaves a hub with no members out", () => {
+    const counts = hubMemberCounts([{ id: "empty", path: "empty", type: "hub" }], {});
+    expect(counts.has("empty")).toBe(false);
+  });
 });
 
 describe("seedPositions", () => {

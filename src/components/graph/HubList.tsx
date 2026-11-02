@@ -4,7 +4,7 @@ import NodeIcon, { type NodeShape } from "./NodeIcon";
 
 type HubListProps = {
   hubs: EntryNode[];
-  /** Pages under each hub, at any depth (`hubMemberCounts`). */
+  /** Pages in each hub, by folder or by link (`hubMemberCounts`). A hub with none shows no number. */
   counts: Map<string, number>;
   onSelect: (id: string) => void;
 };
@@ -30,13 +30,15 @@ export default function HubList({ hubs, counts, onSelect }: HubListProps) {
               type="button"
               className="preview-link hub-list__row"
               onClick={() => onSelect(hub.id)}
-              aria-label={`${hub.title}, ${count} ${count === 1 ? "page" : "pages"}`}
+              aria-label={count > 0 ? `${hub.title}, ${count} ${count === 1 ? "page" : "pages"}` : hub.title}
             >
               <NodeIcon shape={hubType.graph.shape as NodeShape} color={hubType.graph.color as string} />
               <span className="connection-title">{hub.title}</span>
-              <span className="hub-list__count" aria-hidden="true">
-                {count}
-              </span>
+              {count > 0 && (
+                <span className="hub-list__count" aria-hidden="true">
+                  {count}
+                </span>
+              )}
             </button>
           </li>
         );

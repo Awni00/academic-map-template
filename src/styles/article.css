@@ -197,15 +197,16 @@
   gap: 2px;
 }
 
+/* Inline flow rather than flex, so a long label (a full venue name) wraps
+   inside the column like prose, and the date follows on its last line when
+   it fits. The date itself never breaks. */
 .article-date-list__item {
-  display: flex;
-  flex-wrap: wrap;
-  column-gap: 0.35em;
   color: var(--color-fg);
   font-weight: 500;
+  overflow-wrap: break-word;
 }
 
-.article-date-list__label {
+.article-date-list__date {
   white-space: nowrap;
 }
 
@@ -251,15 +252,8 @@
     font-size: 10.5px;
   }
 
-  .article-byline__list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0;
-  }
-
-  .article-byline__list li + li::before {
-    content: ", ";
-  }
+  /* Names and affiliations stay one per line, as on desktop. Run together,
+     they wrap mid-list and leave lines that open with a comma. */
 }
 
 /* The local map rendered in the article header as a contextual landmark
@@ -432,6 +426,30 @@
 
 .article-content li {
   margin: 6px 0;
+}
+
+/* Nested lists get markers, which Tailwind's preflight strips from every
+   list: without one, an indented item reads as a stray indented line rather
+   than part of the item above. Top-level lists stay unmarked, as designed.
+   `:where` keeps these below any component's own list styling. */
+.article-content :where(li > ul) {
+  list-style: disc;
+}
+
+.article-content :where(li li > ul) {
+  list-style: circle;
+}
+
+.article-content :where(li > ol) {
+  list-style: decimal;
+}
+
+.article-content :where(li li)::marker {
+  color: var(--color-muted);
+}
+
+.article-content :where(li li) {
+  margin: 4px 0;
 }
 
 .heading-anchor {
@@ -791,6 +809,35 @@
   overflow-y: hidden;
 }
 
+/* A sideways scroller with more to show fades the edge that hides it.
+   `data-overflow` ("start", "end" or "both") comes from
+   lib/article/overflowHint.ts, wired to display math, toggle tabs and the
+   cite block. A mask rather than an overlay, so it works on any background. */
+[data-overflow-hint][data-overflow] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--overflow-fade-start, 0px),
+    #000 calc(100% - var(--overflow-fade-end, 0px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--overflow-fade-start, 0px),
+    #000 calc(100% - var(--overflow-fade-end, 0px)),
+    transparent
+  );
+}
+
+[data-overflow-hint]:is([data-overflow="start"], [data-overflow="both"]) {
+  --overflow-fade-start: 2.5em;
+}
+
+[data-overflow-hint]:is([data-overflow="end"], [data-overflow="both"]) {
+  --overflow-fade-end: 2.5em;
+}
+
 /* Proof */
 .proof {
   font-size: var(--article-body-size, 18px);
@@ -1101,19 +1148,30 @@
 .toggle-figure {
   width: var(--article-layout-width, auto);
   max-width: min(100%, var(--article-layout-max-width, 100%));
+  min-width: 0;
   margin: 32px auto;
 }
 
+/* The tab bar keeps its natural width and scrolls sideways inside the
+   controls when the labels are wider than the column, rather than pushing
+   the figure wider. `safe` centring falls back to the start edge on
+   overflow, so the first tab is never scrolled out of reach. */
 .toggle-figure__controls {
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   margin-bottom: 12px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.toggle-figure__controls::-webkit-scrollbar {
+  display: none;
 }
 
 .toggle-figure__tablist {
   display: inline-flex;
-  max-width: 100%;
+  flex: none;
   gap: 2px;
   padding: 2px;
   border: 0.5px solid var(--color-border);
@@ -1162,9 +1220,17 @@
   gap: 0;
 }
 
+.toggle-figure__panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.toggle-figure__panel :is(img, video, iframe, svg) {
+  max-width: 100%;
+}
+
 .toggle-figure[data-toggle-figure-enhanced="true"] .toggle-figure__panel {
   grid-area: 1 / 1;
-  min-width: 0;
 }
 
 .toggle-figure[data-toggle-figure-enhanced="true"] .toggle-figure__panel:not([data-active="true"]) {
@@ -1178,6 +1244,14 @@
 
 .toggle-figure__panel > .article-figure:last-child {
   margin-bottom: 0;
+}
+
+/* Phones: tabs at the size of the site's other UI chips. */
+@media (max-width: 480px) {
+  .toggle-figure__tab {
+    padding: 7px 10px;
+    font-size: 14px;
+  }
 }
 
 .model-viewer {
@@ -1347,11 +1421,24 @@
  * notes and stays empty otherwise (it doesn't get bled into by wide
  * blocks). If an aside happens to sit on the same row as a wide block,
  * they appear side-by-side, which is the intended Distill-style flow.
+ *
+ * The cap keeps a block's own `maxWidth` prop (figures, grids, toggles and
+ * embeds set `--article-layout-max-width`); this selector outranks theirs,
+ * so a bare `100%` here would silently undo it.
  */
 .article-content[data-asides="margin"] > * {
   grid-column: 1;
   min-width: 0;
-  max-width: 100%;
+  max-width: min(100%, var(--article-layout-max-width, 100%));
+}
+
+/* A grid item with auto margins shrinks to its content, where in block flow
+   it would fill the column. For media blocks that content is the wrong
+   measure: an iframe's 300px default, a toggle's tab bar, or an image that
+   has not loaded yet. So they fill the column here too, as they do on pages
+   without margin notes; `width` and `maxWidth` props still apply. */
+.article-content[data-asides="margin"] > :is(.article-figure, .figure-grid, .toggle-figure) {
+  width: var(--article-layout-width, 100%);
 }
 
 .article-content[data-asides="margin"] .aside:not([data-aside-placement="inline"]) {
@@ -1917,6 +2004,21 @@ body {
     color: var(--color-fg);
     font: 500 13.5px var(--font-ui);
     cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease-quiet),
+      transform var(--dur-fast) var(--ease-quiet),
+      visibility 0s;
+  }
+
+  /* Out of sight (and out of the tab order) until the header scrolls away;
+     ContentsSheet.tsx sets the attribute. */
+  .contents-pill:not([data-revealed]) {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity var(--dur-fast) var(--ease-quiet),
+      transform var(--dur-fast) var(--ease-quiet),
+      visibility 0s var(--dur-fast);
   }
 
   .contents-pill:focus-visible {

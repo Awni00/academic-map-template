@@ -1,5 +1,6 @@
 ---
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
+import { renderCaption } from "./caption";
 
 type Props = {
   id: string;
@@ -54,5 +55,5 @@ const layoutStyle = buildMediaLayoutStyle(
       allowfullscreen
     ></iframe>
   </div>
-  {caption && <figcaption>{caption}</figcaption>}
+  {caption && <figcaption set:html={renderCaption(caption)} />}
 </figure>

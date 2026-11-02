@@ -79,7 +79,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
     return out;
   }, [graph.nodes]);
   const docs = useMemo(() => toSearchDocuments(graph.nodes), [graph.nodes]);
-  const hubCounts = useMemo(() => hubMemberCounts(graph.nodes), [graph.nodes]);
+  const hubCounts = useMemo(() => hubMemberCounts(graph.nodes, graph.linkedFrom), [graph.nodes, graph.linkedFrom]);
   // One filter for every view: the toolbar is the same in each, so search,
   // types and tags mean the same thing wherever they are set. Topics and List
   // show only what matches. The map marks the matches and fades the rest

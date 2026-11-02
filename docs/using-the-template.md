@@ -347,8 +347,10 @@ Use per-figure overrides for diagrams that need breathing room:
 </Figure>
 ```
 
-Interactive and video embeds use the same outer controls. Existing `height`
-props on `EmbedFrame` and `PlotlyFigure` remain supported:
+Interactive and video embeds use the same outer controls. `EmbedFrame` and
+`PlotlyFigure` fill the column by default (`width="100%"`), so cap them with
+`maxWidth` rather than setting a width. Existing `height` props on both remain
+supported:
 
 ```mdx
 <PlotlyFigure

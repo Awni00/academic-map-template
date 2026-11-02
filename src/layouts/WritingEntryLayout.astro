@@ -416,3 +416,10 @@ const right = renderSide("right");
     </div>
   </article>
 </BaseLayout>
+
+<script>
+  // Fade the hidden edge of display math (and BibTeX) too wide for the column.
+  import { wireOverflowHints } from "../lib/article/overflowHint";
+
+  wireOverflowHints(".article-content .katex-display, .cite-body__code");
+</script>

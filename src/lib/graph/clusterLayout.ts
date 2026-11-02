@@ -48,19 +48,49 @@ export function parentHubs(nodes: readonly FolderNode[]): Map<string, string> {
 }
 
 /**
- * How many pages sit under each top-level hub, at any depth. The panel lists a
- * hub with this count, so a reader can tell a large topic from a small one
+ * How many pages belong to each top-level hub: those under it in the folder
+ * tree, at any depth, and those that link to it or to one of its sub-hubs —
+ * the pages its own page lists under "Linked from". The panel lists a hub
+ * with this count, so a reader can tell a large topic from a small one
  * before opening either.
+ *
+ * Links count because folders are not the only way a site files its pages:
+ * one that keeps every paper in a flat folder and joins each to its topics
+ * by linking would otherwise show every hub empty. A page counts once per
+ * hub however it belongs, and hubs linking to one another are not members.
  */
-export function hubMemberCounts(nodes: readonly FolderNode[]): Map<string, number> {
+export function hubMemberCounts(
+  nodes: readonly FolderNode[],
+  linkedFrom: Readonly<Record<string, readonly string[]>> = {}
+): Map<string, number> {
   const parents = parentHubs(nodes);
-  const counts = new Map<string, number>();
-  for (const node of nodes) {
+  const containers = new Set(nodes.filter((node) => isContainerType(node.type)).map((node) => node.id));
+  const topHub = (id: string) => {
     let top: string | undefined;
-    for (let up = parents.get(node.id); up; up = parents.get(up)) top = up;
-    if (top) counts.set(top, (counts.get(top) ?? 0) + 1);
+    for (let up = parents.get(id); up; up = parents.get(up)) top = up;
+    return top;
+  };
+  const members = new Map<string, Set<string>>();
+  const add = (hub: string, id: string) => {
+    if (id === hub) return;
+    const set = members.get(hub) ?? new Set<string>();
+    set.add(id);
+    members.set(hub, set);
+  };
+
+  for (const node of nodes) {
+    const top = topHub(node.id);
+    if (top) add(top, node.id);
   }
-  return counts;
+  for (const [target, sources] of Object.entries(linkedFrom)) {
+    if (!containers.has(target)) continue;
+    const hub = topHub(target) ?? target;
+    for (const source of sources) {
+      if (!containers.has(source)) add(hub, source);
+    }
+  }
+
+  return new Map([...members].map(([hub, set]) => [hub, set.size]));
 }
 
 /**
@@ -152,7 +182,7 @@ export function hubRepulsionForce(hubs: ReadonlySet<string>, strength: number, r
         const a = members[i];
         const b = members[j];
         let dx = (b.x ?? 0) - (a.x ?? 0);
-        let dy = (b.y ?? 0) - (a.y ?? 0);
+        const dy = (b.y ?? 0) - (a.y ?? 0);
         // Two hubs on the same spot have no direction to push along; split
         // them along a fixed one rather than a random one, for a repeatable map.
         if (dx === 0 && dy === 0) dx = 1e-3 * (j - i);

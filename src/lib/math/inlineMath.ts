@@ -15,12 +15,33 @@ import type { MathMacros } from "./macros";
  * would break it in two.
  */
 export function renderInlineMath(text: string, macros: MathMacros = {}): string {
-  let html = "";
+  return splitInlineMath(text)
+    .map((part) => (part.kind === "math" ? renderMath(part.value, macros) : escapeHtml(part.value)))
+    .join("");
+}
+
+export type InlineMathPart = { kind: "text" | "math"; value: string };
+
+/** KaTeX for one inline span; errors render as KaTeX's red source, not a throw. */
+export function renderMath(source: string, macros: MathMacros = {}): string {
+  return katex.renderToString(source, {
+    macros: { ...macros },
+    throwOnError: false,
+    displayMode: false
+  });
+}
+
+/**
+ * The same text cut into prose and math, by the rules above: `\$` becomes a
+ * literal dollar in the prose, and an unpartnered delimiter stays prose.
+ */
+export function splitInlineMath(text: string): InlineMathPart[] {
+  const parts: InlineMathPart[] = [];
   let prose = "";
   let index = 0;
 
   const flushProse = () => {
-    html += escapeHtml(prose);
+    if (prose) parts.push({ kind: "text", value: prose });
     prose = "";
   };
 
@@ -43,11 +64,7 @@ export function renderInlineMath(text: string, macros: MathMacros = {}): string 
 
     if (math) {
       flushProse();
-      html += katex.renderToString(math.source, {
-        macros: { ...macros },
-        throwOnError: false,
-        displayMode: false
-      });
+      parts.push({ kind: "math", value: math.source });
       index = math.end;
       continue;
     }
@@ -57,7 +74,7 @@ export function renderInlineMath(text: string, macros: MathMacros = {}): string 
   }
 
   flushProse();
-  return html;
+  return parts;
 }
 
 /** The math between `open` at `start` and its unescaped `close`, if any. */
@@ -88,7 +105,7 @@ function closingFrom(
   return null;
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
