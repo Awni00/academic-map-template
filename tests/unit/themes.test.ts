@@ -530,6 +530,16 @@ describe("figure colours", () => {
     expect(theme.colors["figure-2"]).toBe(FALLBACK_SERIES.light[1]);
   });
 
+  // The override documented in docs/theming.md: spread a built-in in
+  // src/site/themes.ts and change only its chart colours.
+  it("lets a site retune a built-in's chart colours by spreading it", () => {
+    const retuned = defineTheme({ ...paper, colors: { ...paper.colors, "figure-1": "#8b1e3f" } });
+    expect(retuned.colors["figure-1"]).toBe("#8b1e3f");
+    expect(retuned.colors["figure-2"]).toBe(paper.colors["figure-2"]);
+    expect(retuned.colors.accent).toBe(paper.colors.accent);
+    expect(checkTheme(retuned).errors).toEqual([]);
+  });
+
   it("pales a strong slot for its companion and deepens a weak one", () => {
     const strong = deriveFigureAlt("#2c5cc5", "#ffffff", "#15161a");
     const weak = deriveFigureAlt("#9d6d03", "#ffffff", "#15161a");

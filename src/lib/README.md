@@ -7,7 +7,8 @@ Ownership: template-owned. Downstream sites should usually influence this logic
 through config, content, and data. Direct edits are local divergence unless the
 change is made upstream.
 
-Subdirectories group utilities by domain: `article/`, `graph/`, `math/`,
-`news/`, `publications/`, `routes/`, `search/`, and `wikilinks/`.
+Subdirectories group utilities by domain: `article/`, `figures/`, `graph/`,
+`math/`, `news/`, `publications/`, `routes/`, `search/`, `theme/`, and
+`wikilinks/`.
 
 See [Repo Ownership](../../docs/repo-ownership.md) for the full policy.
