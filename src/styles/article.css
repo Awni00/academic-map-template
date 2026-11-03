@@ -1353,6 +1353,32 @@
   margin-bottom: 0;
 }
 
+/* align="center" | "end": the bar (and its label) move across the
+   figure's width with auto margins rather than justify-content, because
+   auto margins fall to zero when the tabs overflow, so a scrolling bar
+   still starts at its first tab. The free space goes before the label when
+   there is one, so label and tabs move as a pair; on phones, where the
+   label is hidden, the tabs take the margins themselves. */
+.toggle-figure[data-align="center"] .toggle-figure__tablist {
+  margin-inline: auto;
+}
+
+.toggle-figure[data-align="end"] .toggle-figure__tablist {
+  margin-inline-start: auto;
+}
+
+@media (min-width: 601px) {
+  .toggle-figure:is([data-align="center"], [data-align="end"]) .toggle-figure__label {
+    margin-inline-start: auto;
+  }
+
+  .toggle-figure:is([data-align="center"], [data-align="end"])
+    .toggle-figure__label
+    + .toggle-figure__tablist {
+    margin-inline-start: 0;
+  }
+}
+
 /* Phones: the tabs get the whole row (the label still names them for
    screen readers), and a taller touch target with a little less side
    padding. */

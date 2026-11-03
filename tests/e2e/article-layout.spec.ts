@@ -140,7 +140,39 @@ test("a toggle figure's label names its tabs, which follow the arrow keys", asyn
   await page.context().close();
 });
 
+test("a centred toggle figure centres its label and tabs together", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  const toggle = page.locator(".fixture-toggle");
+  await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+  await expect(toggle).toHaveAttribute("data-align", "center");
+  const controls = (await toggle.locator(".toggle-figure__controls").boundingBox())!;
+  const label = (await toggle.locator(".toggle-figure__label").boundingBox())!;
+  const tabs = (await toggle.getByRole("tablist").boundingBox())!;
+  const left = label.x - controls.x;
+  const right = controls.x + controls.width - (tabs.x + tabs.width);
+  expect(left).toBeGreaterThan(20);
+  expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
+  await page.context().close();
+});
+
 test.describe("on a phone", () => {
+  test("a centred toggle figure still scrolls from its first tab when the tabs overflow", async ({ browser }) => {
+    const page = await open(browser, 390, 844);
+    const toggle = page.locator(".fixture-toggle");
+    await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+    const metrics = await toggle.locator(".toggle-figure__controls").evaluate((controls) => {
+      const first = controls.querySelector(".toggle-figure__tab")!.getBoundingClientRect();
+      const box = controls.getBoundingClientRect();
+      return { overflow: controls.scrollWidth - controls.clientWidth, scrollLeft: controls.scrollLeft, gap: first.left - box.left };
+    });
+    expect(metrics.overflow).toBeGreaterThan(0);
+    expect(metrics.scrollLeft).toBe(0);
+    // The first tab starts at the bar's own padding, not clipped off the left.
+    expect(metrics.gap).toBeGreaterThanOrEqual(0);
+    expect(metrics.gap).toBeLessThan(8);
+    await page.context().close();
+  });
+
   test("a toggle figure's label gives way to its tabs, but still names them", async ({ browser }) => {
     const page = await open(browser, 390, 844);
     const toggle = page.locator(".fixture-toggle");

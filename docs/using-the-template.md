@@ -536,7 +536,7 @@ theme: {
 Each `ToggleFigurePanel` gives its tab `label`:
 
 ```mdx
-<ToggleFigure label="Question" defaultValue="forest">
+<ToggleFigure label="Question" align="center" defaultValue="forest">
   <ToggleFigurePanel label="9.9 or 9.10" value="decimals">…</ToggleFigurePanel>
   <ToggleFigurePanel label="Forest" value="forest">…</ToggleFigurePanel>
 </ToggleFigure>
@@ -546,6 +546,10 @@ Each `ToggleFigurePanel` gives its tab `label`:
   heading. It is also the tab list's accessible name, so it takes precedence
   over `ariaLabel`. It is hidden on phones (600px and narrower), where the tabs
   need the room, but still names them for screen readers.
+- `align`: `"start"` (default), `"center"` or `"end"`: where the tab bar, and
+  its label with it, sits across the figure's width. Tabs wider than the
+  column still scroll from the first tab, whatever the alignment; on phones,
+  where the label is hidden, the tabs alone are aligned.
 - `ariaLabel`: the tab list's accessible name when there is no `label`
   (default "Figure variants").
 - `defaultValue`: the `value` of the panel shown first (default: the first).
