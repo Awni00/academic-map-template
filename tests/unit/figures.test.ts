@@ -314,3 +314,35 @@ describe("diagram replay", () => {
     expect(writingConfig.entryLayout.diagramReplay).toBe(true);
   });
 });
+
+describe("TeX label boxes", () => {
+  // A TeX label's foreignObject is far larger than its text, and used to
+  // catch the pointer over controls and marks drawn beneath it.
+  const foreignObjects = (svg: string) => [...svg.matchAll(/<foreignObject[^>]*>/g)].map((m) => m[0]);
+
+  it("lets the pointer through a diagram's TeX labels", () => {
+    const svg = canvas(200, 100)
+      .label({ x: 50, y: 30 }, "$x$")
+      .label({ x: 150, y: 30 }, "Input $\\hat{y}$", { halo: true })
+      .toSvg("Labels");
+    const boxes = foreignObjects(svg);
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(box).toContain('pointer-events="none"');
+  });
+
+  it("lets the pointer through a chart's TeX axis labels", () => {
+    const data = parseFigureData("x,y\n0,1\n1,2\n");
+    const svg = renderFigure(
+      {
+        width: 360,
+        x: { label: "Step $t$" },
+        y: { label: "Rate $\\eta$" },
+        marks: [Plot.dot(data, { x: "x", y: "y", title: "y" })]
+      },
+      "Chart"
+    );
+    const boxes = foreignObjects(svg);
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(box).toContain('pointer-events="none"');
+  });
+});
