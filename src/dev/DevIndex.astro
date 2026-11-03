@@ -1,0 +1,73 @@
+---
+/**
+ * The /dev index: a link to every dev page, grouped as tools and fixtures.
+ * Reads src/dev/registry.ts, so it lists a page as soon as the route does.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { DEV_PAGES, type DevPageGroup } from "./registry";
+
+const title = "Dev pages";
+const description = "Development-only tools and test fixtures. None of them is built into the published site.";
+
+const GROUPS: { group: DevPageGroup; heading: string; note: string }[] = [
+  { group: "tool", heading: "Tools", note: "For choosing and tuning the site's settings." },
+  { group: "fixture", heading: "Test fixtures", note: "Components at known props, for the e2e suite to measure." }
+];
+
+const href = (page: (typeof DEV_PAGES)[number]) =>
+  "variants" in page ? `/dev/${page.slug}/${page.variants[0]}` : `/dev/${page.slug}`;
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="page-shell">
+    <header class="page-header">
+      <h1>{title}</h1>
+      <p class="page-description">{description}</p>
+    </header>
+    <div class="article-content">
+      {
+        GROUPS.map(({ group, heading, note }) => (
+          <section>
+            <h2>{heading}</h2>
+            <p>{note}</p>
+            <ul class="dev-index">
+              {DEV_PAGES.filter((page) => page.group === group).map((page) => (
+                <li>
+                  <a href={href(page)}>{page.title}</a>{" "}
+                  <code>{"variants" in page ? `/dev/${page.slug}/<variant>` : `/dev/${page.slug}`}</code>
+                  <p>{page.description}</p>
+                  {"variants" in page && (
+                    <details>
+                      <summary>{page.variants.length} variants</summary>
+                      <ul class="dev-index__variants">
+                        {page.variants.map((variant) => (
+                          <li>
+                            <a href={`/dev/${page.slug}/${variant}`}>{variant}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .dev-index > li + li {
+    margin-top: 1rem;
+  }
+
+  .dev-index p {
+    margin: 0.25rem 0 0;
+  }
+
+  .dev-index__variants {
+    columns: 14rem;
+  }
+</style>

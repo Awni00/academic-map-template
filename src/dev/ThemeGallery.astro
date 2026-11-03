@@ -8,7 +8,7 @@
  * reason that function takes a selector at all — so ten palettes coexist in
  * one document without any of them touching `:root`.
  *
- * Dev-only, routed through `src/pages/fixtures/[fixture].astro`.
+ * Dev-only, routed through `src/pages/dev/[...page].astro`.
  */
 import { themeRegistry } from "../config/theme";
 import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../lib/theme/checkTheme";
@@ -87,8 +87,8 @@ const cards = themes.map((theme) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Theme gallery</title>
     <style is:global set:html={css}></style>
-    <!-- Inline, not bundled: the fixtures route imports every fixture, so a
-         bundled style here would restyle every other fixture page too. -->
+    <!-- Inline, not bundled: the dev route imports every dev page, so a
+         bundled style here would restyle every other dev page too. -->
     <style is:inline>
       /* `html body`: inline styles land before the site stylesheet, whose own
          body rule would otherwise win. */

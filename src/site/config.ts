@@ -12,7 +12,7 @@ import type { SiteConfigOverrides } from "../config/types";
  * change and delete the rest. `docs/configuration.md` covers every section,
  * including the ones deliberately left out here: graph appearance, writing
  * layout, and the entry-type registry. To try graph settings first, run the
- * dev server and open /fixtures/graph-playground, which writes the config out
+ * dev server and open /dev/graph-playground, which writes the config out
  * for you.
  *
  * Two things that catch people out:
@@ -75,7 +75,7 @@ export const siteConfigOverrides: SiteConfigOverrides = {
   // },
 
   // Which of the registered themes the site uses. Ten ship with the template
-  // (see docs/theming.md, or run the dev server and open /fixtures/themes to
+  // (see docs/theming.md, or run the dev server and open /dev/themes to
   // compare them); `src/site/themes.ts` is where you define your own.
   // theme: {
   //   light: "dawn",          // paper | dawn | everforest-light | latte | github-light

@@ -1,6 +1,6 @@
 /**
  * The hero fixture's variants, as path segments: `key-value` pairs joined by
- * `_`, e.g. `/fixtures/hero/side-right_len-l`. The route has to enumerate its
+ * `_`, e.g. `/dev/hero/side-right_len-l`. The route has to enumerate its
  * paths (prerendered pages see no query string, even in dev), so this list is
  * every combination the e2e suite and the visual review use.
  *

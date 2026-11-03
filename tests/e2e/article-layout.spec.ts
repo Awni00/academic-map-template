@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 
 /**
- * The article-layout fixture (src/fixtures/ArticleLayout.astro): a paper page
+ * The article-layout fixture (src/dev/ArticleLayout.astro): a paper page
  * with a long venue, several affiliations, wide BibTeX and math, and figures
  * beside margin asides. Each test pins a case that has rendered wrongly on a
  * real site.
@@ -10,7 +10,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
  * only.
  */
 
-const PATH = "/fixtures/article-layout";
+const PATH = "/dev/article-layout";
 
 test.skip(({ isMobile }) => isMobile, "each test sets its own viewport");
 

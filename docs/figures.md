@@ -314,14 +314,14 @@ Scripts that build one post's data belong in `scripts/figures/<post>/`
 
 ## Review page
 
-Run the dev server and open `/fixtures/figures`. It shows every figure listed
+Run the dev server and open `/dev/figures`. It shows every figure listed
 in `src/site/figure-review/*.ts`, and is never built into `dist/`.
 
 Each file there covers one post, so people working on different posts never
 edit the same file:
 
 ```ts
-import { definePaperReview } from "../../fixtures/figure-review/types";
+import { definePaperReview } from "../../dev/figure-review/types";
 
 export default definePaperReview({
   post: "my-post",
@@ -344,7 +344,7 @@ export default definePaperReview({
 the post showed it (`image`, `pdf`, `plotly`, `embed`, or `none` with a
 `reason`) beside the rebuild, using the posts' own components so the
 comparison is like for like. A narrow figure sits beside its "before"; wider
-ones stack. The types are in `src/fixtures/figure-review/types.ts`.
+ones stack. The types are in `src/dev/figure-review/types.ts`.
 
 ## Recovering data from a PDF
 

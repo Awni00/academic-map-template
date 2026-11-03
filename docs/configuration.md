@@ -64,7 +64,7 @@ Supported top-level sections:
 ### Graph layout and edges
 
 Everything in this section, plus node sizes and the selection mark, can be tried before it is written
-down: run `npm run dev` and open `/fixtures/graph-playground`. It shows your
+down: run `npm run dev` and open `/dev/graph-playground`. It shows your
 writing map as your config draws it, beside the same map driven by sliders and
 toggles, and writes the changed values out as config to paste into
 `src/site/config.ts`. It is a development page only; `astro build` does not
