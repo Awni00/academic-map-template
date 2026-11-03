@@ -110,7 +110,78 @@ test("a Figure's src honours invertInDarkMode", async ({ browser }) => {
   await page.context().close();
 });
 
+test("a toggle figure's label names its tabs, which follow the arrow keys", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  const toggle = page.locator(".fixture-toggle");
+  await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+  const label = toggle.locator(".toggle-figure__label");
+  const tablist = toggle.getByRole("tablist");
+  await expect(label).toBeVisible();
+  await expect(label).toHaveText("Model");
+  // The visible label is the accessible name, ahead of ariaLabel.
+  await expect(tablist).toHaveAccessibleName("Model");
+  await expect(tablist).not.toHaveAttribute("aria-label");
+
+  const tabs = toggle.getByRole("tab");
+  await expect(tabs).toHaveCount(3);
+  await tabs.first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(1)).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Home");
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(0)).toBeFocused();
+  await page.context().close();
+});
+
+test("a centred toggle figure centres its label and tabs together", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  const toggle = page.locator(".fixture-toggle");
+  await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+  await expect(toggle).toHaveAttribute("data-align", "center");
+  const controls = (await toggle.locator(".toggle-figure__controls").boundingBox())!;
+  const label = (await toggle.locator(".toggle-figure__label").boundingBox())!;
+  const tabs = (await toggle.getByRole("tablist").boundingBox())!;
+  const left = label.x - controls.x;
+  const right = controls.x + controls.width - (tabs.x + tabs.width);
+  expect(left).toBeGreaterThan(20);
+  expect(Math.abs(left - right)).toBeLessThanOrEqual(1);
+  await page.context().close();
+});
+
 test.describe("on a phone", () => {
+  test("a centred toggle figure still scrolls from its first tab when the tabs overflow", async ({ browser }) => {
+    const page = await open(browser, 390, 844);
+    const toggle = page.locator(".fixture-toggle");
+    await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+    const metrics = await toggle.locator(".toggle-figure__controls").evaluate((controls) => {
+      const first = controls.querySelector(".toggle-figure__tab")!.getBoundingClientRect();
+      const box = controls.getBoundingClientRect();
+      return { overflow: controls.scrollWidth - controls.clientWidth, scrollLeft: controls.scrollLeft, gap: first.left - box.left };
+    });
+    expect(metrics.overflow).toBeGreaterThan(0);
+    expect(metrics.scrollLeft).toBe(0);
+    // The first tab starts at the bar's own padding, not clipped off the left.
+    expect(metrics.gap).toBeGreaterThanOrEqual(0);
+    expect(metrics.gap).toBeLessThan(8);
+    await page.context().close();
+  });
+
+  test("a toggle figure's label gives way to its tabs, but still names them", async ({ browser }) => {
+    const page = await open(browser, 390, 844);
+    const toggle = page.locator(".fixture-toggle");
+    await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+    await expect(toggle.locator(".toggle-figure__label")).toBeHidden();
+    await expect(toggle.getByRole("tablist")).toHaveAccessibleName("Model");
+    await page.context().close();
+  });
+
   test("nothing pushes the page wider than the screen", async ({ browser }) => {
     const page = await open(browser, 390, 844);
     await page.locator(".toggle-figure[data-toggle-figure-enhanced]").waitFor();

@@ -1247,8 +1247,10 @@
    caption start. */
 .toggle-figure__controls {
   display: flex;
+  align-items: center;
   justify-content: flex-start;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -1258,20 +1260,33 @@
   display: none;
 }
 
+/* An optional label before the tabs ("Question"), set like a micro-heading. */
+.toggle-figure__label {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* A pill: the tabs sit in a soft track, the selected one raised on the
+   page colour. */
 .toggle-figure__tablist {
   display: inline-flex;
   flex: none;
   gap: 2px;
-  padding: 2px;
-  border: 0.5px solid var(--color-border);
-  border-radius: 5px;
-  background: var(--color-bg-soft-2);
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-soft);
 }
 
 .toggle-figure__tab {
   border: 0;
-  border-radius: 3px;
-  padding: 6px 12px;
+  border-radius: 999px;
+  padding: 6px 14px;
   background: transparent;
   color: var(--color-muted);
   font-family: var(--font-ui);
@@ -1298,7 +1313,9 @@
   background: var(--color-bg);
   color: var(--color-fg);
   font-weight: 500;
-  box-shadow: var(--shadow-sm);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    0 1px 2px rgb(0 0 0 / 0.06);
 }
 
 .toggle-figure__panels {
@@ -1336,7 +1353,41 @@
   margin-bottom: 0;
 }
 
-/* Phones: a taller touch target, a little less side padding. */
+/* align="center" | "end": the bar (and its label) move across the
+   figure's width with auto margins rather than justify-content, because
+   auto margins fall to zero when the tabs overflow, so a scrolling bar
+   still starts at its first tab. The free space goes before the label when
+   there is one, so label and tabs move as a pair; on phones, where the
+   label is hidden, the tabs take the margins themselves. */
+.toggle-figure[data-align="center"] .toggle-figure__tablist {
+  margin-inline: auto;
+}
+
+.toggle-figure[data-align="end"] .toggle-figure__tablist {
+  margin-inline-start: auto;
+}
+
+@media (min-width: 601px) {
+  .toggle-figure:is([data-align="center"], [data-align="end"]) .toggle-figure__label {
+    margin-inline-start: auto;
+  }
+
+  .toggle-figure:is([data-align="center"], [data-align="end"])
+    .toggle-figure__label
+    + .toggle-figure__tablist {
+    margin-inline-start: 0;
+  }
+}
+
+/* Phones: the tabs get the whole row (the label still names them for
+   screen readers), and a taller touch target with a little less side
+   padding. */
+@media (max-width: 600px) {
+  .toggle-figure__label {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   .toggle-figure__tab {
     padding: 8px 10px;

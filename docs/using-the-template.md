@@ -307,6 +307,7 @@ MDX entries can use built-in technical writing components:
 - `Comparison`
 - `ModelViewer`
 - `PlotlyFigure`
+- `ToggleFigure` and `ToggleFigurePanel`
 - `Chart` and `Diagram`: figures drawn at build time from site-owned
   definitions; see [Figures](figures.md)
 
@@ -528,6 +529,35 @@ theme: {
   terms: { underline: "dotted" }   // "dotted" | "none"
 }
 ```
+
+### Toggle Figures
+
+`ToggleFigure` shows one of several panels at a time, behind a row of tabs.
+Each `ToggleFigurePanel` gives its tab `label`:
+
+```mdx
+<ToggleFigure label="Question" align="center" defaultValue="forest">
+  <ToggleFigurePanel label="9.9 or 9.10" value="decimals">…</ToggleFigurePanel>
+  <ToggleFigurePanel label="Forest" value="forest">…</ToggleFigurePanel>
+</ToggleFigure>
+```
+
+- `label` (optional): visible text before the tabs, set as a small uppercase
+  heading. It is also the tab list's accessible name, so it takes precedence
+  over `ariaLabel`. It is hidden on phones (600px and narrower), where the tabs
+  need the room, but still names them for screen readers.
+- `align`: `"start"` (default), `"center"` or `"end"`: where the tab bar, and
+  its label with it, sits across the figure's width. Tabs wider than the
+  column still scroll from the first tab, whatever the alignment; on phones,
+  where the label is hidden, the tabs alone are aligned.
+- `ariaLabel`: the tab list's accessible name when there is no `label`
+  (default "Figure variants").
+- `defaultValue`: the `value` of the panel shown first (default: the first).
+
+The tabs are a pill-shaped track with the selected tab raised on the page
+colour. They follow the arrow keys, Home and End, and scroll sideways when
+they are wider than the column. Without JavaScript every panel is shown, one
+after another. The [media layout controls](#media-layout-controls) apply too.
 
 ### Plotly Figures
 
