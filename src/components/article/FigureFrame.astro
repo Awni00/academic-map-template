@@ -3,7 +3,8 @@
  * The frame <Chart> and <Diagram> share: the <Figure> around them, the panel
  * title, the wide drawing and its phone layout, the legend and the caption.
  * Each component draws its SVG and hands it here; anything else it needs
- * inside the frame (a data block, a button) goes in the default slot.
+ * inside the frame (a data block) goes in the default slot, and anything laid
+ * over the drawing itself (a button in a corner) in the `overlay` slot.
  *
  * Not used in posts directly.
  */
@@ -54,6 +55,7 @@ const { size, width, compactWidth } = layout;
     <div class="figure-chart__plot">
       <div class="figure-chart__wide" set:html={wide} />
       {compact && <div class="figure-chart__compact" set:html={compact} />}
+      <slot name="overlay" />
     </div>
     <FigureLegend items={legend} />
     <slot />
