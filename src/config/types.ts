@@ -167,6 +167,13 @@ export type WritingConfig = {
      * once.
      */
     figureNumbers: boolean;
+    /**
+     * Whether an animated `<Diagram>` offers a Replay button after it has
+     * played. On by default; a definition's `animate.replay` and the
+     * component's `replay` prop override it, in that order of precedence
+     * (the prop wins).
+     */
+    diagramReplay: boolean;
     toc: {
       default: TocConfig;
       byType: Record<EntryType, TocConfigOverride>;

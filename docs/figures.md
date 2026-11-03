@@ -255,7 +255,23 @@ motion see.
 
 With motion allowed, the diagram gets `data-armed` on load, and `data-play`
 once half of it, or half the viewport, is covered by it, after `delay` ms
-(default 400). A Replay button appears once it has played. Write the
+(default 400). It plays once and stays on its final frame.
+
+After the first play, a small icon-only Replay button appears inside the
+drawing's box, in a corner, so it takes no space of its own. It is quiet at
+rest and clearer on hover and focus, takes keyboard focus with a visible
+ring, and is labelled "Replay animation". It never appears with reduced
+motion or without JavaScript.
+
+- `animate.replayCorner`: `"top-right"` (default), `"top-left"`,
+  `"bottom-right"` or `"bottom-left"`. Pick a corner the drawing leaves
+  empty; the button is 28px square.
+- Whether it shows at all, highest precedence first:
+  1. `<Diagram replay={false} />` (or `replay`) on the page;
+  2. `animate: { replay: false }` in the definition;
+  3. `writing.entryLayout.diagramReplay` in `src/site/config.ts` (default
+     `true`).
+ Write the
 keyframes in a `raw("<style>…</style>")`, under
 `.figure-diagram[data-play]`, with class names prefixed per diagram; hide the
 first frame under `.figure-diagram[data-armed]:not([data-play])` so the final

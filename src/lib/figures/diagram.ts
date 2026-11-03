@@ -21,6 +21,21 @@ export type Point = { x: number; y: number };
 
 export type DiagramContext = { width: number; compact: boolean };
 
+export type ReplayCorner = "top-right" | "top-left" | "bottom-right" | "bottom-left";
+
+/**
+ * Whether an animated diagram shows its Replay button: the component's prop,
+ * else the definition's `animate.replay`, else the site default.
+ */
+export function showsReplay(
+  animate: DiagramDefinition["animate"],
+  prop: boolean | undefined,
+  siteDefault: boolean
+): boolean {
+  if (!animate) return false;
+  return prop ?? animate.replay ?? siteDefault;
+}
+
 export type DiagramDefinition = {
   size: FigureSize;
   alt?: string;
@@ -29,12 +44,18 @@ export type DiagramDefinition = {
   /**
    * Play-once animation. The root gets `data-animated`; once half of the
    * diagram, or half the viewport, is covered by it, it gets `data-play`
-   * after `delay` ms (default 400), and a Replay button appears to restart it. Write keyframes with `raw("<style>…</style>")`
+   * after `delay` ms (default 400), plays, and stays on its final frame.
+   *
+   * After the first play a small icon-only Replay button appears inside the
+   * figure, in `replayCorner` (default "top-right"; pick another corner if
+   * that one has content). `replay: false` leaves it out; it overrides the
+   * site default (`writing.entryLayout.diagramReplay`), and `<Diagram
+   * replay>` overrides both. Write keyframes with `raw("<style>…</style>")`
    * under `.figure-diagram[data-play]`, with class names prefixed per
    * diagram. The static drawing is the final frame: without JS, or with
    * reduced motion, `data-play` is never set.
    */
-  animate?: { delay?: number };
+  animate?: { delay?: number; replay?: boolean; replayCorner?: ReplayCorner };
   draw: (context: DiagramContext) => DiagramCanvas;
 };
 

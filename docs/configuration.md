@@ -715,6 +715,24 @@ it are not numbered. Tables are counted separately: wrap the table in
 Numbers are added by CSS, so a caption that already starts with "Figure:"
 will show both.
 
+## Diagram Replay
+
+An animated `<Diagram>` plays once when it scrolls into view and offers a
+small Replay button afterwards. To leave the button off site-wide:
+
+```ts
+export const siteConfigOverrides = {
+  writing: {
+    entryLayout: {
+      diagramReplay: false
+    }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+A definition's `animate.replay` overrides this, and the component's `replay`
+prop overrides both. See [Figures](figures.md#animation).
+
 ## Content Paths
 
 The resolved config currently expects these source paths:

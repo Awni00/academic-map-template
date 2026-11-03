@@ -9,9 +9,11 @@
  * may draw a phone layout too (its definition sees `compact: true`), swapped
  * in on narrow columns like a chart's. See docs/figures.md.
  */
+import { RotateCcw } from "@lucide/astro";
 import FigureFrame from "./FigureFrame.astro";
+import { writingConfig } from "../../config/writing";
 import type { FigureSize } from "../../lib/figures";
-import type { DiagramDefinition } from "../../lib/figures/diagram";
+import { showsReplay, type DiagramDefinition } from "../../lib/figures/diagram";
 import { figureLayout, findDefinition } from "../../lib/figures/frame";
 
 type Props = {
@@ -20,9 +22,15 @@ type Props = {
   caption?: string;
   /** Overrides the definition's size preset. */
   size?: FigureSize;
+  /**
+   * Show the Replay button on an animated diagram. Overrides the
+   * definition's `animate.replay`, which overrides the site's
+   * `writing.entryLayout.diagramReplay`.
+   */
+  replay?: boolean;
 };
 
-const { figure, alt, caption, size } = Astro.props;
+const { figure, alt, caption, size, replay } = Astro.props;
 
 const definitions = import.meta.glob<{ default: DiagramDefinition }>(
   ["/src/site/diagrams/**/*.ts", "!/src/site/diagrams/**/_*.ts"],
@@ -38,6 +46,7 @@ const compact =
     ? null
     : definition.draw({ width: layout.compactWidth, compact: true }).toSvg(label);
 const { animate } = definition;
+const replayable = showsReplay(animate, replay, writingConfig.entryLayout.diagramReplay);
 ---
 
 <FigureFrame
@@ -55,9 +64,17 @@ const { animate } = definition;
   }}
 >
   {
-    animate && (
-      <button type="button" class="figure-diagram__replay" hidden>
-        Replay
+    replayable && (
+      <button
+        slot="overlay"
+        type="button"
+        class="figure-diagram__replay"
+        data-corner={animate?.replayCorner ?? "top-right"}
+        aria-label="Replay animation"
+        title="Replay animation"
+        hidden
+      >
+        <RotateCcw size={16} stroke-width={1.75} aria-hidden="true" />
       </button>
     )
   }
@@ -67,8 +84,9 @@ const { animate } = definition;
 <script>
   // Play-once diagrams: start once half the diagram, or half the viewport,
   // is covered by it (a diagram taller than twice the viewport can never be
-  // half in view), and offer Replay after the first play. With reduced
-  // motion (or no JS) the static final frame stays and no button shows.
+  // half in view), play, and stay on the final frame. If the diagram has a
+  // Replay button, it appears after the first play. With reduced motion (or
+  // no JS) the static final frame stays and no button shows.
   const motion = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const pending = new WeakMap<HTMLElement, number>();
 

@@ -50,6 +50,7 @@ export const defaultWritingConfig = {
       maxNodes: 20
     },
     figureNumbers: false,
+    diagramReplay: true,
     toc: {
       default: {
         minDepth: 2,

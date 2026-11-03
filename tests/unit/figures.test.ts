@@ -11,7 +11,8 @@ import {
   replaceColorSentinels,
   withSiteDefaults
 } from "../../src/lib/figures";
-import { canvas } from "../../src/lib/figures/diagram";
+import { canvas, showsReplay } from "../../src/lib/figures/diagram";
+import { writingConfig } from "../../src/config/writing";
 import { escapeHtml, unescapeHtml } from "../../src/lib/figures/escape";
 import { figureLayout, findDefinition } from "../../src/lib/figures/frame";
 import { renderLegend } from "../../src/lib/figures/legend";
@@ -289,5 +290,27 @@ describe("panel ticks", () => {
     expect(niceTicks(0, 7, 3)).toEqual([0, 2.5, 5]);
     expect(tickFormat([0, 0.25, 0.5])(0.5)).toBe("0.50");
     expect(tickFormat([0, 5, 10])(5)).toBe("5");
+  });
+});
+
+describe("diagram replay", () => {
+  it("never shows for a diagram that does not animate", () => {
+    expect(showsReplay(undefined, true, true)).toBe(false);
+  });
+
+  it("takes the prop, then the definition, then the site default", () => {
+    // Site default alone.
+    expect(showsReplay({}, undefined, true)).toBe(true);
+    expect(showsReplay({}, undefined, false)).toBe(false);
+    // The definition overrides the site.
+    expect(showsReplay({ replay: false }, undefined, true)).toBe(false);
+    expect(showsReplay({ replay: true }, undefined, false)).toBe(true);
+    // The prop overrides both.
+    expect(showsReplay({ replay: false }, true, false)).toBe(true);
+    expect(showsReplay({ replay: true }, false, true)).toBe(false);
+  });
+
+  it("is on by default site-wide", () => {
+    expect(writingConfig.entryLayout.diagramReplay).toBe(true);
   });
 });
