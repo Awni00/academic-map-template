@@ -32,6 +32,7 @@ import type {
   Theme,
   PlacementOverride,
   ThemeConfig,
+  ThemeInput,
   TocConfigOverride,
   WritingConfig
 } from "./types";
@@ -108,9 +109,14 @@ function checkPresentationConfig(): string[] {
  * with a built-in replaces it, so `src/site/themes.ts` can retune a shipped
  * theme without the site forking `src/config/defaults/themes.ts`.
  */
-export const themeRegistry: ReadonlyMap<string, Theme> = new Map(
-  [...builtInThemes, ...customThemes.map(defineTheme)].map((theme) => [theme.id, theme])
-);
+export function buildThemeRegistry(
+  builtIns: readonly Theme[],
+  custom: readonly ThemeInput[]
+): ReadonlyMap<string, Theme> {
+  return new Map([...builtIns, ...custom.map(defineTheme)].map((theme) => [theme.id, theme]));
+}
+
+export const themeRegistry = buildThemeRegistry(builtInThemes, customThemes);
 
 export const lightTheme = resolveTheme(themeConfig.light, "light");
 export const darkTheme = resolveTheme(themeConfig.dark, "dark");
