@@ -264,7 +264,9 @@ export class DiagramCanvas {
    * A label. Plain text is SVG text; text with `$…$` is KaTeX HTML in a
    * foreignObject centred on the same anchor point. Labels are never
    * interactive: the foreignObject passes pointer events through, so it
-   * doesn't block a control or a hover target drawn under its box.
+   * doesn't block a control or a hover target drawn under its box. That
+   * includes one in a neighbouring figure: the SVG has `overflow: visible`,
+   * so the box can reach past it (into the next cell of a FigureGrid, say).
    */
   label(at: Point, text: string, options: LabelOptions = {}) {
     const { anchor = "middle", baseline = "middle", size = "md", tone = "ink", halo = false, italic = false } = options;
