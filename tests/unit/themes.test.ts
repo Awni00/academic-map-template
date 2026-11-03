@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { CALLOUT_ROLE_COLORS } from "../../src/components/article/calloutRoles";
 import { builtInThemes } from "../../src/config/defaults/themes";
-import { darkTheme, lightTheme, themeConfig, themeRegistry } from "../../src/config/resolve";
+import {
+  buildThemeRegistry,
+  darkTheme,
+  lightTheme,
+  themeConfig,
+  themeRegistry
+} from "../../src/config/resolve";
+import { customThemes } from "../../src/site/themes";
 import { CONTRAST_TARGETS, PAIR_TARGETS, RAISED_TARGETS, checkTheme } from "../../src/lib/theme/checkTheme";
 import { contrastRatio, isCheckable, mixSrgb, parseColor } from "../../src/lib/theme/contrast";
 import { defineTheme } from "../../src/lib/theme/defineTheme";
@@ -463,14 +470,39 @@ describe("themeToCss", () => {
 });
 
 describe("theme registry", () => {
-  it("registers every built-in and resolves the configured pair", () => {
+  it("registers every built-in, or the site theme that replaces it, and resolves the configured pair", () => {
+    const overridden = new Set(customThemes.map((theme) => theme.id));
     for (const theme of builtInThemes) {
-      expect(themeRegistry.get(theme.id)).toBe(theme);
+      const registered = themeRegistry.get(theme.id);
+      if (overridden.has(theme.id)) {
+        expect(registered, theme.id).not.toBe(theme);
+        expect(registered?.id).toBe(theme.id);
+      } else {
+        expect(registered, theme.id).toBe(theme);
+      }
     }
+    for (const theme of customThemes) {
+      expect(themeRegistry.get(theme.id)?.label).toBe(theme.label);
+    }
+    expect(themeRegistry.size).toBe(new Set([...builtInThemes, ...customThemes].map((t) => t.id)).size);
     expect(lightTheme.id).toBe(themeConfig.light);
     expect(darkTheme.id).toBe(themeConfig.dark);
     expect(lightTheme.appearance).toBe("light");
     expect(darkTheme.appearance).toBe("dark");
+  });
+
+  it("lets a site theme replace a built-in by reusing its id, once", () => {
+    const paper = builtInThemes.find((theme) => theme.id === "paper")!;
+    const registry = buildThemeRegistry(builtInThemes, [
+      { ...paper, label: "Paper (site)", colors: { ...paper.colors, accent: "#8b1e3f" } },
+      { id: "seminar", label: "Seminar", appearance: "light", colors: { bg: "#fffdf8", fg: "#1b1a17", accent: "#8a3324" } }
+    ]);
+    expect(registry.get("paper")?.label).toBe("Paper (site)");
+    expect(registry.get("paper")?.colors.accent).toBe("#8b1e3f");
+    expect(registry.get("ink")).toBe(builtInThemes.find((theme) => theme.id === "ink"));
+    // The gallery lists registry values: the override appears once, not beside the built-in.
+    expect([...registry.values()].filter((theme) => theme.id === "paper")).toHaveLength(1);
+    expect(registry.size).toBe(builtInThemes.length + 1);
   });
 });
 
