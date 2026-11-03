@@ -110,7 +110,46 @@ test("a Figure's src honours invertInDarkMode", async ({ browser }) => {
   await page.context().close();
 });
 
+test("a toggle figure's label names its tabs, which follow the arrow keys", async ({ browser }) => {
+  const page = await open(browser, 1280);
+  const toggle = page.locator(".fixture-toggle");
+  await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+  const label = toggle.locator(".toggle-figure__label");
+  const tablist = toggle.getByRole("tablist");
+  await expect(label).toBeVisible();
+  await expect(label).toHaveText("Model");
+  // The visible label is the accessible name, ahead of ariaLabel.
+  await expect(tablist).toHaveAccessibleName("Model");
+  await expect(tablist).not.toHaveAttribute("aria-label");
+
+  const tabs = toggle.getByRole("tab");
+  await expect(tabs).toHaveCount(3);
+  await tabs.first().focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(1)).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowRight");
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Home");
+  await expect(tabs.nth(0)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(0)).toBeFocused();
+  await page.context().close();
+});
+
 test.describe("on a phone", () => {
+  test("a toggle figure's label gives way to its tabs, but still names them", async ({ browser }) => {
+    const page = await open(browser, 390, 844);
+    const toggle = page.locator(".fixture-toggle");
+    await expect(toggle).toHaveAttribute("data-toggle-figure-enhanced", "true");
+    await expect(toggle.locator(".toggle-figure__label")).toBeHidden();
+    await expect(toggle.getByRole("tablist")).toHaveAccessibleName("Model");
+    await page.context().close();
+  });
+
   test("nothing pushes the page wider than the screen", async ({ browser }) => {
     const page = await open(browser, 390, 844);
     await page.locator(".toggle-figure[data-toggle-figure-enhanced]").waitFor();

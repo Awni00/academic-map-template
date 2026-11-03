@@ -2,6 +2,13 @@
 import { buildMediaLayoutStyle, type MediaLayoutProps } from "./mediaLayout";
 
 type Props = {
+  /**
+   * Visible text before the tabs, such as "Question". It names the tab list
+   * for screen readers too, so it takes precedence over `ariaLabel`. Hidden
+   * on phones, where the tabs need the room.
+   */
+  label?: string;
+  /** The tab list's accessible name when there is no `label`. */
   ariaLabel?: string;
   defaultValue?: string;
   class?: string;
@@ -9,6 +16,7 @@ type Props = {
 } & MediaLayoutProps;
 
 const {
+  label,
   ariaLabel = "Figure variants",
   defaultValue,
   class: className,
@@ -48,7 +56,9 @@ const layoutStyle = buildMediaLayoutStyle(
   data-aria-label={ariaLabel}
   data-default-value={defaultValue}
 >
-  <div class="toggle-figure__controls" data-toggle-figure-controls hidden></div>
+  <div class="toggle-figure__controls" data-toggle-figure-controls hidden>
+    {label && <span class="toggle-figure__label" data-toggle-figure-label>{label}</span>}
+  </div>
   <div class="toggle-figure__panels" data-toggle-figure-panels>
     <slot />
   </div>
@@ -60,6 +70,7 @@ const layoutStyle = buildMediaLayoutStyle(
   const SELECTORS = {
     root: "[data-toggle-figure]",
     controls: "[data-toggle-figure-controls]",
+    label: "[data-toggle-figure-label]",
     panel: "[data-toggle-figure-panel]"
   };
 
@@ -76,7 +87,14 @@ const layoutStyle = buildMediaLayoutStyle(
       const rootIndex = Array.from(document.querySelectorAll(SELECTORS.root)).indexOf(root);
       tablist.className = "toggle-figure__tablist";
       tablist.setAttribute("role", "tablist");
-      tablist.setAttribute("aria-label", root.dataset.ariaLabel || "Figure variants");
+      // A visible label names the tab list; otherwise `ariaLabel` does.
+      const heading = controls.querySelector<HTMLElement>(SELECTORS.label);
+      if (heading) {
+        heading.id = `toggle-figure-${rootIndex}-label`;
+        tablist.setAttribute("aria-labelledby", heading.id);
+      } else {
+        tablist.setAttribute("aria-label", root.dataset.ariaLabel || "Figure variants");
+      }
 
       const buttons = panels.map((panel, index) => {
         const label = panel.dataset.label || `Figure ${index + 1}`;
@@ -123,7 +141,7 @@ const layoutStyle = buildMediaLayoutStyle(
         if (focusButton) buttons[activeIndex]?.focus();
       };
 
-      controls.replaceChildren(tablist);
+      controls.replaceChildren(...(heading ? [heading] : []), tablist);
       controls.hidden = panels.length < 2;
       // Tabs wider than the column scroll; fade the edge that hides some.
       wireOverflowHints(SELECTORS.controls, root);
