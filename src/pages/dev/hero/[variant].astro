@@ -1,11 +1,11 @@
 ---
 /**
  * Routes the hero fixture's variants — in development only. The PROD guard
- * is load-bearing for the same reason as in ../[fixture].astro: without it,
+ * is load-bearing for the same reason as in ../[...page].astro: without it,
  * every site built from the template would publish these pages.
  */
-import HeroLayout from "../../../fixtures/HeroLayout.astro";
-import { HERO_FIXTURE_VARIANTS } from "../../../fixtures/heroVariants";
+import HeroLayout from "../../../dev/HeroLayout.astro";
+import { HERO_FIXTURE_VARIANTS } from "../../../dev/heroVariants";
 
 export function getStaticPaths() {
   if (import.meta.env.PROD) return [];

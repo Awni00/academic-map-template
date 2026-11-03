@@ -15,6 +15,7 @@ src/lib/
 src/pages/
 src/styles/
 src/config/defaults/
+src/dev/
 scripts/
 tests/
 astro.config.ts

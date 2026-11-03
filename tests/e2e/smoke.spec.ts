@@ -478,7 +478,7 @@ test("article column and footer share one left edge across layouts", async ({
 });
 
 test("media layout controls size figures and embeds", async ({ page }) => {
-  await page.goto("/fixtures/media-layout-controls");
+  await page.goto("/dev/media-layout-controls");
   await expect(page.locator("#media-layout-controls-fixture")).toBeVisible();
 
   const grid = page.locator(".fixture-equal-grid");

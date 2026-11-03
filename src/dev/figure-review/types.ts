@@ -1,5 +1,5 @@
 /**
- * Entries for the figure review page (`/fixtures/figures`, dev only).
+ * Entries for the figure review page (`/dev/figures`, dev only).
  *
  * The entries themselves are site content: each post's live in
  * `src/site/figure-review/<post>.ts`, which default-exports

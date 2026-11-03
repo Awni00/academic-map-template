@@ -27,10 +27,13 @@ toggles, navigation, social links, publication author highlighting, graph
 styling, theme preferences, and entry type choices.
 
 To try graph styling before writing it down, run the dev server and open
-`/fixtures/graph-playground`: your writing map beside the same map driven by
+`/dev/graph-playground`: your writing map beside the same map driven by
 sliders for layout, edges, hover, and node sizes, with the changed values
 written out as config to paste here. [Configuration](configuration.md#graph-layout-and-edges)
 documents each setting.
+
+`/dev` lists every development-only page: these tools, and the fixtures the
+e2e suite runs against. None of them is built into the published site.
 
 Do not edit `src/config/defaults/` in a downstream website unless you intend to
 diverge from the template.
@@ -621,7 +624,7 @@ theme: {
 }
 ```
 
-Run the dev server and open `/fixtures/themes` to see all eighteen against real
+Run the dev server and open `/dev/themes` to see all eighteen against real
 type before choosing. To define your own, add it to `src/site/themes.ts` — only
 `bg`, `fg` and `accent` are required, and `npm run validate` checks whatever you
 write for contrast.

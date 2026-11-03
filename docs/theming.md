@@ -51,7 +51,7 @@ Restart the dev server after editing — it reads this at startup.
 | `github-dark`      | dark       | GitHub Dark                   |
 
 To see them all against real type, run the dev server and open
-`/fixtures/themes`. That page is development-only and is never built into
+`/dev/themes`. That page is development-only and is never built into
 `dist/`.
 
 ## Writing your own theme

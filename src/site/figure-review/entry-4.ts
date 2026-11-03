@@ -1,7 +1,7 @@
-import { definePaperReview } from "../../fixtures/figure-review/types";
+import { definePaperReview } from "../../dev/figure-review/types";
 
 // Starter example: the figures in entry 4, listed for the dev-only review
-// page at /fixtures/figures. One file per post; see docs/figures.md.
+// page at /dev/figures. One file per post; see docs/figures.md.
 export default definePaperReview({
   post: "entry-4",
   paper: "Entry 4",

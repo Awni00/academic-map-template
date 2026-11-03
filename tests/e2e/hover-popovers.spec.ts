@@ -2,10 +2,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
  * HoverNote and Term share one top-layer popover (src/lib/article/hoverPopover.ts).
- * These run against the dev-only fixture at /fixtures/hover-popovers.
+ * These run against the dev-only fixture at /dev/hover-popovers.
  */
 
-const FIXTURE = "/fixtures/hover-popovers";
+const FIXTURE = "/dev/hover-popovers";
 
 const term = (page: Page, text: string) =>
   page.locator(".term").filter({ has: page.locator(".term__text", { hasText: text }) });

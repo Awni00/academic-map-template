@@ -3,8 +3,8 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 /**
  * The homepage hero ("margin card") at the three layouts it has: desktop
  * 1440, tablet 768, phone 390. Most checks run against the dev-only hero
- * fixture (src/fixtures/HeroLayout.astro), whose variants are listed in
- * src/fixtures/heroVariants.ts, so both photo sides and every link style
+ * fixture (src/dev/HeroLayout.astro), whose variants are listed in
+ * src/dev/heroVariants.ts, so both photo sides and every link style
  * are covered without changing the site config.
  *
  * Each test sets its own viewport, so the suite runs in the desktop project
@@ -84,7 +84,7 @@ async function noHorizontalScroll(page: Page) {
 for (const width of WIDTHS) {
   for (const side of SIDES) {
     test(`${width.name} ${width.width}px, photo ${side}: card placement and no sideways scroll`, async ({ browser }) => {
-      const page = await open(browser, width, `/fixtures/hero/side-${side}_len-l`);
+      const page = await open(browser, width, `/dev/hero/side-${side}_len-l`);
       await noHorizontalScroll(page);
       await expect(page.locator(".hero")).toHaveAttribute("data-hero-side", side);
 
@@ -130,7 +130,7 @@ for (const width of WIDTHS.filter((w) => w.touch)) {
   for (const style of LINK_STYLES) {
     for (const side of SIDES) {
       test(`${width.name} ${width.width}px, ${style} links, photo ${side}: tap targets are at least 44px`, async ({ browser }) => {
-        const page = await open(browser, width, `/fixtures/hero/side-${side}_links-${style}`);
+        const page = await open(browser, width, `/dev/hero/side-${side}_links-${style}`);
         await noHorizontalScroll(page);
         await expectTapTargets(page);
       });
@@ -139,7 +139,7 @@ for (const width of WIDTHS.filter((w) => w.touch)) {
 }
 
 test("a touch screen wider than 900px still gets 44px link targets", async ({ browser }) => {
-  const page = await open(browser, { name: "desktop", width: 1180, height: 820, touch: true }, "/fixtures/hero/default");
+  const page = await open(browser, { name: "desktop", width: 1180, height: 820, touch: true }, "/dev/hero/default");
   expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
   await expectTapTargets(page);
 });
@@ -219,7 +219,7 @@ const EXPECTED_COLS = { desktop: 3, tablet: 2, phone: 3 } as const;
 for (const width of WIDTHS) {
   for (const side of SIDES) {
     test(`${width.name} ${width.width}px, photo ${side}: pills form equal-width, balanced rows`, async ({ browser }) => {
-      const page = await open(browser, width, `/fixtures/hero/side-${side}`);
+      const page = await open(browser, width, `/dev/hero/side-${side}`);
       const grid = await pillGrid(page);
       expect(grid.cols).toBe(EXPECTED_COLS[width.name]);
       expectBalanced(grid, 6);
@@ -237,7 +237,7 @@ for (const width of WIDTHS) {
 
   test(`${width.name} ${width.width}px: other link counts stay balanced`, async ({ browser }) => {
     // Nine links (with custom ones) and the template's default four.
-    const custom = await open(browser, width, "/fixtures/hero/custom-1");
+    const custom = await open(browser, width, "/dev/hero/custom-1");
     expectBalanced(await pillGrid(custom), 9);
     const home = await open(browser, width, "/");
     expectBalanced(await pillGrid(home), await home.locator(".hero-link").count());
@@ -245,7 +245,7 @@ for (const width of WIDTHS) {
 }
 
 test("without a photo, desktop pills share one row within the bio's measure", async ({ browser }) => {
-  const page = await open(browser, WIDTHS[0], "/fixtures/hero/side-left_photo-none");
+  const page = await open(browser, WIDTHS[0], "/dev/hero/side-left_photo-none");
   const grid = await pillGrid(page);
   expect(grid.rows).toEqual([6]);
   expectBalanced(grid, 6);
@@ -258,7 +258,7 @@ test("without a photo, desktop pills share one row within the bio's measure", as
 for (const width of WIDTHS) {
   for (const style of ["text", "text-icons"] as const) {
     test(`${width.name} ${width.width}px, ${style} links: balanced rows that never end on a dot`, async ({ browser }) => {
-      const page = await open(browser, width, `/fixtures/hero/side-left_links-${style}`);
+      const page = await open(browser, width, `/dev/hero/side-left_links-${style}`);
       const rows = await page.locator(".hero-links").evaluate((nav) => {
         const links = [...nav.querySelectorAll(".hero-link")] as HTMLElement[];
         const out: { dots: boolean[]; overflow: boolean }[] = [];
@@ -292,7 +292,7 @@ for (const width of WIDTHS) {
 test("without JavaScript, pills fall back to wrapping at their own widths", async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 768, height: 1024 }, javaScriptEnabled: false });
   const page = await context.newPage();
-  await page.goto("/fixtures/hero/default");
+  await page.goto("/dev/hero/default");
   await expect(page.locator(".hero-links")).not.toHaveAttribute("data-cols");
   await noHorizontalScroll(page);
   expect((await pillGrid(page)).clipped).toEqual([]);
@@ -300,7 +300,7 @@ test("without JavaScript, pills fall back to wrapping at their own widths", asyn
 
 for (const side of SIDES) {
   test(`phone compact layout, photo ${side}: a 76px photo beside the caption, above the bio`, async ({ browser }) => {
-    const page = await open(browser, WIDTHS[2], `/fixtures/hero/side-${side}_phone-compact`);
+    const page = await open(browser, WIDTHS[2], `/dev/hero/side-${side}_phone-compact`);
     await noHorizontalScroll(page);
     const photo = await box(page, ".hero-photo");
     const meta = await box(page, ".hero-meta");
@@ -313,7 +313,7 @@ for (const side of SIDES) {
   });
 
   test(`sticky card, photo ${side}: stays in view while the bio scrolls`, async ({ browser }) => {
-    const page = await open(browser, WIDTHS[0], `/fixtures/hero/side-${side}_sticky-1_len-l`);
+    const page = await open(browser, WIDTHS[0], `/dev/hero/side-${side}_sticky-1_len-l`);
     // The site scrolls smoothly; jump so the card is measured where it settles.
     await page.evaluate(() => window.scrollTo({ top: 420, behavior: "instant" }));
     const top = await page.locator(".hero-card").evaluate((card) => card.getBoundingClientRect().top);
@@ -324,7 +324,7 @@ for (const side of SIDES) {
 
 for (const width of WIDTHS) {
   test(`${width.name} ${width.width}px without a photo: caption and links lead the bio`, async ({ browser }) => {
-    const page = await open(browser, width, "/fixtures/hero/side-left_photo-none");
+    const page = await open(browser, width, "/dev/hero/side-left_photo-none");
     await noHorizontalScroll(page);
     await expect(page.locator(".hero-photo")).toHaveCount(0);
     const card = await box(page, ".hero-card");
@@ -360,7 +360,7 @@ test("the homepage hero renders the card first, with the name as the page headin
 });
 
 test("custom links get bundled icons and their own labels", async ({ browser }) => {
-  const page = await open(browser, WIDTHS[0], "/fixtures/hero/custom-1");
+  const page = await open(browser, WIDTHS[0], "/dev/hero/custom-1");
   const labels = await page.locator(".hero-link__label").allTextContents();
   expect(labels.slice(-3)).toEqual(["ORCID", "Bluesky", "Lab"]);
   await expect(page.locator('.hero-link[data-link-key="orcid"] svg path')).toHaveCount(1);
@@ -372,7 +372,7 @@ test("custom links get bundled icons and their own labels", async ({ browser }) 
 });
 
 test("a hidden name stays the page heading for screen readers", async ({ browser }) => {
-  const page = await open(browser, WIDTHS[0], "/fixtures/hero/name-hide_extra-1");
+  const page = await open(browser, WIDTHS[0], "/dev/hero/name-hide_extra-1");
   const heading = page.locator("h1.hero-name");
   await expect(heading).toHaveCount(1);
   expect(await heading.evaluate((el) => el.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
@@ -390,20 +390,20 @@ test.describe("justified prose", () => {
   }
 
   test("justifies the bio's paragraphs and list items only", async ({ browser }) => {
-    const page = await open(browser, WIDTHS[0], "/fixtures/hero/len-l_justify-all");
+    const page = await open(browser, WIDTHS[0], "/dev/hero/len-l_justify-all");
     expect(await page.evaluate(() => document.documentElement.lang)).toBe("en");
     expect(await alignments(page)).toEqual({ p: "justify", li: "justify", hyphens: "auto", caption: "start" });
   });
 
   test('minWidth "tablet" leaves phones ragged', async ({ browser }) => {
-    const tablet = await open(browser, WIDTHS[1], "/fixtures/hero/len-l_justify-tablet");
+    const tablet = await open(browser, WIDTHS[1], "/dev/hero/len-l_justify-tablet");
     expect((await alignments(tablet)).p).toBe("justify");
-    const phone = await open(browser, WIDTHS[2], "/fixtures/hero/len-l_justify-tablet");
+    const phone = await open(browser, WIDTHS[2], "/dev/hero/len-l_justify-tablet");
     expect(await alignments(phone)).toMatchObject({ p: "start", li: "start", hyphens: "manual" });
   });
 
   test("is off by default", async ({ browser }) => {
-    const page = await open(browser, WIDTHS[0], "/fixtures/hero/side-left_len-l");
+    const page = await open(browser, WIDTHS[0], "/dev/hero/side-left_len-l");
     expect((await alignments(page)).p).toBe("start");
   });
 });

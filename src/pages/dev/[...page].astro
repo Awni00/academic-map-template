@@ -1,0 +1,36 @@
+---
+/**
+ * Routes the dev pages — in development only. /dev is an index of them; each
+ * entry in src/dev/registry.ts is served at /dev/<slug>.
+ *
+ * Dev pages are scaffolding, not site content. Some are tools for the person
+ * running the site (the theme gallery, the graph playground); the rest are
+ * fixtures that instantiate components at known props so the Playwright suite
+ * can measure real layout geometry against them, which no unit test can do.
+ * They live in `src/dev/` rather than here, because everything under
+ * `src/pages/` is a public URL, and a template that ships its own test rig
+ * hands that page to every site generated from it — built into `dist/` and
+ * advertised in `sitemap.xml`.
+ *
+ * `getStaticPaths` returning `[]` under PROD is what keeps that from
+ * happening: `astro dev` serves these routes, `astro build` emits nothing.
+ * The index shares this route rather than being an `index.astro`, so the one
+ * guard covers it too. The e2e suite runs against the dev server (see
+ * playwright.config.ts), so it reaches every page.
+ *
+ * This guard is load-bearing. Removing it does not "simplify" anything — it
+ * publishes the dev pages.
+ */
+import DevIndex from "../../dev/DevIndex.astro";
+import { ROUTED_DEV_PAGES } from "../../dev/registry";
+
+export function getStaticPaths() {
+  if (import.meta.env.PROD) return [];
+  return [{ params: { page: undefined } }, ...ROUTED_DEV_PAGES.map(({ slug }) => ({ params: { page: slug } }))];
+}
+
+const { page } = Astro.params;
+const Page = page === undefined ? DevIndex : ROUTED_DEV_PAGES.find(({ slug }) => slug === page)?.component;
+---
+
+{Page && <Page />}
