@@ -58,7 +58,9 @@ export function renderTexAxisLabels(svg: string, width: number): string {
       const x = anchor === "start" ? 0 : anchor === "end" ? -box : -box / 2;
       const y = hanging ? -2 : -17;
       return (
-        `${group}<foreignObject class="figure-tex" transform="${transform}" x="${x}" y="${y}" width="${box}" height="24">` +
+        // Twice the chart's width, so it must let the pointer through to the
+        // marks (and their hover tips) beneath it.
+        `${group}<foreignObject class="figure-tex" transform="${transform}" x="${x}" y="${y}" width="${box}" height="24" pointer-events="none">` +
         `<div xmlns="http://www.w3.org/1999/xhtml" class="figure-tex__label" data-anchor="${anchor}">${texToHtml(label)}</div>` +
         `</foreignObject>`
       );

@@ -262,7 +262,11 @@ export class DiagramCanvas {
 
   /**
    * A label. Plain text is SVG text; text with `$…$` is KaTeX HTML in a
-   * foreignObject centred on the same anchor point.
+   * foreignObject centred on the same anchor point. Labels are never
+   * interactive: the foreignObject passes pointer events through, so it
+   * doesn't block a control or a hover target drawn under its box. That
+   * includes one in a neighbouring figure: the SVG has `overflow: visible`,
+   * so the box can reach past it (into the next cell of a FigureGrid, say).
    */
   label(at: Point, text: string, options: LabelOptions = {}) {
     const { anchor = "middle", baseline = "middle", size = "md", tone = "ink", halo = false, italic = false } = options;
@@ -274,7 +278,9 @@ export class DiagramCanvas {
       const x = anchor === "start" ? at.x : anchor === "end" ? at.x - box.w : at.x - box.w / 2;
       const y = baseline === "top" ? at.y : baseline === "bottom" ? at.y - box.h : at.y - box.h / 2;
       this.parts.push(
-        `<foreignObject x="${fmt(x)}" y="${fmt(y)}" width="${box.w}" height="${box.h}" class="d-tex">` +
+        // The box is far larger than the text, so it must let the pointer
+        // through to whatever is drawn beneath it.
+        `<foreignObject x="${fmt(x)}" y="${fmt(y)}" width="${box.w}" height="${box.h}" class="d-tex" pointer-events="none">` +
           `<div xmlns="http://www.w3.org/1999/xhtml" class="${classes}" data-anchor="${anchor}" data-baseline="${baseline}">` +
           `<span>${texToHtml(text)}</span></div></foreignObject>`
       );

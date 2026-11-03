@@ -314,3 +314,49 @@ describe("diagram replay", () => {
     expect(writingConfig.entryLayout.diagramReplay).toBe(true);
   });
 });
+
+describe("TeX label boxes", () => {
+  // A TeX label's foreignObject is far larger than its text, and used to
+  // catch the pointer over controls and marks drawn beneath it, including
+  // those of a neighbouring figure: the SVG has overflow: visible, so the box
+  // can reach into the next cell of a FigureGrid. The rule therefore has to
+  // be on the foreignObject itself, not on an ancestor that clips or scopes.
+  const foreignObjects = (svg: string) => [...svg.matchAll(/<foreignObject[^>]*>/g)].map((m) => m[0]);
+
+  it("lets the pointer through a diagram's TeX labels", () => {
+    const svg = canvas(200, 100)
+      .label({ x: 50, y: 30 }, "$x$")
+      .label({ x: 150, y: 30 }, "Input $\\hat{y}$", { halo: true })
+      .toSvg("Labels");
+    const boxes = foreignObjects(svg);
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(box).toContain('pointer-events="none"');
+  });
+
+  it("keeps the rule on a label box that reaches past its own canvas", () => {
+    // A label near the right edge of a narrow canvas: its 480px box spills
+    // well past the 200px SVG, where a neighbouring figure would sit.
+    const svg = canvas(200, 60).label({ x: 190, y: 30 }, "$h^{(t+1)}$").toSvg("Edge label");
+    const [box] = foreignObjects(svg);
+    const x = Number(/ x="([-\d.]+)"/.exec(box)![1]);
+    const width = Number(/ width="([\d.]+)"/.exec(box)![1]);
+    expect(x + width).toBeGreaterThan(200);
+    expect(box).toMatch(/^<foreignObject [^>]*pointer-events="none"/);
+  });
+
+  it("lets the pointer through a chart's TeX axis labels", () => {
+    const data = parseFigureData("x,y\n0,1\n1,2\n");
+    const svg = renderFigure(
+      {
+        width: 360,
+        x: { label: "Step $t$" },
+        y: { label: "Rate $\\eta$" },
+        marks: [Plot.dot(data, { x: "x", y: "y", title: "y" })]
+      },
+      "Chart"
+    );
+    const boxes = foreignObjects(svg);
+    expect(boxes).toHaveLength(2);
+    for (const box of boxes) expect(box).toContain('pointer-events="none"');
+  });
+});

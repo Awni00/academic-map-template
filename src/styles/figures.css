@@ -148,6 +148,17 @@
   overflow: visible;
 }
 
+/* TeX labels sit in boxes much larger than their text (an axis label's is
+   twice the chart's width), and the SVG lets them overflow, so a box can
+   cover a neighbouring figure. Labels are never interactive, so the
+   pointer passes through to controls and hover targets beneath, in this
+   figure or the next. The markup carries
+   pointer-events="none" too; this covers the HTML inside. */
+.figure-chart :is(.figure-tex, .d-tex),
+.figure-chart :is(.figure-tex, .d-tex) * {
+  pointer-events: none;
+}
+
 .figure-tex__label {
   font-family: var(--font-ui);
   font-size: 13px;
