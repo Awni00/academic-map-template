@@ -497,6 +497,11 @@ export type RecentWritingSelect = "featured-first" | "recent" | "featured";
 
 export type PublicationsConfig = {
   source: string;
+  /**
+   * One line under the publications page's title, and the page's meta
+   * description. Empty hides the line.
+   */
+  description?: string;
   grouping: {
     by: "year";
     order: "asc" | "desc";

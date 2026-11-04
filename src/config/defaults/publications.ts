@@ -2,6 +2,7 @@ import type { PublicationsConfig } from "../types";
 
 export const defaultPublicationsConfig = {
   source: "src/data/publications.bib",
+  description: "",
   grouping: {
     by: "year",
     order: "desc"
