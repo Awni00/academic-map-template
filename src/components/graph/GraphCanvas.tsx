@@ -8,6 +8,7 @@ import {
   nodePaintedRadius,
   resolveLabelSide,
   type HubLayout,
+  type LabelPlacement,
   type LabelSide
 } from "../../lib/graph/nodeInteraction";
 import {
@@ -35,8 +36,9 @@ import {
 import { curvedArrow, curvedEdge } from "../../lib/graph/edgeGeometry";
 import { arrowMode } from "../../lib/graph/graphSettings";
 import {
+  overlaps,
   placeLabel,
-  placeRequiredLabel,
+  placeLeastCovering,
   screenToGraph,
   wrapLabel,
   type Box
@@ -87,6 +89,15 @@ type GraphCanvasProps = {
    *   "none"   — paint none; hovering a node floats its title instead.
    */
   labelMode?: LabelMode;
+  /**
+   * A small canvas set beside a panel describing the selected node — the
+   * per-entry map. There is no room on it for the same words twice, so:
+   *   - the selected node keeps no label of its own (the panel names it),
+   *   - nor does the anchor (it is the page being read),
+   *   - and hub labels are set smaller.
+   * Hovering still names whatever is under the pointer.
+   */
+  compact?: boolean;
   /**
    * Drawn in place of the canvas until it mounts: in the server render, and
    * until the canvas scrolls into view. Defaults to a "Loading graph..." line.
@@ -192,6 +203,7 @@ export default function GraphCanvas({
   anchor,
   drag = "none",
   labelMode = "config",
+  compact = false,
   placeholder,
   labelSide = "auto",
   onSelect,
@@ -258,10 +270,10 @@ export default function GraphCanvas({
   // Bumped on every theme switch purely to force a re-render — see the
   // MutationObserver below for why that's what repaints the canvas.
   const [, setThemeVersion] = useState(0);
-  // Labels for the frame being painted: the boxes already taken, and the hover
-  // labels held back to be drawn last, on top of everything (see
-  // `drawHoverLabels`). Reset at the start of every frame.
-  const labelsRef = useRef<FrameLabels>({ taken: [], glyphs: [], deferred: [], blocked: [] });
+  // Labels for the frame being painted: the boxes already taken, and the
+  // labels the node pass asked for, placed and drawn once every glyph is down
+  // (see `drawLabels`). Reset at the start of every frame.
+  const labelsRef = useRef<FrameLabels>({ taken: [], glyphs: [], requests: [], blocked: [], outward: false });
   // Read at paint time, so a legend that changes size reaches the next frame
   // without re-creating the canvas callbacks.
   const obstaclesRef = useRef<Box[]>([]);
@@ -1138,8 +1150,9 @@ export default function GraphCanvas({
             labelsRef.current = {
               taken: [],
               glyphs: [],
-              deferred: [],
-              blocked: obstaclesRef.current.map((box) => screenToGraph(box, transform, dpr))
+              requests: [],
+              blocked: obstaclesRef.current.map((box) => screenToGraph(box, transform, dpr)),
+              outward: Boolean(anchor) && labelSide === "auto"
             };
           }}
           onRenderFramePost={(ctx: CanvasRenderingContext2D, globalScale: number) => {
@@ -1147,7 +1160,7 @@ export default function GraphCanvas({
             ctx.globalCompositeOperation = "destination-over";
             drawEdges(ctx, globalScale);
             ctx.restore();
-            drawHoverLabels(ctx, globalScale, labelsRef.current);
+            drawLabels(ctx, globalScale, labelsRef.current);
           }}
           nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
             zoomRef.current = globalScale;
@@ -1164,6 +1177,7 @@ export default function GraphCanvas({
               // Hovering names nodes on the canvas, as `hover.labels` says.
               revealLabel: focus?.named.has(node.id) ?? false,
               labelMode,
+              compact,
               radius: radiusOf(node, globalScale),
               selectionStyle
             });
@@ -1331,6 +1345,7 @@ function drawNode(
     /** Paint this node's label even where its type is hover-only. */
     revealLabel: boolean;
     labelMode: LabelMode;
+    compact: boolean;
     anchored?: boolean;
     /** Glyph radius in graph units at this zoom. */
     radius: number;
@@ -1394,16 +1409,35 @@ function drawNode(
   const alpha = state.dimmed ? HOVER_DIM_ALPHA * 2 : state.faded ? FADED_LABEL_ALPHA : 1;
   const hub = labelVisibilityFor(node.type) === "always";
   const always = shouldPaintLabel(node, state.labelMode);
-  if (hub && always) {
-    paintLabel(ctx, node, radius, px, LABEL_STYLES.hub, alpha, state.labels);
+  // A compact map's panel names the selected node, and the anchor is the page
+  // itself; a label on either only repeats what is beside the canvas.
+  // A hub keeps its name when selected: it is one of the map's landmarks.
+  const quiet = state.compact && (state.anchored || (state.selected && !hub));
+  const hubStyle = state.compact ? LABEL_STYLES.compactHub : LABEL_STYLES.hub;
+  const request = (kind: LabelKind, style: LabelStyle) =>
+    state.labels.requests.push({
+      node,
+      radius,
+      kind,
+      style,
+      // What hovering names is the answer to the question being asked, so it
+      // is never faded.
+      alpha: state.hovered || kind === "neighbour" ? 1 : alpha,
+      hovered: state.hovered
+    });
+  // Nothing is painted here. Every label waits for `drawLabels`, after the
+  // last glyph: a label painted mid-pass is painted over by every node drawn
+  // after it, and could only avoid the glyphs drawn before it.
+  if (hub && always && !quiet) {
+    request("hub", hubStyle);
   } else if (state.hovered) {
-    state.labels.deferred.push({ node, radius, kind: "focus" });
-  } else if (state.selected) {
-    paintLabel(ctx, node, radius, px, LABEL_STYLES.focus, alpha, state.labels);
+    request("focus", hub ? hubStyle : LABEL_STYLES.focus);
+  } else if (state.selected && !state.compact) {
+    request("selected", LABEL_STYLES.focus);
   } else if (state.revealLabel) {
-    state.labels.deferred.push({ node, radius, kind: "neighbour" });
-  } else if (always) {
-    paintLabel(ctx, node, radius, px, LABEL_STYLES.neighbour, alpha, state.labels);
+    request("neighbour", LABEL_STYLES.neighbour);
+  } else if (always && !quiet) {
+    request("always", LABEL_STYLES.neighbour);
   }
 }
 
@@ -1419,27 +1453,62 @@ type LabelStyle = {
   gap: number;
 };
 
+/**
+ * Why a label is on the canvas, which is also the order labels are placed in:
+ * standing labels first, so they hold the same place whatever is hovered, then
+ * the hovered node's, then its neighbours' in whatever room is left.
+ *   "hub"       — a hub's name, always shown.
+ *   "selected"  — the selected node's title (not on a compact map).
+ *   "always"    — any other type configured to show its label.
+ *   "focus"     — the hovered node's title.
+ *   "neighbour" — a hovered node's neighbour, per `hover.labels`; dropped
+ *                 where there is no free room for it.
+ */
+type LabelKind = "hub" | "selected" | "always" | "focus" | "neighbour";
+const PLACEMENT_ORDER: LabelKind[] = ["hub", "selected", "always", "focus", "neighbour"];
+
+type LabelRequest = {
+  node: any;
+  radius: number;
+  kind: LabelKind;
+  style: LabelStyle;
+  alpha: number;
+  /** The node is under the pointer: its label goes on top of every other. */
+  hovered: boolean;
+};
+
 type FrameLabels = {
   taken: Box[];
-  /** Every glyph painted this frame, so hover labels can avoid covering one. */
+  /** Every glyph painted this frame, so labels can avoid covering one. */
   glyphs: (Box & { id: string })[];
-  deferred: { node: any; radius: number; kind: "focus" | "neighbour" }[];
+  requests: LabelRequest[];
   /** `obstacles`, in graph units for this frame. No label goes on one. */
   blocked: Box[];
+  /**
+   * Hub names go on the side of the hub away from the anchor. The anchor is
+   * pinned at the origin and its neighbours ring it, the way hubs ring the
+   * centre of the circle layout, so "auto" means the same here as there.
+   * Worked out per frame: unlike the circle's hubs, these move.
+   */
+  outward: boolean;
 };
 
 /**
- * How each kind of label is set — three styles, one treatment.
+ * How each kind of label is set — a few styles, one treatment.
  *
  * Hubs are set in the body serif, like the site's headings: they name topics,
- * and are the map's few permanent words. The node in focus — hovered or
- * selected — gets its whole title, wrapped to a short block, in the full text
+ * and are the map's few permanent words (a size smaller on a compact map).
+ * The node in focus — hovered or selected — gets its whole title, wrapped to
+ * a short block, in the full text
  * colour. Its neighbours get one line each in the softer colour, cut with an
  * ellipsis: context for the focused node, not titles to read in full, and
  * dropped where they would land on another label or glyph.
  */
 const LABEL_STYLES = {
   hub: { size: 14, weight: 600, family: "--font-body", color: "--color-fg", maxWidth: 190, maxLines: 2, gap: 8 },
+  // A compact map's hub names: a step down, and narrower, so a name sits in
+  // the gaps between ring neighbours instead of across them.
+  compactHub: { size: 12, weight: 600, family: "--font-body", color: "--color-fg", maxWidth: 130, maxLines: 2, gap: 6 },
   focus: { size: 12.5, weight: 500, family: "--font-ui", color: "--color-fg", maxWidth: 200, maxLines: 3, gap: 7 },
   neighbour: { size: 11.5, weight: 400, family: "--font-ui", color: "--color-fg-soft", maxWidth: 150, maxLines: 1, gap: 6 }
 } as const satisfies Record<string, LabelStyle>;
@@ -1471,63 +1540,90 @@ function viewBox(ctx: CanvasRenderingContext2D): Box {
 }
 
 /**
- * Paint a node's title: wrapped to the style's width, placed above the node
- * (below it near the top edge), kept inside the canvas, and — with `taken` —
- * dropped if every position would collide with a label already placed.
- * Returns whether it was painted.
+ * A title set in `style` at `px` graph units per screen pixel: its lines, and
+ * the size of the plate behind them, measured before the label is placed.
  */
-function paintLabel(
-  ctx: CanvasRenderingContext2D,
-  node: any,
-  radius: number,
-  px: number,
-  style: LabelStyle,
-  alpha: number,
-  labels: FrameLabels,
-  avoid = false
-): boolean {
+function labelBlock(ctx: CanvasRenderingContext2D, title: string, style: LabelStyle, px: number) {
   const family = cssVar(style.family, "ui-sans-serif, system-ui, sans-serif");
+  const font = `${style.weight} ${style.size * px}px ${family}`;
   ctx.save();
-  ctx.font = `${style.weight} ${style.size * px}px ${family}`;
-  const lines = wrapLabel(node.title, (text) => ctx.measureText(text).width, style.maxWidth * px, style.maxLines);
+  ctx.font = font;
+  const lines = wrapLabel(title, (text) => ctx.measureText(text).width, style.maxWidth * px, style.maxLines);
+  const textWidth = Math.max(0, ...lines.map((line) => ctx.measureText(line).width));
+  ctx.restore();
   const lineHeight = style.size * LINE_HEIGHT * px;
-  const padX = PLATE_PAD_X * px;
-  const padY = PLATE_PAD_Y * px;
-  const width = Math.max(...lines.map((line) => ctx.measureText(line).width)) + padX * 2;
-  const height = lines.length * lineHeight + padY * 2;
+  return {
+    font,
+    lines,
+    lineHeight,
+    width: textWidth + PLATE_PAD_X * 2 * px,
+    height: lines.length * lineHeight + PLATE_PAD_Y * 2 * px
+  };
+}
+
+type PlacedLabel = { request: LabelRequest; box: Box } & ReturnType<typeof labelBlock>;
+
+/**
+ * The side a label prefers: outward from the anchor for a hub (see
+ * `FrameLabels.outward`), else the node's `_labelSide`. A hub within its own
+ * radius of the anchor's level keeps the default, so one settling across the
+ * line does not flip its name from frame to frame.
+ */
+function side(node: any, radius: number, labels: FrameLabels): LabelPlacement {
+  if (!labels.outward || labelVisibilityFor(node.type) !== "always" || Math.abs(node.y) <= radius) {
+    return node._labelSide;
+  }
+  return node.y > 0 ? "bottom" : "top";
+}
+
+/**
+ * Where a requested label goes: on its preferred side of the node (the other
+ * near an edge), inside the canvas, and clear of every label already placed
+ * and every glyph. A neighbour's label that cannot be clear is dropped
+ * (`null`); any other label is shown regardless, on whichever side covers least.
+ */
+function layoutLabel(
+  ctx: CanvasRenderingContext2D,
+  request: LabelRequest,
+  px: number,
+  view: Box,
+  labels: FrameLabels
+): PlacedLabel | null {
+  const { node, radius, style } = request;
+  const block = labelBlock(ctx, node.title, style, px);
+  const size = { width: block.width, height: block.height };
   const options = {
     radius,
     gap: style.gap * px,
     margin: LABEL_MARGIN * px,
-    view: viewBox(ctx),
-    prefer: node._labelSide === "bottom" ? ("below" as const) : undefined
+    view,
+    prefer: side(node, radius, labels) === "bottom" ? ("below" as const) : undefined
   };
-  const box = avoid
-    ? placeLabel(node, { width, height }, {
-        ...options,
-        taken: [...labels.taken, ...labels.glyphs.filter((glyph) => glyph.id !== node.id), ...labels.blocked]
-      })
-    : placeRequiredLabel(node, { width, height }, options, labels.blocked);
-  if (!box) {
-    ctx.restore();
-    return false;
-  }
-  labels.taken.push(box);
+  const avoid = [...labels.taken, ...labels.glyphs.filter((glyph) => glyph.id !== node.id), ...labels.blocked];
+  const box =
+    placeLabel(node, size, { ...options, taken: avoid }) ??
+    (request.kind === "neighbour" ? null : placeLeastCovering(node, size, options, avoid, labels.blocked));
+  return box ? { request, box, ...block } : null;
+}
 
+function paintPlaced(ctx: CanvasRenderingContext2D, label: PlacedLabel, px: number) {
+  const { request, box, font, lines, lineHeight } = label;
+  const { node, style, alpha } = request;
+  const padY = PLATE_PAD_Y * px;
   ctx.save();
   ctx.globalAlpha = alpha * PLATE_ALPHA;
   ctx.fillStyle = cssVar("--color-bg-soft");
   ctx.beginPath();
-  if (typeof ctx.roundRect === "function") ctx.roundRect(box.x0, box.y0, width, height, 3 * px);
-  else ctx.rect(box.x0, box.y0, width, height);
+  if (typeof ctx.roundRect === "function") ctx.roundRect(box.x0, box.y0, label.width, label.height, 3 * px);
+  else ctx.rect(box.x0, box.y0, label.width, label.height);
   ctx.fill();
-  ctx.restore();
   ctx.globalAlpha = alpha;
 
   // Lines run from the edge nearest the node, so the text baseline faces it:
   // a label above is set from its bottom line up, one below from its top down.
   const above = box.y1 <= node.y;
   const cx = (box.x0 + box.x1) / 2;
+  ctx.font = font;
   ctx.textAlign = "center";
   ctx.textBaseline = above ? "bottom" : "top";
   ctx.fillStyle = cssVar(style.color);
@@ -1538,31 +1634,43 @@ function paintLabel(
     ctx.fillText(line, cx, y);
   });
   ctx.restore();
-  return true;
 }
 
 /**
- * The labels hovering adds, drawn after every node and edge so they sit on top:
- * the hovered node's title first, so it always shows, then its neighbours',
- * nearest first, each skipped if it would land on a label or glyph already
- * placed.
+ * Every label of the frame, placed and painted after the last node and edge.
+ *
+ * Placement runs in `PLACEMENT_ORDER`, each label clear of those before it
+ * where it can be, so standing labels keep their places whatever is hovered.
+ * The hovered node's label is painted last, on top; any standing label it
+ * could not avoid is left out for as long as the hover lasts — a name half
+ * showing through the plate of another reads as neither.
  */
-function drawHoverLabels(ctx: CanvasRenderingContext2D, scale: number, labels: FrameLabels) {
-  if (labels.deferred.length === 0) return;
+function drawLabels(ctx: CanvasRenderingContext2D, scale: number, labels: FrameLabels) {
+  if (labels.requests.length === 0) return;
   const px = 1 / scale;
-  const focus = labels.deferred.find((item) => item.kind === "focus");
-  if (focus) paintLabel(ctx, focus.node, focus.radius, px, LABEL_STYLES.focus, 1, labels);
-  const origin = focus?.node;
-  const neighbours = labels.deferred
-    .filter((item) => item.kind === "neighbour")
-    .sort((a, b) =>
-      origin
-        ? Math.hypot(a.node.x - origin.x, a.node.y - origin.y) - Math.hypot(b.node.x - origin.x, b.node.y - origin.y)
-        : 0
-    );
-  for (const item of neighbours) {
-    paintLabel(ctx, item.node, item.radius, px, LABEL_STYLES.neighbour, 1, labels, true);
+  const view = viewBox(ctx);
+  const origin = labels.requests.find((request) => request.hovered)?.node;
+  const distance = (request: LabelRequest) =>
+    origin ? Math.hypot(request.node.x - origin.x, request.node.y - origin.y) : 0;
+  const ordered = [...labels.requests].sort(
+    (a, b) =>
+      PLACEMENT_ORDER.indexOf(a.kind) - PLACEMENT_ORDER.indexOf(b.kind) ||
+      // Neighbours nearest the hovered node first; the rest keep node order.
+      (a.kind === "neighbour" ? distance(a) - distance(b) : 0)
+  );
+  const placed: PlacedLabel[] = [];
+  for (const request of ordered) {
+    const label = layoutLabel(ctx, request, px, view, labels);
+    if (!label) continue;
+    labels.taken.push(label.box);
+    placed.push(label);
   }
+  const top = placed.find((label) => label.request.hovered);
+  for (const label of placed) {
+    if (label === top || (top && overlaps(label.box, top.box))) continue;
+    paintPlaced(ctx, label, px);
+  }
+  if (top) paintPlaced(ctx, top, px);
 }
 
 function roundedSquare(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {

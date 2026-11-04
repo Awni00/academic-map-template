@@ -46,7 +46,8 @@ export function resolveHover(
  */
 export function validateGraphSettings(
   config: Pick<GraphConfigBase, "links" | "layout" | "hover"> & Partial<Pick<GraphConfigBase, "selection">>,
-  homepageHover?: Partial<GraphHoverConfig>
+  homepageHover?: Partial<GraphHoverConfig>,
+  localGraphHover?: Partial<GraphHoverConfig>
 ): string[] {
   const errors: string[] = [];
   const checkHover = (hover: Partial<GraphHoverConfig> | undefined, path: string) => {
@@ -62,6 +63,7 @@ export function validateGraphSettings(
   };
   checkHover(config.hover, "graph.hover");
   checkHover(homepageHover, "site.homepage.writingPreview.hover");
+  checkHover(localGraphHover, "writing.entryLayout.localGraph.hover");
 
   const style = config.selection?.style;
   if (style !== undefined && !SELECTION_STYLES.includes(style)) {

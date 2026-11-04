@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { graphConfig, isHubType } from "../../config";
+import { graphConfig, isHubType, writingConfig } from "../../config";
+import { resolveHover } from "../../lib/graph/graphSettings";
 import type { EntryNode, GraphIndex } from "../../lib/graph/types";
 import GraphCanvas from "./GraphCanvas";
 import NodeDetailPanel from "./NodeDetailPanel";
@@ -58,6 +59,9 @@ export default function LocalGraphMap({
           // says which topics this page belongs to; every other node shows
           // its title on hover.
           labelMode="config"
+          labelSide={graphConfig.layout.labelSide}
+          compact
+          hover={resolveHover(graphConfig.hover, writingConfig.entryLayout.localGraph.hover)}
           placeholder={<MapSkeleton nodes={localGraph.nodes} anchorId={currentId} />}
           onSelect={handleSelect}
         />

@@ -159,6 +159,12 @@ export type WritingConfig = {
     localGraph: {
       defaultDepth: number;
       maxNodes: number;
+      /**
+       * Overrides `graph.hover` for these maps. They are small, and the panel
+       * beside them already describes the selected node, so by default
+       * hovering names only the hovered node.
+       */
+      hover: Partial<GraphHoverConfig>;
     };
     /**
      * Number figure and table captions ("Figure 3.", "Table 1.") in article
@@ -632,6 +638,11 @@ export type GraphConfigBase = {
   layout: {
     hubs: "cluster" | "circle" | "row" | "force";
     labels: "config" | "all" | "none";
+    /**
+     * Which side of its node a hub's name takes. "auto" means outward: away
+     * from the centre on the "circle" layout, and from the current page on an
+     * entry's local map; "top" elsewhere.
+     */
     labelSide: "top" | "bottom" | "auto";
     /** Used by the "cluster" layout. */
     forces: GraphForcesConfig;

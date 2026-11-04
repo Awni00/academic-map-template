@@ -78,12 +78,17 @@ export function wrapLabel(
   return lines.map((line) => truncate(line, measure, maxWidth));
 }
 
+/** Whether `box` sits inside `view` vertically, `margin` clear of its edges. */
+function fitsView(box: Box, view: Box, margin: number): boolean {
+  return box.y0 >= view.y0 + margin && box.y1 <= view.y1 - margin;
+}
+
 /**
  * Where a label block of `width` × `height` goes beside a node: centred above
- * it, `gap` clear of the glyph, slid sideways to stay inside `view`, and moved
- * below the node when there is no room above. With `taken`, a position that
- * overlaps an existing label is refused and the other side tried; `null` means
- * neither side is free.
+ * it (below, with `prefer`), `gap` clear of the glyph, slid sideways to stay
+ * inside `view`, and on the other side when only that one fits. With `taken`,
+ * a position that overlaps an existing label, or runs off the canvas, is
+ * refused and the other side tried; `null` means neither side is free.
  */
 export function placeLabel(
   node: { x: number; y: number },
@@ -107,16 +112,12 @@ export function placeLabel(
     y0: node.y + radius + gap,
     y1: node.y + radius + gap + size.height
   };
-  const fitsAbove = above.y0 >= view.y0 + margin;
-  const fitsBelow = below.y1 <= view.y1 - margin;
-  const order =
-    options.prefer === "below"
-      ? [below, above]
-      : fitsAbove || !fitsBelow
-        ? [above, below]
-        : [below, above];
+  const fits = (box: Box) => fitsView(box, view, margin);
+  const [first, second] = options.prefer === "below" ? [below, above] : [above, below];
+  const order = fits(first) || !fits(second) ? [first, second] : [second, first];
+  if (!taken) return order[0];
   for (const box of order) {
-    if (!taken || !taken.some((other) => overlaps(box, other))) return box;
+    if (fits(box) && !taken.some((other) => overlaps(box, other))) return box;
   }
   return null;
 }
@@ -135,6 +136,31 @@ export function placeRequiredLabel(
 ): Box {
   const clear = blocked.length ? placeLabel(node, size, { ...options, taken: [...blocked] }) : null;
   return clear ?? (placeLabel(node, size, options) as Box);
+}
+
+/**
+ * Where a label that must be shown goes when no side of its node is clear of
+ * `avoid`: as `placeRequiredLabel` puts it, unless the other side, still inside
+ * `view`, covers fewer of `avoid`. A hovered title over one glyph is better
+ * than the same title over two.
+ */
+export function placeLeastCovering(
+  node: { x: number; y: number },
+  size: { width: number; height: number },
+  options: Omit<Parameters<typeof placeLabel>[2], "taken">,
+  avoid: readonly Box[],
+  blocked: readonly Box[]
+): Box {
+  const first = placeRequiredLabel(node, size, options, blocked);
+  const flipped = placeRequiredLabel(
+    node,
+    size,
+    { ...options, prefer: options.prefer === "below" ? "above" : "below" },
+    blocked
+  );
+  const inView = fitsView(flipped, options.view, options.margin);
+  const cost = (box: Box) => avoid.filter((other) => overlaps(box, other)).length;
+  return inView && cost(flipped) < cost(first) ? flipped : first;
 }
 
 /**

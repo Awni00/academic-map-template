@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   overlaps,
   placeLabel,
+  placeLeastCovering,
   placeRequiredLabel,
   screenToGraph,
   wrapLabel
@@ -76,6 +77,21 @@ describe("placeLabel", () => {
     expect(placeLabel(node, size, { ...opts, taken: [above, below] })).toBeNull();
     expect(overlaps(above, below)).toBe(false);
   });
+  it("does not fall back to a side that runs off the canvas", () => {
+    const low = { x: 200, y: 275 };
+    const above = placeLabel(low, size, opts)!;
+    expect(placeLabel(low, size, { ...opts, taken: [above] })).toBeNull();
+  });
+
+  it("takes the other side when the preferred one runs off the canvas", () => {
+    const box = placeLabel({ x: 200, y: 275 }, size, { ...opts, prefer: "below" })!;
+    expect(box.y1).toBeLessThanOrEqual(275);
+  });
+
+  it("keeps the preferred side when neither fits", () => {
+    const box = placeLabel({ x: 200, y: 150 }, { width: 100, height: 200 }, { ...opts, prefer: "below" })!;
+    expect(box.y0).toBeGreaterThan(150);
+  });
 });
 
 describe("placeRequiredLabel", () => {
@@ -99,6 +115,29 @@ describe("placeRequiredLabel", () => {
   it("keeps its usual place when both sides are covered", () => {
     const everywhere = { x0: 0, y0: 0, x1: 400, y1: 300 };
     expect(placeRequiredLabel(node, size, options, [everywhere])).toEqual(placeLabel(node, size, options));
+  });
+});
+
+describe("placeLeastCovering", () => {
+  const options = { radius: 10, gap: 8, margin: 6, view };
+  const size = { width: 120, height: 36 };
+  const node = { x: 200, y: 150 };
+  const glyph = (x: number, y: number) => ({ x0: x - 8, x1: x + 8, y0: y - 8, y1: y + 8 });
+
+  it("stays above when the two sides cover as much", () => {
+    const box = placeLeastCovering(node, size, options, [glyph(200, 110), glyph(200, 190)], []);
+    expect(box.y1).toBeLessThanOrEqual(node.y);
+  });
+
+  it("takes the side that covers fewer glyphs", () => {
+    const box = placeLeastCovering(node, size, options, [glyph(170, 110), glyph(230, 110), glyph(200, 190)], []);
+    expect(box.y0).toBeGreaterThanOrEqual(node.y);
+  });
+
+  it("never flips out of the canvas", () => {
+    const low = { x: 200, y: 270 };
+    const box = placeLeastCovering(low, size, options, [glyph(170, 230), glyph(230, 230)], []);
+    expect(box.y1).toBeLessThanOrEqual(low.y);
   });
 });
 
