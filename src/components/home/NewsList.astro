@@ -1,0 +1,25 @@
+---
+/**
+ * Homepage news: a date column beside each title. Titles arrive as HTML
+ * rendered from inline Markdown and escaped by `toNewsItem`
+ * (src/lib/news/loadNews.ts); an item with a `url` links its whole title.
+ */
+import type { NewsItem } from "../../lib/news/loadNews";
+
+type Props = {
+  items: NewsItem[];
+};
+
+const { items } = Astro.props;
+---
+
+<dl class="news">
+  {
+    items.map((item) => (
+      <>
+        <dt>{item.date}</dt>
+        <dd>{item.url ? <a href={item.url} set:html={item.titleHtml} /> : <span set:html={item.titleHtml} />}</dd>
+      </>
+    ))
+  }
+</dl>

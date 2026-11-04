@@ -1,0 +1,39 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import NewsList from "../components/home/NewsList.astro";
+import { toNewsItem } from "../lib/news/loadNews";
+
+const title = "News List Fixture";
+const description = "Internal fixture page for homepage news titles with inline Markdown.";
+
+// One entry per kind of title. Below, the homepage's news aside sits beside a
+// stand-in for the publications column, so the news column has its real width.
+const items = [
+  {
+    date: "June 8, 2026",
+    title: "New preprint: [*Putting Transformer Theories to the Test*](https://arxiv.org/abs/2610.32104)"
+  },
+  {
+    date: "May 2026",
+    title: "Gave a talk on [*CoT Information*](/publications) at the [FLaNN Seminar](https://flannseminars.github.io/)"
+  },
+  { date: "Apr 2026", title: "*A Paper Title* accepted at **ICML** 2026" },
+  { date: "Mar 2026", title: "Released *Entry 1*, linked as a whole", url: "/publications" },
+  { date: "Feb 2026", title: "Plain title with <b>raw HTML</b> & `code`" }
+].map((item, index) => toNewsItem(item, `fixture item ${index + 1}`));
+---
+
+<BaseLayout title={title} description={description}>
+  <section class="section">
+    <div class="cols2">
+      <section>
+        <h2 class="h2">Stand-in column</h2>
+        <p>Takes the space selected publications take on the homepage.</p>
+      </section>
+      <aside>
+        <h2 class="h2">News</h2>
+        <NewsList items={items} />
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
