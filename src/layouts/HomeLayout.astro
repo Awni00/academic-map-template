@@ -10,16 +10,12 @@ import type { Publication } from "../lib/publications/types";
 import WritingPreview from "../components/graph/WritingPreview";
 import PublicationItem from "../components/publications/PublicationItem.astro";
 import Hero from "../components/home/Hero.astro";
+import NewsList from "../components/home/NewsList.astro";
 import RecentWriting from "../components/home/RecentWriting.astro";
 import { siteConfig, themeConfig } from "../config";
 import { justifyClasses } from "../lib/article/justify";
 import { resolveHeroLinks } from "../lib/home/hero";
-
-type NewsItem = {
-  date: string;
-  title: string;
-  url?: string;
-};
+import type { NewsItem } from "../lib/news/loadNews";
 
 type Props = {
   graph: GraphIndex;
@@ -105,16 +101,7 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
           {showNews && (
             <aside>
               <h2 class="h2">News</h2>
-              <dl class="news">
-                {news.map((item) => (
-                  <>
-                    <dt>{item.date}</dt>
-                    <dd>
-                      {item.url ? <a href={item.url}>{item.title}</a> : <span>{item.title}</span>}
-                    </dd>
-                  </>
-                ))}
-              </dl>
+              <NewsList items={news} />
             </aside>
           )}
         </div>

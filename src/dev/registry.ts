@@ -17,6 +17,7 @@ import GraphPlayground from "./GraphPlayground.astro";
 import { HERO_FIXTURE_VARIANTS } from "./heroVariants";
 import HoverPopovers from "./HoverPopovers.astro";
 import MediaLayoutControls from "./MediaLayoutControls.astro";
+import NewsList from "./NewsList.astro";
 import ThemeGallery from "./ThemeGallery.astro";
 
 export type DevPageGroup = "tool" | "fixture";
@@ -86,6 +87,14 @@ export const DEV_PAGES = [
       "Width, alignment and grid controls on figures, pictures and embeds.",
     group: "fixture",
     component: MediaLayoutControls,
+  },
+  {
+    slug: "news",
+    title: "Homepage news",
+    description:
+      "News titles with inline Markdown: italic titles inside links, mixed links, and escaped HTML.",
+    group: "fixture",
+    component: NewsList,
   },
 ] as const satisfies readonly DevPageInfo[];
 

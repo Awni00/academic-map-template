@@ -288,6 +288,29 @@ src/data/news.yaml
 
 Both files are site-owned after adoption.
 
+Each news item has a `date` (free text, shown as written), a `title`, and an
+optional `url` that links the whole title. Titles accept inline Markdown:
+`*italics*` or `_italics_`, `**bold**`, `` `code` ``, and `[text](url)` links,
+mixed with plain text:
+
+```yaml
+- date: "June 8, 2026"
+  title: "New preprint: [*Putting Transformer Theories to the Test*](https://arxiv.org/abs/2610.32104)"
+- date: "May 2026"
+  title: "Gave a talk on [*CoT Information*](/blog/cot-info) at the [FLaNN Seminar](https://flannseminars.github.io/)"
+- date: "Apr 2026"
+  title: "Released *Entry 3*."
+  url: "/writing/hub-1/entry-3"
+```
+
+Quote titles that contain Markdown: YAML reads an unquoted value starting with
+`*` or `[` as something else. Use either `url` or links in the title, not
+both: a link cannot sit inside another link, so an item with both fails the
+build. Links may be `http(s)`, `mailto`, or site-relative (`/blog/cot-info`);
+other schemes, such as `javascript:`, fail the build. Everything else stays
+literal text, including HTML tags and anything that would start a block (a
+title beginning `1.` or `#` is not a list or heading).
+
 ## Article Components
 
 MDX entries can use built-in technical writing components:

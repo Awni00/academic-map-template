@@ -1,5 +1,5 @@
 - date: "May 2026"
-  title: "Published Entry 1."
+  title: "Published *Entry 1*."
   url: "/writing/hub-1/entry-1"
 - date: "Apr 2026"
   title: "Added Entry 2."
@@ -11,4 +11,4 @@
   title: "Released Entry 3."
   url: "/writing/hub-1/entry-3"
 - date: "Jan 2026"
-  title: "Updated the example website."
+  title: "Updated the example website and its [publications list](/publications)."

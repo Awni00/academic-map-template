@@ -1364,13 +1364,19 @@ html:has(.site-menu:popover-open) {
   color: var(--color-fg-soft);
 }
 
-.news dd i {
+/* Italic text (a paper title, say) stands out in the full foreground colour,
+   except inside a link, where it keeps the link colour like the rest of it. */
+.news dd :is(em, i) {
   color: var(--color-fg);
 }
 
 .news dd a {
   color: var(--color-link);
   text-decoration: none;
+}
+
+.news dd a :is(em, i) {
+  color: inherit;
 }
 
 .news dd a:hover {
