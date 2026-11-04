@@ -47,7 +47,8 @@ export const defaultWritingConfig = {
     },
     localGraph: {
       defaultDepth: 1,
-      maxNodes: 20
+      maxNodes: 20,
+      hover: { labels: "node" }
     },
     figureNumbers: false,
     diagramReplay: true,

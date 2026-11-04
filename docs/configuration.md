@@ -164,7 +164,12 @@ entry's local map:
   neighbourhood. Either way, its edges light up in the accent colour.
 
 The homepage map overrides this with `site.homepage.writingPreview.hover`,
-which by default is `{ labels: "node" }`: a small canvas gets crowded fast.
+and each entry's local map with `writing.entryLayout.localGraph.hover`; both
+default to `{ labels: "node" }`: a small canvas gets crowded fast. The local
+map also leaves the current page and a selected paper unlabelled — the panel
+beside it already names them — and sets hub names a size smaller. With
+`graph.layout.labelSide: "auto"`, each hub's name goes on the side away from
+the current page, as it goes outward on the `"circle"` layout.
 
 ```ts
 export const siteConfigOverrides = {

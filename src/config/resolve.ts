@@ -142,11 +142,6 @@ export const publicationsConfig = mergeConfig<PublicationsConfig>(
 );
 
 const mergedGraphConfig = mergeConfig<GraphConfigBase>(defaultGraphConfig, siteConfigOverrides.graph);
-const graphErrors = validateGraphSettings(mergedGraphConfig, siteConfig.homepage.writingPreview.hover);
-if (graphErrors.length > 0) {
-  throw new Error(`Invalid graph config:\n  - ${graphErrors.join("\n  - ")}`);
-}
-
 export const graphConfig: GraphConfig = {
   ...mergedGraphConfig,
   nodeTypes: Object.fromEntries(
@@ -155,6 +150,15 @@ export const graphConfig: GraphConfig = {
 };
 
 export const writingConfig: WritingConfig = resolveWritingConfig();
+
+const graphErrors = validateGraphSettings(
+  mergedGraphConfig,
+  siteConfig.homepage.writingPreview.hover,
+  writingConfig.entryLayout.localGraph.hover
+);
+if (graphErrors.length > 0) {
+  throw new Error(`Invalid graph config:\n  - ${graphErrors.join("\n  - ")}`);
+}
 
 export function getEntryType(type: EntryType): EntryTypeDefinition {
   return entryTypeById.get(type) ?? {
