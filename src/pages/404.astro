@@ -1,18 +1,73 @@
 ---
 /**
  * The not-found page. `astro build` writes it to `dist/404.html`, which GitHub
- * Pages (and most static hosts) serve for any path that has no file. The
- * header's links are the way on, so the page itself only says what happened.
+ * Pages (and most static hosts) serve for any path that has no file.
+ *
+ * Centred in the space between header and footer, with a faint "404" above
+ * the heading and two ways on: the homepage and the writing map.
  */
+import { House, Waypoints } from "@lucide/astro";
+
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { siteConfig } from "../config";
+import { siteConfig, writingConfig } from "../config";
 ---
 
 <BaseLayout title="Page not found" description={`This page doesn't exist on ${siteConfig.name}'s site.`}>
-  <section class="page-shell">
-    <header class="page-header">
-      <h1>Page not found</h1>
-      <p class="page-description">The page you were looking for doesn't exist, or it has moved.</p>
-    </header>
+  <section class="page-shell not-found">
+    <p class="not-found__code" aria-hidden="true">404</p>
+    <h1>Page not found</h1>
+    <p class="not-found__lead">The page you were looking for doesn't exist, or it has moved.</p>
+    <div class="not-found__actions">
+      <a class="btn btn--tonal" href="/"><House aria-hidden="true" />Homepage</a>
+      <a class="btn btn--outline" href={writingConfig.route}><Waypoints aria-hidden="true" />{writingConfig.label} map</a>
+    </div>
   </section>
 </BaseLayout>
+
+<style>
+  .not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 62vh;
+    padding-block: 48px;
+    text-align: center;
+  }
+
+  .not-found__code {
+    margin: 0 0 8px;
+    font-family: var(--font-body);
+    font-size: clamp(96px, 16vw, 168px);
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: var(--color-accent);
+    opacity: 0.18;
+  }
+
+  h1 {
+    margin: 0 0 12px;
+    font-family: var(--font-body);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--color-fg);
+  }
+
+  .not-found__lead {
+    max-width: 34ch;
+    margin: 0 0 28px;
+    font-family: var(--font-ui);
+    font-size: 16px;
+    color: var(--color-muted);
+  }
+
+  .not-found__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+</style>
