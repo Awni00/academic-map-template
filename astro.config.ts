@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -5,6 +6,7 @@ import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
+import type { AstroIntegration } from "astro";
 import { defineConfig } from "astro/config";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
@@ -72,6 +74,20 @@ const rehypePlugins: any[] = [
   ]
 ];
 
+// `public/dev/` holds the files the dev pages load by URL (see
+// src/pages/dev/[...page].astro): a fixture that checks how a public-path image
+// or an embed behaves needs a real file under `public/`. Astro copies all of
+// `public/` into `dist/`, so the folder is removed once the build is done, just
+// as the dev pages themselves are never built.
+const dropDevAssets: AstroIntegration = {
+  name: "drop-dev-assets",
+  hooks: {
+    "astro:build:done": async ({ dir }) => {
+      await rm(new URL("dev/", dir), { recursive: true, force: true });
+    }
+  }
+};
+
 export default defineConfig({
   site: siteConfig.url,
   output: "static",
@@ -90,7 +106,8 @@ export default defineConfig({
     // keeping them out of the sitemap avoids advertising duplicate content.
     sitemap({
       filter: (page) => !shortLinkPaths.has(new URL(page).pathname.replace(/\/$/, "") || "/")
-    })
+    }),
+    dropDevAssets
   ],
   markdown: {
     remarkPlugins,
