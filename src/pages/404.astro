@@ -1,8 +1,8 @@
 ---
 /**
  * The not-found page. `astro build` writes it to `dist/404.html`, which GitHub
- * Pages (and most static hosts) serve for any path that has no file. It lists
- * the header's links, so a reader who followed a stale URL has somewhere to go.
+ * Pages (and most static hosts) serve for any path that has no file. The
+ * header's links are the way on, so the page itself only says what happened.
  */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config";
@@ -14,27 +14,5 @@ import { siteConfig } from "../config";
       <h1>Page not found</h1>
       <p class="page-description">The page you were looking for doesn't exist, or it has moved.</p>
     </header>
-    <ul class="not-found-links">
-      {
-        siteConfig.nav.map((item) => (
-          <li>
-            <a href={item.href}>{item.label}</a>
-          </li>
-        ))
-      }
-    </ul>
   </section>
 </BaseLayout>
-
-<style>
-  .not-found-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-family: var(--font-ui);
-    font-size: 15px;
-  }
-</style>
