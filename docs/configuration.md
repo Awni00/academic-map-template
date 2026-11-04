@@ -217,6 +217,20 @@ Low-level rendering internals should stay in template-owned code. If a visual or
 feature option should be reusable by many sites, add a documented config knob to
 the template rather than editing a downstream site locally.
 
+## Publications Page
+
+`publications.description` is one line under the publications page's title,
+and the page's meta description. It is empty by default, which hides the line
+(the meta description then reads "Publications by {site.name}."):
+
+```ts
+export const siteConfigOverrides = {
+  publications: {
+    description: "Papers and preprints, with links to code, slides, and posters."
+  }
+} satisfies SiteConfigOverrides;
+```
+
 ## Publication Abstract Display
 
 Publication abstracts can render differently on the full publications page and
