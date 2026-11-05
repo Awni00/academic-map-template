@@ -1,4 +1,4 @@
-import type { EntryType } from "../../config";
+import type { ArticleMode, EntryType } from "../../config";
 
 export type { EntryType };
 
@@ -17,6 +17,12 @@ export type EntryNode = {
   draft?: boolean;
   /** Frontmatter `featured`; leads the homepage carousel (see `recentWriting.select`). */
   featured?: boolean;
+  /**
+   * The page's resolved `article.mode`. An abstract-only page is tagged as
+   * such in the map's panel and the List/Topics rows; a full page, the
+   * default, is not. Text only: the glyph still follows the entry type.
+   */
+  mode?: ArticleMode;
 };
 
 export type GraphEdge = {

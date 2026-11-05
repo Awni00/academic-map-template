@@ -26,7 +26,10 @@ export default function EntryRow({ entry, density, showTags = false }: EntryRowP
       <a className="wb-row__link" href={entry.url}>
         <TypeLabel type={entry.type} className="wb-row__type" />
         <span className="wb-row__main">
-          <span className="wb-row__title">{entry.title}</span>
+          <span className="wb-row__title">
+            {entry.title}
+            {entry.mode === "abstract" && <span className="wb-row__mode">Abstract</span>}
+          </span>
           {showSummary && <span className="wb-row__sum">{entry.summary}</span>}
         </span>
         {showTags && (

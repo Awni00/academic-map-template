@@ -1,3 +1,4 @@
+import { resolveArticleMode } from "../article/placement";
 import { writingEntryUrl } from "../routes/paths";
 import type { EntryNode, EntryRecord, ResolvedReference, WritingEntryLike } from "./types";
 
@@ -70,7 +71,8 @@ export function entryToRecord<TEntry extends WritingEntryLike>(
       updated: entry.data.updated,
       url: writingEntryUrl(entryPath, route),
       draft: entry.data.draft,
-      featured: entry.data.featured
+      featured: entry.data.featured,
+      mode: resolveArticleMode(entry)
     }
   };
 }

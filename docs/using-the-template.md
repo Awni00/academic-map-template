@@ -226,6 +226,12 @@ entry keeps its usual graph shape and colour, its RSS inclusion, and its place
 in topic lists. An abstract entry is a full graph citizen: inbound links, related
 entries, and the local graph all render in the footer as usual.
 
+So that readers can tell before opening a page, the writing map's side panel
+marks an abstract entry with an `Abstract` tag beside its type and a "Read
+abstract" button in place of "Open page", and the List and Topics views tag
+its row. Full pages are the default and carry no tag. The node on the map
+itself is drawn as usual.
+
 Because the body is the abstract, the article table of contents is suppressed
 in this mode regardless of placement config, and `<Aside>` blocks render inline.
 
