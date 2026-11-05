@@ -1378,6 +1378,19 @@
   transition: color var(--dur-fast) var(--ease-quiet);
 }
 
+/* The article mode, after the title: quiet, so the title still leads. */
+.wb-row__mode {
+  margin-left: 0.55em;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: 0.2em;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
 .wb-row__link:hover .wb-row__title {
   color: var(--color-accent);
 }

@@ -41,6 +41,7 @@ export default function NodeDetailPanel({
   actions
 }: NodeDetailPanelProps) {
   const type = getEntryType(node.type);
+  const abstract = node.mode === "abstract";
   const classes = ["node-panel", size === "large" && "node-panel--large", className]
     .filter(Boolean)
     .join(" ");
@@ -56,6 +57,7 @@ export default function NodeDetailPanel({
         <span className="pill" style={{ ["--pill-color" as string]: type.graph.color }}>
           {type.label}
         </span>
+        {abstract && <span className="pill">Abstract</span>}
         {isCurrent && <span className="node-panel__here">This page</span>}
         {showDate && node.date && (
           <time className="node-panel__date" dateTime={node.date}>
@@ -82,7 +84,7 @@ export default function NodeDetailPanel({
         <div className="node-panel__actions">
           {!isCurrent && (
             <a className="node-panel__open" href={node.url}>
-              <span>Open page</span>
+              <span>{abstract ? "Read abstract" : "Open page"}</span>
               <span className="node-panel__open-arrow" aria-hidden="true">
                 →
               </span>
