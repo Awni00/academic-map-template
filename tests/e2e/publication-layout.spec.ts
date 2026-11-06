@@ -164,7 +164,7 @@ test("Copy BibTeX copies the entry line by line", async ({ browser }) => {
   await dialog.locator("[data-bib-copy]").click();
   await expect(dialog.locator("[data-bib-copy-label]")).toHaveText("Copied");
   const copied = await page.evaluate(() => navigator.clipboard.readText());
-  expect(copied).toMatch(/^@\w+\{[^,\n]+,\n  \w+ = \{/);
+  expect(copied).toMatch(/^@\w+\{[^,\n]+,\n {2}\w+ = \{/);
   expect(copied.trim().endsWith("}")).toBe(true);
   await dialog.locator("[data-dialog-close]").click();
   await expect(dialog).toHaveCount(0);
