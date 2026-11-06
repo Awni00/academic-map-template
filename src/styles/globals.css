@@ -1871,6 +1871,13 @@ html:has(.site-menu:popover-open) {
   .publication-dialog__footer {
     padding: 0 18px 16px;
   }
+
+  /* Room for an arXiv URL on one continuation line, so its comma does not
+     wrap onto a line of its own. */
+  .bibtex-dialog__code {
+    padding: 12px;
+    font-size: 12px;
+  }
 }
 
 /* 44px targets on touch screens. */
