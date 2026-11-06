@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 
-import { siteConfig } from "../../src/config/resolve";
+import { defaultSiteConfig } from "../../src/config/defaults/site";
 import { packIco, renderFaviconIco, renderSvgPng } from "../../src/lib/meta/icons";
 import { webManifest } from "../../src/lib/meta/manifest";
 import { robotsTxt, validateRobotsDisallow } from "../../src/lib/meta/robots";
@@ -29,7 +29,8 @@ describe("robots.txt", () => {
   });
 
   it("defaults to no disallowed paths", () => {
-    expect(siteConfig.robots.disallow).toEqual([]);
+    // The template default; a site's own config may add paths.
+    expect(defaultSiteConfig.robots.disallow).toEqual([]);
   });
 });
 
