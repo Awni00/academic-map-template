@@ -1785,8 +1785,11 @@
     display: none;
   }
 
+  /* Basis 0, not auto: the toolbar wraps by each item's starting width, and
+     the input's intrinsic width (~230px) pushed Sort onto its own row on
+     phones narrower than ~370px. */
   .wb-search {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     height: 44px;
   }
 
