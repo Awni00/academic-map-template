@@ -61,8 +61,7 @@ export const defaultSiteConfig = {
       hover: { labels: "node" },
       clickTarget: "/writing",
       title: "Explore Writing",
-      description:
-        "Research notes, paper explainers, and teaching materials organized as a linked map."
+      description: "A map of my research."
     },
     selectedPublications: {
       enabled: true,

@@ -3,7 +3,7 @@ import type { WritingConfig } from "../types";
 export const defaultWritingConfig = {
   route: "/writing",
   label: "Writing",
-  description: "Research notes, paper explainers, and teaching materials, organised as a linked map.",
+  description: "A map of my research.",
   entryTypes: [],
   search: {
     writing: {
@@ -38,6 +38,12 @@ export const defaultWritingConfig = {
       showTypeFilter: true,
       defaultSort: { field: "date", dir: "desc" },
       sortOptions: ["date", "title", "type"]
+    }
+  },
+  nodePanel: {
+    openLabel: {
+      article: "Open page",
+      abstract: "Read abstract"
     }
   },
   entryLayout: {

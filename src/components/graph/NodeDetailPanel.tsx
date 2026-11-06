@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { getEntryType } from "../../config";
+import { getEntryType, writingConfig } from "../../config";
 import { formatDate } from "../../lib/dates";
 import type { EntryNode } from "../../lib/graph/types";
 
@@ -84,7 +84,7 @@ export default function NodeDetailPanel({
         <div className="node-panel__actions">
           {!isCurrent && (
             <a className="node-panel__open" href={node.url}>
-              <span>{abstract ? "Read abstract" : "Open page"}</span>
+              <span>{writingConfig.nodePanel.openLabel[abstract ? "abstract" : "article"]}</span>
               <span className="node-panel__open-arrow" aria-hidden="true">
                 →
               </span>
