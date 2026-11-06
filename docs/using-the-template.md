@@ -147,9 +147,15 @@ paper's own words open the record and the figure illustrates what was just
 read.
 
 For paper-style writing entries, `venue` is intentionally stored in entry
-frontmatter even if the same paper also appears in `src/data/publications.bib`.
+frontmatter even if the same paper also appears in `src/data/publications.yaml`.
 This keeps writing entries portable and prevents article headers from depending
-on a BibTeX lookup.
+on a publications lookup.
+
+The "Cite" block at the foot of a paper page is different: when a publication's
+`links.blog` is the page's URL (or its `shortUrl`), the page shows that
+publication's `bibtex`, so the page and the publications list copy the same
+citation. Frontmatter `bibtex:` is only for pages with no publication entry;
+`npm run validate` reports a page that has both.
 
 ### Article Date Display
 
@@ -283,8 +289,56 @@ Use full paths for nested entries unless you define a unique alias.
 Publications are generated from:
 
 ```txt
-src/data/publications.bib
+src/data/publications.yaml
 ```
+
+Each item is one publication. Display fields are plain text, shown as written;
+`bibtex` is the citation readers copy, kept verbatim, so it can be the venue's
+official BibTeX:
+
+```yaml
+- id: lovelace2026engines            # also the BibTeX key and the HoverNote cite key
+  title: "Notes on the Analytical Engine"
+  authors: [Ada Lovelace, Charles Babbage]   # reading order, accents as written
+  year: 2026                         # leave out for an undated entry
+  venue: Conference on Engines (CoE) # as shown; "(CoE)" names the publisher link
+  award: Spotlight                   # badge after the venue; never in the citation
+  selected: true                     # homepage selected publications
+  preview: engines.webp              # under publications.previews.basePath
+  links:                             # pdf, arxiv, html, code, blog, slides,
+    arxiv: "2601.00001"              # poster, video, website, publisher, doi, url
+    publisher: https://proceedings.example.org/coe-2026/engines
+    blog: /writing/engines
+  tldr: One sentence, for other consumers such as a CV.
+  abstract: >-
+    The abstract, shown in a dialog or inline.
+  bibtex: |
+    @inproceedings{lovelace2026engines,
+      author = {Lovelace, Ada and Babbage, Charles},
+      title = {Notes on the Analytical Engine},
+      booktitle = {Proceedings of the Conference on Engines},
+      year = {2026},
+      eprint = {2601.00001},
+      archivePrefix = {arXiv},
+      primaryClass = {cs.LG}
+    }
+```
+
+`npm run validate` checks each `bibtex` against its entry and as a citation:
+
+- the key is the `id`, and the title, year and surnames match the display fields;
+- the entry type has its required fields (`journal` for `@article`, `booktitle`
+  for `@inproceedings`, `booktitle` and `publisher` for `@incollection`, …);
+- `primaryClass` is an arXiv category such as `cs.LG`;
+- no award text ("spotlight", "oral", "best paper") sits in a venue field,
+  where it would be cited. It belongs in `award`.
+
+The site build reports the same problems as warnings and keeps going; an entry
+it cannot read at all (a misspelled field, no title) is left off.
+
+Moving from a `.bib` file, such as an al-folio `_bibliography/papers.bib`?
+`npm run publications:from-bib -- path/to/papers.bib` writes
+`src/data/publications.yaml`, then `npm run validate` lists what to fix.
 
 Homepage news comes from:
 
@@ -501,8 +555,8 @@ Attention<HoverNote cite="vaswani2017attention" /> replaced recurrence<HoverNote
   key again reuses its number. A body, if given, is shown after the citation.
   An unknown key fails the build.
 
-Keys are looked up in the page's own bibliography first and then in the
-publications file, so a post can cite outside work and your own papers
+Keys are looked up in the page's own bibliography first and then among your
+publications by `id`, so a post can cite outside work and your own papers
 together. Give a page its bibliography in frontmatter, with paths relative to
 the page file:
 

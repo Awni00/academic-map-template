@@ -2,9 +2,13 @@ import fs from "node:fs/promises";
 
 import { publicationsConfig } from "../../config/publications";
 import { publicationLinks } from "../publications/formatPublication";
+import { loadPublications } from "../publications/loadPublications";
 import { arxivUrl } from "../publications/identifierUrls";
 import { parseBibtexWithIssues } from "../publications/parseBibtex";
+import { cleanLatex } from "../publications/latex";
 import { UNDATED_YEAR, type Publication } from "../publications/types";
+
+export { cleanLatex };
 
 /** What a `<HoverNote cite="…">` shows for one bibliography entry. */
 export type Citation = {
@@ -39,16 +43,18 @@ export function loadBibliography(file: string): Promise<Map<string, Publication>
 
 /**
  * Looks `key` up in the page's own bibliographies first, in order, then in the
- * site's publications file — so a post can cite outside work and the author's
- * own papers without copying either.
+ * site's publications by `id` — so a post can cite outside work and the
+ * author's own papers without copying either.
  */
 export async function resolveCitation(key: string, pageBibliographies: string[] = []): Promise<Citation> {
-  const files = [...pageBibliographies, publicationsConfig.source];
-  for (const file of files) {
+  for (const file of pageBibliographies) {
     const publication = (await loadBibliography(file)).get(key);
     if (publication) return formatCitation(publication);
   }
-  throw new Error(`<HoverNote cite="${key}">: no entry with that key in ${files.join(", ")}.`);
+  const own = (await loadPublications()).find((publication) => publication.id === key);
+  if (own) return formatCitation(own);
+  const searched = [...pageBibliographies, publicationsConfig.source];
+  throw new Error(`<HoverNote cite="${key}">: no entry with that key in ${searched.join(", ")}.`);
 }
 
 export function formatCitation(publication: Publication): Citation {
@@ -69,60 +75,8 @@ export function formatCitation(publication: Publication): Citation {
   };
 }
 
-/** "Ashish Vaswani, Noam Shazeer, et al." — BibTeX's "Last, First" flipped. */
+/** "Ashish Vaswani, Noam Shazeer, et al.": names in reading order, cut after `max`. */
 export function formatCitationAuthors(authors: string[], max = 3): string {
-  const names = authors.map((name) => {
-    const [last, first] = name.split(/,\s*/, 2);
-    return first ? `${first} ${last}` : name;
-  });
-  if (names.length <= max) return names.join(", ");
-  return `${names.slice(0, max - 1).join(", ")}, et al.`;
-}
-
-const COMBINING_ACCENTS: Record<string, string> = {
-  '"': "̈",
-  "'": "́",
-  "`": "̀",
-  "^": "̂",
-  "~": "̃",
-  "=": "̄",
-  ".": "̇",
-  u: "̆",
-  v: "̌",
-  H: "̋",
-  c: "̧"
-};
-
-const LETTER_COMMANDS: Record<string, string> = {
-  ss: "ß",
-  o: "ø",
-  O: "Ø",
-  aa: "å",
-  AA: "Å",
-  ae: "æ",
-  AE: "Æ",
-  oe: "œ",
-  OE: "Œ",
-  l: "ł",
-  L: "Ł",
-  i: "ı"
-};
-
-/**
- * Plain text from the LaTeX that real-world BibTeX carries: `{BERT}` case
- * protection, `{\"o}` accents, `\&`, `--`. Math (`$…$`) is left alone.
- */
-export function cleanLatex(value: string): string {
-  return value
-    .replace(/\\([`'^"~=.uvHc])\s*\{?\s*([A-Za-z])\}?/g, (_, accent: string, letter: string) =>
-      `${letter}${COMBINING_ACCENTS[accent]}`.normalize("NFC")
-    )
-    .replace(/\\(ss|aa|AA|ae|AE|oe|OE|[oOlLi])(?![A-Za-z])\s?/g, (_, command: string) => LETTER_COMMANDS[command])
-    .replace(/\\([&%$#_])/g, "$1")
-    .replace(/---/g, "—")
-    .replace(/--/g, "–")
-    .replace(/~/g, " ")
-    .replace(/[{}]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  if (authors.length <= max) return authors.join(", ");
+  return `${authors.slice(0, max - 1).join(", ")}, et al.`;
 }

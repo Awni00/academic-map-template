@@ -6,7 +6,7 @@ import { entryTypeIncludedInRecent, siteConfig } from "../config";
 import { buildGraphIndex } from "../lib/graph/buildGraph";
 import { selectRecentWriting } from "../lib/home/recentWriting";
 import { loadNews } from "../lib/news/loadNews";
-import { loadPublications } from "../lib/publications/parseBibtex";
+import { loadPublications } from "../lib/publications/loadPublications";
 
 const writingEntries = await getCollection("writing", ({ data }) => data.draft !== true);
 const pages = await getCollection("pages", ({ data }) => data.draft !== true);

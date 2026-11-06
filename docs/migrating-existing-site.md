@@ -49,7 +49,7 @@ Move content into the new structure:
 ```txt
 Old durable pages      -> src/content/pages/
 Old posts/notes        -> src/content/writing/
-Old publication data   -> src/data/publications.bib
+Old publication data   -> src/data/publications.yaml (npm run publications:from-bib converts a .bib)
 Old news/updates       -> src/data/news.yaml
 Old profile/CV/assets  -> public/
 Personal config        -> src/site/config.ts

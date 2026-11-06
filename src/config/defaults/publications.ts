@@ -1,7 +1,7 @@
 import type { PublicationsConfig } from "../types";
 
 export const defaultPublicationsConfig = {
-  source: "src/data/publications.bib",
+  source: "src/data/publications.yaml",
   description: "",
   grouping: {
     by: "year",

@@ -12,6 +12,7 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "validate": "tsx scripts/validate.ts",
+    "publications:from-bib": "tsx scripts/bib-to-yaml.ts",
     "new:entry": "tsx scripts/new-entry.ts",
     "gallery": "tsx scripts/gallery.ts",
     "test": "vitest run",
