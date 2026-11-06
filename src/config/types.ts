@@ -146,6 +146,17 @@ export type WritingConfig = {
     topics: TopicsConfig;
     list: ListConfig;
   };
+  /**
+   * The panel that describes a selected node beside a map: on the writing
+   * map, the homepage map, and each entry's local map.
+   */
+  nodePanel: {
+    /**
+     * The panel's link to the selected page, by the page's article mode: a
+     * full page (`article`) or an abstract-only page (`abstract`).
+     */
+    openLabel: Record<ArticleMode, string>;
+  };
   entryLayout: {
     mode: {
       default: ArticleMode;

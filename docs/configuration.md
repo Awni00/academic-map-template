@@ -472,6 +472,19 @@ export const siteConfigOverrides = {
 The nav is a separate array (`site.nav`), so update its entry too, and the
 homepage section title (`site.homepage.recentWriting.title`).
 
+The panel beside each map (the writing map, the homepage map, and every entry's
+local map) links to the selected page with a button. `writing.nodePanel.openLabel`
+sets its label by the page's article mode: `article` (default `"Open page"`) for a
+full page, `abstract` (default `"Read abstract"`) for an abstract-only one.
+
+```ts
+export const siteConfigOverrides = {
+  writing: {
+    nodePanel: { openLabel: { article: "Read post" } }
+  }
+} satisfies SiteConfigOverrides;
+```
+
 ## Homepage Recent Writing
 
 The homepage shows the newest dated entries as a horizontally scrolling row of

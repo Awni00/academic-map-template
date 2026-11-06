@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import EntryRow from "../../src/components/graph/browser/EntryRow";
 import NodeDetailPanel from "../../src/components/graph/NodeDetailPanel";
+import { writingConfig } from "../../src/config";
 import { buildGraphIndex } from "../../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../../src/lib/graph/types";
 
@@ -46,6 +47,12 @@ describe("abstract-only tagging", () => {
     const html = renderToString(createElement(NodeDetailPanel, { node: nodes().full }));
     expect(html).not.toContain(">Abstract<");
     expect(html).toContain("Open page");
+  });
+
+  it("labels the open action from writing.nodePanel.openLabel", () => {
+    const { article, abstract } = writingConfig.nodePanel.openLabel;
+    expect(renderToString(createElement(NodeDetailPanel, { node: nodes().full }))).toContain(article);
+    expect(renderToString(createElement(NodeDetailPanel, { node: nodes().record }))).toContain(abstract);
   });
 
   it("tags only the abstract-only row in List and Topics", () => {
