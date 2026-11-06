@@ -435,6 +435,20 @@ test("writing entry and RSS render", async ({ page }) => {
   expect(await response?.text()).toContain('<rss version="2.0">');
 });
 
+test("footer credits the template and the head advertises the feed", async ({ page }) => {
+  await page.goto("/");
+  const links = page.locator(".site-footer a");
+  await expect(links).toHaveCount(1);
+  await expect(links).toHaveText("github.com/awni00/academic-map-template");
+  await expect(links).toHaveAttribute(
+    "href",
+    "https://github.com/awni00/academic-map-template",
+  );
+  await expect(
+    page.locator('head link[rel="alternate"][type="application/rss+xml"]'),
+  ).toHaveAttribute("href", "/writing/rss.xml");
+});
+
 test("abstract-mode entry renders its record layout", async ({ page }) => {
   await page.goto("/writing/hub-2/entry-5");
   await expect(

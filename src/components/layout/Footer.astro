@@ -1,17 +1,16 @@
 ---
 import { siteConfig } from "../../config/site";
-import { rssFeed } from "../../lib/routes/paths";
 
-const feed = rssFeed();
+const templateRepo = "github.com/awni00/academic-map-template";
 ---
 
 <footer class="site-footer">
   <div class="site-footer__inner">
     <div>© {new Date().getFullYear()} · {siteConfig.name}</div>
     <div>
-      Built with the <a href="https://github.com/" rel="noopener">academic-graph</a>
-      template · <a href="https://github.com/" rel="noopener">source</a>
-      {feed && <> · <a href={feed.href}>RSS</a></>}
+      Built with <a class="site-footer__repo" href={`https://${templateRepo}`} rel="noopener"
+        >{templateRepo}</a
+      >
     </div>
   </div>
 </footer>
