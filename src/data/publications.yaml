@@ -8,7 +8,8 @@
 # `bibtex` is the citation readers copy, kept verbatim: paste the venue's
 # official BibTeX. Its key must be the entry's `id`, and its title, year and
 # authors must match the display fields; `npm run validate` checks this.
-# A post whose page is `links.blog` shows the same citation under "Cite".
+# The page in `links.blog` takes its venue, award, link chips and "Cite"
+# citation from the entry, so its frontmatter needs none of them.
 #
 # Moving from a .bib file? `npm run publications:from-bib` converts one.
 - id: example2026paperone
@@ -29,6 +30,7 @@
     blog: /writing/hub-1/entry-1
     slides: /publications/example-slides.pdf
     publisher: https://example.com/ecl-2026/paper-1
+    doi: 10.0000/example.00001
   abstract: Lorem ipsum dolor sit amet, consectetur adipiscing elit. This generic publication demonstrates preview images, link chips, abstract dialogs, and BibTeX disclosure.
   bibtex: |
     @inproceedings{example2026paperone,

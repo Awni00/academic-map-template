@@ -102,7 +102,11 @@ const writing = defineCollection({
     displayDates: z.array(displayDate).min(1).optional(),
     updated: dateString,
     summary: z.string().optional(),
+    // Venue, award and `external` links, for a page that no publication in
+    // src/data/publications.yaml links to with `links.blog`. A page that one
+    // does takes them from the publication.
     venue: z.string().optional(),
+    award: z.string().optional(),
     tags: z.array(z.string()).default([]),
     links: z.array(z.string()).default([]),
     authors: z

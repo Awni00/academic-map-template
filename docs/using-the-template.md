@@ -89,7 +89,8 @@ displayDates:
   - label: "Page"
     date: "2026-05-24"
 summary: "Short description."
-venue: "Conference or Journal Name"
+venue: "Conference or Journal Name"   # venue, award, external: only for a page
+award: "Spotlight"                    # no publication links to (see below)
 tags:
   - learning-theory
 links:
@@ -146,16 +147,28 @@ page, above the body; in `abstract` mode it follows the abstract, so the
 paper's own words open the record and the figure illustrates what was just
 read.
 
-For paper-style writing entries, `venue` is intentionally stored in entry
-frontmatter even if the same paper also appears in `src/data/publications.yaml`.
-This keeps writing entries portable and prevents article headers from depending
-on a publications lookup.
+A paper page whose paper is in `src/data/publications.yaml` takes its details
+from there. When a publication's `links.blog` is the page's URL (or its
+`shortUrl`), the page shows that publication's
 
-The "Cite" block at the foot of a paper page is different: when a publication's
-`links.blog` is the page's URL (or its `shortUrl`), the page shows that
-publication's `bibtex`, so the page and the publications list copy the same
-citation. Frontmatter `bibtex:` is only for pages with no publication entry;
-`npm run validate` reports a page that has both.
+- `venue` and `award`, in the byline's Venue column;
+- links, as the chips under the title: the same links, labels and order as on
+  the publications list (the publisher link named by the venue's acronym),
+  less the `blog` link back to the page itself;
+- `bibtex`, in the "Cite" block at the foot of the page.
+
+So the page and the publications list cannot drift apart, and such a page
+needs none of `venue`, `award`, `external` or `bibtex` in its frontmatter.
+Those fields are for pages with no publication entry. On a page that has one,
+they fill only what the publication leaves out, and `npm run validate` reports
+them: frontmatter that repeats or contradicts the publication is an error,
+since the page ignores it; frontmatter the publication lacks is a warning,
+since the page shows it but the publications list does not. Move it to the
+publication.
+
+The `external` keys and the publication links they stand for are `paper`
+(`pdf`), `arxiv`, `doi`, `code`, `slides`, `poster`, `website`,
+`publisher_page` (`publisher`) and `video`.
 
 ### Article Date Display
 
@@ -226,6 +239,10 @@ hero:
 article:
   mode: abstract
 ```
+
+An abstract entry for a paper in `src/data/publications.yaml` needs no `venue`
+or `external`: point the publication's `links.blog` at the page and they come
+from there (see above).
 
 Mode is presentation only. Keep `type: "paper"` (or whichever type fits) so the
 entry keeps its usual graph shape and colour, its RSS inclusion, and its place
@@ -743,5 +760,6 @@ npm run validate
 Validation catches missing titles, invalid entry types, invalid dates, duplicate
 writing paths, duplicate aliases, reserved writing paths, malformed or colliding
 short URLs, unreadable or malformed theme colours, unresolved wikilinks,
-unresolved frontmatter links, and BibTeX parse
-failures.
+unresolved frontmatter links, publications whose `bibtex` disagrees with their
+display fields, and paper pages whose frontmatter repeats or contradicts their
+publication.
