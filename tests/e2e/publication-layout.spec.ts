@@ -99,3 +99,35 @@ test("items in a year group stay apart when a script sits between them", async (
   expect(gap).not.toBeNull();
   expect(gap!).toBeGreaterThanOrEqual(28);
 });
+
+test("Abstract and BibTeX sit on a row of their own on a phone", async ({ browser }) => {
+  const page = await open(browser, WIDTHS[3], "/publications");
+  const rows = await page.locator(".publication-links").evaluateAll((lists) =>
+    lists
+      .filter((list) => list.querySelector(".publication-links__group--toggles") && list.children.length > 1)
+      .map((list) => {
+        const linkBottom = Math.max(
+          ...[...list.querySelectorAll("a.publication-link")].map((link) => link.getBoundingClientRect().bottom)
+        );
+        const toggleTop = Math.min(
+          ...[...list.querySelectorAll("button.publication-link")].map((button) => button.getBoundingClientRect().top)
+        );
+        return { linkBottom, toggleTop };
+      })
+  );
+  expect(rows.length).toBeGreaterThan(0);
+  for (const { linkBottom, toggleTop } of rows) expect(toggleTop).toBeGreaterThan(linkBottom);
+  await page.context().close();
+});
+
+test("publication links show a focus ring from the keyboard", async ({ page }) => {
+  await page.goto("/publications");
+  const link = page.locator("a.publication-link").first();
+  await link.focus();
+  const outline = await link.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) };
+  });
+  expect(outline.style).toBe("solid");
+  expect(outline.width).toBeGreaterThanOrEqual(2);
+});

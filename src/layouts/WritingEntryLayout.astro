@@ -29,6 +29,7 @@ import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraphMap from "../components/graph/LocalGraphMap";
 import { getEntryType, themeConfig, writingConfig } from "../config";
 import {
+  BookOpen,
   Code2,
   FileText,
   Globe,
@@ -50,6 +51,7 @@ import {
 import { relatedEntries } from "../lib/article/related";
 import { justifyClasses } from "../lib/article/justify";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
+import { venueAcronym } from "../lib/publications/formatPublication";
 import { externalLinkHref } from "../lib/publications/identifierUrls";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
@@ -97,6 +99,8 @@ const chipMeta: Record<string, { label: string; icon: any }> = {
   slides: { label: "Slides", icon: Presentation },
   poster: { label: "Poster", icon: ImageIcon },
   website: { label: "Website", icon: Globe },
+  // Named like the publications list's link: "NeurIPS" for a venue ending "(NeurIPS)".
+  publisher_page: { label: venueAcronym(venue) ?? "Published", icon: BookOpen },
   video: { label: "Video", icon: Play }
 };
 const external = Object.entries(entry.data.external ?? {})

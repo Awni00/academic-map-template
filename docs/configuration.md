@@ -236,6 +236,26 @@ export const siteConfigOverrides = {
 } satisfies SiteConfigOverrides;
 ```
 
+## Publication Links
+
+Each entry in `src/data/publications.bib` gets a link for each of these fields
+it has, in this order: `pdf`, `arxiv`, `html`, `code`, `blog`, `slides`,
+`poster`, `video`, `website`, `publisher_page`, `doi`, `url`. The `Abstract`
+and `BibTeX` buttons follow, after a divider (on a phone, on a row of their own).
+
+- `publisher_page` is the paper's page at its venue (proceedings, journal,
+  OpenReview, conference site). Its label is the venue's acronym, taken from
+  the last parenthesized group in `journal`/`booktitle`, as in
+  `booktitle = {Neural Information Processing Systems (NeurIPS)}` → "NeurIPS".
+  With no acronym it reads "Published"; `publisher_label = {PMLR}` sets it
+  explicitly.
+- `url` is shown only when it points somewhere no other link does. BibTeX
+  exporters fill it with the arXiv or publisher page, which would repeat a link.
+- `doi` is hidden when it is arXiv's own DOI for the preprint
+  (`10.48550/arXiv.…`) and the `arxiv` link is shown.
+- `award = {Spotlight}` adds a badge after the venue. Like the link fields, it
+  never appears in the copied BibTeX.
+
 ## Publication Abstract Display
 
 Publication abstracts can render differently on the full publications page and

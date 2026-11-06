@@ -196,6 +196,8 @@ function normalizePublication(entry: RawEntry): Publication {
     poster: fields.poster,
     video: fields.video,
     website: fields.website,
+    publisherPage: fields.publisher_page,
+    award: fields.award,
     preview: resolvePreview(fields.preview),
     selected: boolField(fields.selected),
     bibtexShow: boolField(fields[publicationsConfig.bibtex.showButtonField]),
