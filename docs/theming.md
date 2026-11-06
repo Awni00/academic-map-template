@@ -20,12 +20,46 @@ theme: {
 }
 ```
 
-`light` and `dark` are theme ids. `defaultMode` is what a first-time reader
-gets; after that their own choice is remembered. The header toggle cycles
-light → dark → system, so a reader can always hand the decision back to their
-operating system.
+`light` and `dark` are theme ids. Restart the dev server after editing — it
+reads this at startup.
 
-Restart the dev server after editing — it reads this at startup.
+### Light, dark, or the reader's system
+
+`defaultMode` is what a reader sees before they touch the toggle:
+
+- `"light"` or `"dark"`: that theme, whatever the reader's operating system is
+  set to. The system setting plays no part.
+- `"system"`: the reader's system setting, followed live — if the OS switches
+  to dark at sunset with the page open, the page follows.
+
+Either way the header toggle has two states, light and dark. A click switches
+to the other theme and remembers it in the browser (`localStorage.theme`) across
+pages and visits, and in the reader's other open tabs.
+
+Only a choice that differs from the default is remembered. Choosing the
+default's own theme again clears it, so:
+
+- under `"system"`, two clicks hand the decision back to the reader's OS;
+- under a fixed default, a reader who went back to it follows you if you later
+  change `defaultMode`.
+
+The icon shows the theme on screen: a sun for light, a moon for dark. While
+that theme comes from the reader's system setting, a small monitor sits in its
+corner. It goes when they pick a theme and comes back if they pick the
+system's theme again. The button's label and tooltip say the same:
+"Theme: light, from your system setting. Switch to dark."
+
+`allowToggle: false` removes the toggle, and with it any remembered choice:
+every reader gets `defaultMode`.
+
+A page can override the default in its frontmatter with
+`theme: light | dark | system` (`global`, the default, uses `defaultMode`). The
+toggle still works there, but only for that view: the page shows its own theme
+again on the next load, and the reader's site-wide choice is untouched.
+
+The phone browser's bar colour (`<meta name="theme-color">`) follows the
+site's theme rather than the operating system's, so a light site on a dark
+phone does not get a dark bar.
 
 ### Built-in themes
 
@@ -425,6 +459,9 @@ maintaining two files. `EmbedFrame` takes the same prop for light-only iframes.
 | `src/components/layout/ThemeStyles.astro`    | template | Emits the two blocks into `<head>`     |
 | `src/styles/tokens.css`                      | template | Everything that is _not_ a colour      |
 
-The tokens are emitted inline in `<head>`, before the theme bootstrap script,
-so there is no flash of the wrong palette. `:root` carries the light theme, so
+The tokens are emitted inline in `<head>`, before the theme bootstrap script
+(in `BaseLayout.astro`), so there is no flash of the wrong palette. That script
+is also the toggle's behaviour: `ThemeToggle.astro` is static markup that it
+labels and listens to, and it stamps `data-theme` (`light` | `dark`) and
+`data-theme-source` (`system` | `default` | `choice`) on `<html>` for CSS. `:root` carries the light theme, so
 a page still renders correctly with JavaScript disabled.

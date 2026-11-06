@@ -54,7 +54,7 @@ export default function GraphBrowser({ graph }: GraphBrowserProps) {
   // Initialised to a constant, not to the URL. The server has no `window`, so
   // reading the URL during render makes the first client render disagree with
   // the markup the server sent on any non-default `?view=`. The URL is applied
-  // in a mount effect instead — same shape as ThemeToggle.
+  // in a mount effect instead.
   const [state, setState] = useState<WritingBrowserState>(defaultState);
   const [urlApplied, setUrlApplied] = useState(false);
   // The canvas needs a pixel height, so this one piece of layout cannot live in

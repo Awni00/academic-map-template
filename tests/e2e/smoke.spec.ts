@@ -1,36 +1,23 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+/** The header toggle, once the theme bootstrap has labelled it. */
 async function themeToggle(page: Page) {
-  await page.waitForFunction(
-    () =>
-      !document.querySelector('astro-island[component-url*="ThemeToggle"][ssr]'),
-  );
-  return page.getByRole("button", { name: /Theme:/ });
+  const toggle = page.locator("[data-theme-toggle]");
+  await expect(toggle).toHaveAttribute("aria-label", /^Theme: /);
+  return toggle;
 }
 
 /**
- * Click the toggle until it reports `preference`.
+ * Show `theme`, clicking the toggle if needed.
  *
- * Clicking a fixed number of times would assume where the cycle starts, which
- * depends on the emulated OS scheme once defaultMode is "system". Three clicks
- * is a full cycle, so this always terminates.
+ * The toggle has two states, so this is at most one click; which one the page
+ * starts in depends on the emulated OS scheme once defaultMode is "system".
  */
-async function setThemePreference(
-  page: Page,
-  preference: "light" | "dark" | "system",
-) {
+async function setTheme(page: Page, theme: "light" | "dark") {
   const toggle = await themeToggle(page);
-  for (let click = 0; click < 3; click += 1) {
-    const current = await page
-      .locator("html")
-      .getAttribute("data-theme-preference");
-    if (current === preference) break;
-    await toggle.click();
-  }
-  await expect(page.locator("html")).toHaveAttribute(
-    "data-theme-preference",
-    preference,
-  );
+  const html = page.locator("html");
+  if ((await html.getAttribute("data-theme")) !== theme) await toggle.click();
+  await expect(html).toHaveAttribute("data-theme", theme);
 }
 
 async function firstTextLineRect(locator: Locator) {
@@ -616,30 +603,33 @@ test("media layout controls size figures and embeds", async ({ page }) => {
 
 /*
  * The default mode is "system", so where the toggle starts depends on the
- * emulated OS scheme. Pin it, and drive the toggle by target state rather than
+ * emulated OS scheme. Pin it, and drive the toggle by target theme rather than
  * by a fixed number of clicks.
  */
 test.describe("theming", () => {
   test.use({ colorScheme: "light" });
 
-  test("theme toggle cycles light, dark and system, and repaints the page", async ({
+  test("theme toggle follows the system until a choice, and repaints the page", async ({
     page,
   }) => {
     await page.goto("/");
     const html = page.locator("html");
     const toggle = await themeToggle(page);
+    const badge = page.locator(".theme-toggle__badge");
 
-    await expect(html).toHaveAttribute("data-theme-preference", "system");
+    // No choice yet: the OS decides, and the icon says so.
+    await expect(html).toHaveAttribute("data-theme-source", "system");
     await expect(html).toHaveAttribute("data-theme", "light");
-
-    await setThemePreference(page, "light");
+    await expect(badge).toBeVisible();
+    await expect(toggle).toHaveAttribute("aria-label", /from your system setting/);
     const lightBackground = await page.evaluate(
       () => getComputedStyle(document.body).backgroundColor,
     );
 
     await toggle.click();
-    await expect(html).toHaveAttribute("data-theme-preference", "dark");
     await expect(html).toHaveAttribute("data-theme", "dark");
+    await expect(html).toHaveAttribute("data-theme-source", "choice");
+    await expect(badge).toBeHidden();
     const darkBackground = await page.evaluate(
       () => getComputedStyle(document.body).backgroundColor,
     );
@@ -647,16 +637,35 @@ test.describe("theming", () => {
     // /light|dark|system/, which passed even when nothing changed at all.
     expect(darkBackground).not.toBe(lightBackground);
 
-    // "system" is reachable only because the toggle cycles through it.
-    await toggle.click();
-    await expect(html).toHaveAttribute("data-theme-preference", "system");
-    await expect(html).toHaveAttribute("data-theme", "light");
-
     // The choice has to survive a navigation, or the toggle is decorative.
-    await setThemePreference(page, "dark");
     await page.goto("/writing");
-    await expect(html).toHaveAttribute("data-theme-preference", "dark");
     await expect(html).toHaveAttribute("data-theme", "dark");
+    await expect(html).toHaveAttribute("data-theme-source", "choice");
+
+    // Choosing the system's own theme hands the decision back to the system.
+    await (await themeToggle(page)).click();
+    await expect(html).toHaveAttribute("data-theme", "light");
+    await expect(html).toHaveAttribute("data-theme-source", "system");
+    expect(await page.evaluate(() => localStorage.getItem("theme"))).toBeNull();
+  });
+
+  test("the OS setting applies live until the reader makes a choice", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const html = page.locator("html");
+    await themeToggle(page);
+
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(html).toHaveAttribute("data-theme", "dark");
+    await expect(html).toHaveAttribute("data-theme-source", "system");
+
+    // Pick light while the OS is dark; the OS flipping again changes nothing.
+    await setTheme(page, "light");
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(html).toHaveAttribute("data-theme", "light");
+    await expect(html).toHaveAttribute("data-theme-source", "choice");
   });
 
   test("code blocks recolour with the theme", async ({ page }) => {
@@ -664,11 +673,11 @@ test.describe("theming", () => {
     const token = page.locator(".astro-code span").first();
     await expect(token).toBeVisible();
 
-    await setThemePreference(page, "light");
+    await setTheme(page, "light");
     const lightColor = await token.evaluate(
       (node) => getComputedStyle(node).color,
     );
-    await setThemePreference(page, "dark");
+    await setTheme(page, "dark");
     const darkColor = await token.evaluate(
       (node) => getComputedStyle(node).color,
     );
@@ -683,11 +692,11 @@ test.describe("theming", () => {
     const callout = page.locator(".callout").first();
     await expect(callout).toBeVisible();
 
-    await setThemePreference(page, "light");
+    await setTheme(page, "light");
     const light = await callout.evaluate(
       (node) => getComputedStyle(node).borderLeftColor,
     );
-    await setThemePreference(page, "dark");
+    await setTheme(page, "dark");
     const dark = await callout.evaluate(
       (node) => getComputedStyle(node).borderLeftColor,
     );

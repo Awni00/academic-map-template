@@ -90,7 +90,7 @@ const layoutStyle = buildMediaLayoutStyle(
 {
   lightSrc && darkSrc ? (
     // Art-directed pair. The swap is driven by `data-theme` from
-    // `window.__applyTheme` (see BaseLayout) rather than a
+    // the theme bootstrap in BaseLayout rather than a
     // `media="(prefers-color-scheme: dark)"` source, because that media query
     // tracks the operating system and would ignore the site's own toggle.
     // Only one of the two is ever fetched, unlike a CSS show/hide pair.
