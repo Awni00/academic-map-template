@@ -27,7 +27,7 @@ import Video from "../components/article/Video.astro";
 import WrapFigure from "../components/article/WrapFigure.astro";
 import YouTubeVideo from "../components/article/YouTubeVideo.astro";
 import LocalGraphMap from "../components/graph/LocalGraphMap";
-import { getEntryType, themeConfig, writingConfig } from "../config";
+import { getEntryType, siteConfig, themeConfig, writingConfig } from "../config";
 import {
   BookOpen,
   Code2,
@@ -54,6 +54,7 @@ import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
 import { venueAcronym } from "../lib/publications/formatPublication";
 import { loadPublications, publicationForPage } from "../lib/publications/loadPublications";
 import { externalLinkHref } from "../lib/publications/identifierUrls";
+import { newTabAttrs } from "../lib/routes/newTab";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
 
@@ -210,9 +211,12 @@ const components = {
           external.length > 0 && (
             <div class="article-external">
               {external.map(({ href, label, Icon }) => (
-                <a class="entry-chip" href={href}>
+                <a class="entry-chip" href={href} {...newTabAttrs(href, siteConfig.url)}>
                   <Icon class="entry-chip__icon" size={14} aria-hidden="true" />
                   <span>{label}</span>
+                  {newTabAttrs(href, siteConfig.url).target && (
+                    <span class="visually-hidden"> (opens in new tab)</span>
+                  )}
                 </a>
               ))}
             </div>
