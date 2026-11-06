@@ -503,26 +503,35 @@ test("article column and footer share one left edge across layouts", async ({
   // multi-column one.
   if ((viewport?.width ?? 0) <= 980) return;
 
+  // A hub shows its local map in the header, and the Related list stands in
+  // for a map, so a hub without BibTeX has nothing for the entry footer and
+  // renders none. Its header and body still carry the column check.
   const routes = [
-    "/writing/hub-2", // hub, no rail rendered
-    "/writing/hub-2/entry-5", // abstract mode, no rail
-    "/writing/hub-3/entry-6", // toc: none
-    "/writing/hub-1/entry-2", // left toc
-    "/writing/hub-2/entry-4", // left toc + margin asides
+    { path: "/writing/hub-2", footer: false }, // hub, no rail rendered
+    { path: "/writing/hub-2/entry-5", footer: true }, // abstract mode, no rail
+    { path: "/writing/hub-3/entry-6", footer: true }, // toc: none
+    { path: "/writing/hub-1/entry-2", footer: true }, // left toc
+    { path: "/writing/hub-2/entry-4", footer: true }, // left toc + margin asides
   ];
 
   const edges: number[] = [];
-  for (const route of routes) {
+  for (const { path: route, footer: hasFooter } of routes) {
     await page.goto(route);
     const header = await page.locator(".article-header").boundingBox();
-    const footer = await page.locator(".entry-foot").boundingBox();
+    const main = await page.locator(".article-main").boundingBox();
     expect(header, route).not.toBeNull();
-    expect(footer, route).not.toBeNull();
+    expect(main, route).not.toBeNull();
+    await expect(page.locator(".entry-foot"), route).toHaveCount(hasFooter ? 1 : 0);
 
-    // The footer lives in the grid's body column, so it inherits both the
-    // header's left edge and the prose measure.
-    expect(Math.abs(header!.x - footer!.x), route).toBeLessThanOrEqual(1);
-    expect(Math.abs(header!.width - footer!.width), route).toBeLessThanOrEqual(1);
+    // Header, body and footer all start at the grid's body column. The body
+    // runs on into the margin-aside gutter; the footer keeps the header's
+    // prose measure.
+    expect(Math.abs(header!.x - main!.x), route).toBeLessThanOrEqual(1);
+    if (hasFooter) {
+      const footer = (await page.locator(".entry-foot").boundingBox())!;
+      expect(Math.abs(header!.x - footer.x), route).toBeLessThanOrEqual(1);
+      expect(Math.abs(header!.width - footer.width), route).toBeLessThanOrEqual(1);
+    }
     edges.push(header!.x);
   }
 
