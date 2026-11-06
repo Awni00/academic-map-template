@@ -1194,9 +1194,9 @@
   padding-bottom: 48px;
 }
 
-/* minmax(0, 1fr): an implicit auto track would grow to the longest unwrapped
-   hub title and push the rail over the sections; this one keeps the rail's
-   width, so a long title ends in an ellipsis instead. */
+/* minmax(0, 1fr): an implicit auto track would grow to the longest hub title
+   and push the rail over the sections; this one keeps the rail's width, and a
+   long title wraps onto further lines instead. */
 .topics-rail {
   position: sticky;
   top: calc(var(--site-header-height, 56px) + 16px);
@@ -1211,17 +1211,23 @@
 
 .topics-rail__item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 9px;
   min-height: 38px;
-  padding: 0 10px;
+  padding: 9px 10px;
   border: 0;
   border-radius: 9px;
   background: none;
   color: var(--color-fg-soft);
-  font: 14px var(--font-ui);
+  font: 14px/1.35 var(--font-ui);
   text-align: left;
   cursor: pointer;
+}
+
+/* The icon and the count sit on the title's first line when it wraps. */
+.topics-rail__item > svg:first-child {
+  flex: none;
+  margin-top: calc((1.35em - 12px) / 2);
 }
 
 .topics-rail__item:hover {
@@ -1236,13 +1242,12 @@
 
 .topics-rail__title {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .topics-rail__count {
   margin-left: auto;
+  line-height: calc(14px * 1.35);
   font-family: var(--font-mono);
   font-size: 11.5px;
   font-weight: 400;
