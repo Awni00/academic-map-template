@@ -188,6 +188,35 @@ test("phone app bar hides while reading an entry and stays on the map", async ({
   }
 });
 
+test("phone toolbar keeps search, Filters and Sort on one row", async ({
+  baseURL,
+  browser,
+}) => {
+  // 320px is the narrowest common phone width; larger Android display or
+  // font sizes bring wider phones down to it.
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 320, height: 640 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto("/writing?view=topics");
+    const search = page.locator(".wb-toolbar .wb-search");
+    const sort = page.getByRole("button", { name: "Sort" });
+    const filters = page.getByRole("button", { name: "Filters" });
+    const top = (await search.boundingBox())!.y;
+    for (const button of [filters, sort]) {
+      const box = (await button.boundingBox())!;
+      expect(Math.abs(box.y - top)).toBeLessThan(1);
+      expect(box.x + box.width).toBeLessThanOrEqual(320);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 test("writing toolbar filters every view the same way", async ({ page, isMobile }) => {
   await page.goto("/writing?view=list");
   await expect(page.getByRole("tab", { name: "list" })).toHaveAttribute("aria-selected", "true");
