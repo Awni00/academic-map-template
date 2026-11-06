@@ -260,6 +260,10 @@ paper's `blog` post, open in place.
   display field and never appears in the copied BibTeX, which is the entry's
   `bibtex` as written.
 
+The page in `links.blog` shows the same venue, award and links (less the
+`blog` link to itself) in its header; see
+[Writing Entries](using-the-template.md#writing-entries).
+
 ## Publication Abstract Display
 
 Publication abstracts can render differently on the full publications page and

@@ -117,7 +117,7 @@ function isArxivDoi(href: string): boolean {
 }
 
 /** Same page, ignoring scheme, `www.`, a trailing slash, and arXiv abs/pdf/version variants. */
-function sameTarget(a: string, b: string): boolean {
+export function sameTarget(a: string, b: string): boolean {
   return normalizeHref(a) === normalizeHref(b);
 }
 

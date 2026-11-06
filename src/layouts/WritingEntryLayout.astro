@@ -37,6 +37,7 @@ import {
   Link as LinkIcon,
   Play,
   Presentation,
+  Star,
   Tag
 } from "@lucide/astro";
 import { formatDate } from "../lib/dates";
@@ -51,9 +52,8 @@ import {
 import { relatedEntries } from "../lib/article/related";
 import { justifyClasses } from "../lib/article/justify";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
-import { venueAcronym } from "../lib/publications/formatPublication";
 import { loadPublications, publicationForPage } from "../lib/publications/loadPublications";
-import { externalLinkHref } from "../lib/publications/identifierUrls";
+import { pageMeta } from "../lib/publications/pageMeta";
 import { newTabAttrs } from "../lib/routes/newTab";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
@@ -90,35 +90,33 @@ const related = showRelatedList(placement) ? relatedEntries(graph, byId, node.id
 const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
-const venue = entry.data.venue;
-// The "Cite" BibTeX comes from the publication that links to this page
-// (`links.blog`), so the page and the publications list copy the same
-// citation. Frontmatter `bibtex:` is for pages with no publication entry.
+// A paper page's citation, venue, award and link chips come from the
+// publication that links to it (`links.blog`), so the page and the
+// publications list show the same thing. Frontmatter `bibtex`, `venue`,
+// `award` and `external` are for pages with no publication entry, and fill
+// only what the publication leaves out.
 const pagePublication = publicationForPage(await loadPublications(), [
   node.url,
   (entry.data as { shortUrl?: string }).shortUrl
 ]);
 const citeBibtex = pagePublication?.bibtex || (entry.data as { bibtex?: string }).bibtex;
+const { venue, award, links: pageLinks } = pageMeta(pagePublication, entry.data);
 const hasByline = authors.length > 0 || Boolean(venue);
 
-const chipMeta: Record<string, { label: string; icon: any }> = {
-  arxiv: { label: "arXiv", icon: FileText },
-  paper: { label: "Paper", icon: FileText },
-  doi: { label: "DOI", icon: LinkIcon },
-  code: { label: "Code", icon: Code2 },
-  slides: { label: "Slides", icon: Presentation },
-  poster: { label: "Poster", icon: ImageIcon },
-  website: { label: "Website", icon: Globe },
-  // Named like the publications list's link: "NeurIPS" for a venue ending "(NeurIPS)".
-  publisher_page: { label: venueAcronym(venue) ?? "Published", icon: BookOpen },
-  video: { label: "Video", icon: Play }
+const chipIcons: Record<string, any> = {
+  pdf: FileText,
+  arxiv: FileText,
+  html: FileText,
+  doi: LinkIcon,
+  url: LinkIcon,
+  code: Code2,
+  slides: Presentation,
+  poster: ImageIcon,
+  website: Globe,
+  publisher: BookOpen,
+  video: Play
 };
-const external = Object.entries(entry.data.external ?? {})
-  .filter(([, href]) => Boolean(href))
-  .map(([key, href]) => {
-    const meta = chipMeta[key] ?? { label: key, icon: LinkIcon };
-    return { key, href: externalLinkHref(key, href as string), label: meta.label, Icon: meta.icon };
-  });
+const external = pageLinks.map(({ kind, label, href }) => ({ href, label, Icon: chipIcons[kind] ?? LinkIcon }));
 
 // displayDates customizes only the header; node.date remains canonical elsewhere.
 const displayDateRows = entry.data.displayDates?.map((item) => ({
@@ -251,7 +249,12 @@ const components = {
               {venue && (
                 <div class="article-byline__col">
                   <div class="article-byline__label">Venue</div>
-                  <div class="article-byline__value">{venue}</div>
+                  <div class="article-byline__value">
+                    {venue}
+                    {award && (
+                      <span class="publication-award"><Star aria-hidden="true" />{award}</span>
+                    )}
+                  </div>
                 </div>
               )}
               {dateRows.length > 0 && (

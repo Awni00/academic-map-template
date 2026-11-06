@@ -351,9 +351,22 @@ test("writing entry and RSS render", async ({ page }) => {
     }),
   ).toBeVisible();
   await expect(page.locator(".article-byline")).toContainText("Venue");
+  // Venue, award and link chips come from the publication whose
+  // links.blog is this page, not from the page's frontmatter.
   await expect(page.locator(".article-byline")).toContainText(
-    "Example Conference 1",
+    "Example Conference on Learning (ECL)",
   );
+  await expect(page.locator(".article-byline .publication-award")).toHaveText(
+    "Spotlight",
+  );
+  await expect(page.locator(".article-external .entry-chip > span:first-of-type")).toHaveText([
+    "PDF",
+    "arXiv",
+    "Code",
+    "Slides",
+    "ECL",
+    "DOI",
+  ]);
   await expect(page.locator(".article-byline__col--date")).toContainText(
     "Date",
   );

@@ -109,6 +109,7 @@ export type WritingEntryLike = {
     updated?: string;
     summary?: string;
     venue?: string;
+    award?: string;
     tags?: string[];
     links?: string[];
     authors?: Array<

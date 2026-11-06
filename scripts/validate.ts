@@ -18,6 +18,7 @@ import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGra
 import type { WritingEntryLike } from "../src/lib/graph/types";
 import { entryToRecord } from "../src/lib/graph/resolveLinks";
 import { parsePublicationsYaml, publicationForPage } from "../src/lib/publications/loadPublications";
+import { pageMetaIssues, type PageFrontmatter } from "../src/lib/publications/pageMeta";
 import { stripSlashes } from "../src/lib/routes/paths";
 import { collectShortLinks } from "../src/lib/routes/shortLinksSource";
 import { checkThemes } from "../src/lib/theme/checkTheme";
@@ -79,7 +80,10 @@ async function readWritingEntries(root: string): Promise<WritingEntryLike[]> {
             draft: parsed.data.draft ?? false,
             article: parsed.data.article,
             shortUrl: parsed.data.shortUrl,
-            bibtex: parsed.data.bibtex
+            bibtex: parsed.data.bibtex,
+            venue: parsed.data.venue,
+            award: parsed.data.award,
+            external: parsed.data.external
           }
         } as WritingEntryLike;
       })
@@ -195,16 +199,22 @@ async function validatePublications(): Promise<void> {
       warnings.push("No selected publications found, but the homepage selected-publications section is enabled.");
     }
 
-    // A page whose publication carries a citation takes it from there; a
-    // second, hand-written `bibtex:` in its frontmatter would be ignored.
+    // A page that a publication links to (`links.blog`) takes its citation,
+    // venue, award and link chips from that publication. Frontmatter that
+    // repeats or contradicts it is ignored, so it is an error; frontmatter the
+    // publication lacks still shows on the page, but not on the publications
+    // list, so it is a warning.
     for (const entry of entries) {
-      const data = entry.data as { shortUrl?: string; bibtex?: string };
-      if (!data.bibtex) continue;
+      const data = entry.data as PageFrontmatter & { shortUrl?: string; bibtex?: string };
       const publication = publicationForPage(publications, [entryToRecord(entry).node.url, data.shortUrl]);
-      if (publication?.bibtex) {
+      if (!publication) continue;
+      if (data.bibtex && publication.bibtex) {
         errors.push(
           `${entry.id}: frontmatter "bibtex" duplicates the citation of publication "${publication.id}" in ${source}, which the page shows instead. Remove it.`
         );
+      }
+      for (const issue of pageMetaIssues(publication, data)) {
+        (issue.severity === "error" ? errors : warnings).push(`${entry.id}: ${issue.message} (${source})`);
       }
     }
   } catch (error) {
