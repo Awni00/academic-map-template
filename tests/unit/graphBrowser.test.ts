@@ -36,7 +36,7 @@ describe("GraphBrowser initial state", () => {
 
     expect(html).toContain("Select a node on the map");
     expect(html).not.toContain("node-panel__title");
-    expect(html).not.toContain("Open page");
+    expect(html).not.toContain("node-panel__open");
   });
 
   it("lists every hub as a way into the map", () => {
