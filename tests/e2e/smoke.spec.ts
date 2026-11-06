@@ -359,7 +359,7 @@ test("writing entry and RSS render", async ({ page }) => {
   await expect(page.locator(".article-byline .publication-award")).toHaveText(
     "Spotlight",
   );
-  await expect(page.locator(".article-external .entry-chip")).toHaveText([
+  await expect(page.locator(".article-external .entry-chip > span:first-of-type")).toHaveText([
     "PDF",
     "arXiv",
     "Code",
