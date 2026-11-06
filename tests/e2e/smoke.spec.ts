@@ -226,7 +226,7 @@ test("writing toolbar filters every view the same way", async ({ page, isMobile 
   await expect(page.locator(".wb-count")).toHaveText(`${papers} of ${all} pages`);
 });
 
-test("a long hub title stays inside the Topics rail", async ({ page, isMobile }) => {
+test("a long hub title wraps inside the Topics rail", async ({ page, isMobile }) => {
   test.skip(isMobile, "The rail is hidden on a phone.");
   await page.goto("/writing?view=topics");
   const rail = page.locator(".topics-rail");
@@ -246,8 +246,11 @@ test("a long hub title stays inside the Topics rail", async ({ page, isMobile })
     expect(box.x + box.width).toBeLessThanOrEqual(railBox.x + railBox.width + 0.5);
   }
   expect(railBox.x + railBox.width).toBeLessThanOrEqual(bodyBox.x);
+  // The title wraps in full rather than being cut off.
   const title = rail.locator(".topics-rail__title").first();
-  expect(await title.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  expect(await title.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // One line of 14px text at line-height 1.35 is about 19px tall.
+  expect((await title.boundingBox())!.height).toBeGreaterThan(30);
 });
 
 test("publication abstracts open as configured popups", async ({ page }) => {
