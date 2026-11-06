@@ -9,6 +9,7 @@ export const defaultSiteConfig = {
   url: "https://example.com",
   profileImage: "/profile.svg",
   ogImage: "/og-image.svg",
+  robots: { disallow: [] },
   links: {
     email: "mailto:you@example.com",
     cv: "/cv.pdf",

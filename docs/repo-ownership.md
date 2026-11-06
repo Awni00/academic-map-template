@@ -41,6 +41,8 @@ src/content/
 src/data/
 public/profile.*
 public/og-image.*
+public/favicon.svg
+public/apple-touch-icon.png
 public/cv.pdf
 public/site/
 ```
