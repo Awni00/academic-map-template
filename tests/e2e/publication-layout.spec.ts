@@ -131,3 +131,42 @@ test("publication links show a focus ring from the keyboard", async ({ page }) =
   expect(outline.style).toBe("solid");
   expect(outline.width).toBeGreaterThanOrEqual(2);
 });
+
+test("BibTeX dialog wraps on a phone and shows the full title", async ({ browser }) => {
+  const page = await open(browser, WIDTHS[3], "/publications");
+  const opener = page.locator('[data-dialog-open^="bib-"]').first();
+  await opener.click();
+  const dialog = page.locator("dialog.bibtex-dialog[open]");
+  await expect(dialog).toBeVisible();
+  const sizes = await dialog.evaluate((element) => {
+    const code = element.querySelector(".bibtex-dialog__code")!;
+    const title = element.querySelector(".publication-dialog__title")!;
+    const box = element.getBoundingClientRect();
+    return {
+      codeOverflow: code.scrollWidth - code.clientWidth,
+      titleOverflow: title.scrollWidth - title.clientWidth,
+      right: box.right,
+      viewport: window.innerWidth
+    };
+  });
+  expect(sizes.codeOverflow).toBeLessThanOrEqual(0);
+  expect(sizes.titleOverflow).toBeLessThanOrEqual(0);
+  expect(sizes.right).toBeLessThanOrEqual(sizes.viewport);
+  await page.context().close();
+});
+
+test("Copy BibTeX copies the entry line by line", async ({ browser }) => {
+  const context = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+  const page = await context.newPage();
+  await page.goto("/publications");
+  await page.locator('[data-dialog-open^="bib-"]').first().click();
+  const dialog = page.locator("dialog.bibtex-dialog[open]");
+  await dialog.locator("[data-bib-copy]").click();
+  await expect(dialog.locator("[data-bib-copy-label]")).toHaveText("Copied");
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toMatch(/^@\w+\{[^,\n]+,\n  \w+ = \{/);
+  expect(copied.trim().endsWith("}")).toBe(true);
+  await dialog.locator("[data-dialog-close]").click();
+  await expect(dialog).toHaveCount(0);
+  await context.close();
+});
