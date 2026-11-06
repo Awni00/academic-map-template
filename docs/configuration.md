@@ -242,6 +242,9 @@ Each entry in `src/data/publications.yaml` gets a link for each of these
 `links` it has, in this order: `pdf`, `arxiv`, `html`, `code`, `blog`, `slides`,
 `poster`, `video`, `website`, `publisher`, `doi`, `url`. The `Abstract`
 and `BibTeX` buttons follow, after a divider (on a phone, on a row of their own).
+Links to other sites (any host but `site.url`'s) and to PDFs open in a new tab,
+here and in writing entries' `external` chips; the site's own pages, such as a
+paper's `blog` post, open in place.
 
 - `publisher` is the paper's page at its venue (proceedings, journal,
   OpenReview, conference site). Its label is the venue's acronym, taken from
