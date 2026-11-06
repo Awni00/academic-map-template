@@ -39,20 +39,14 @@ describe("abstract-only tagging", () => {
   it("tags an abstract-only page in the panel and its open action", () => {
     const html = renderToString(createElement(NodeDetailPanel, { node: nodes().record }));
     expect(html).toContain(">Abstract<");
-    expect(html).toContain("Read abstract");
-    expect(html).not.toContain("Open page");
+    expect(html).toContain(writingConfig.nodePanel.openLabel.abstract);
+    expect(html).not.toContain(writingConfig.nodePanel.openLabel.article);
   });
 
   it("leaves a full page's panel as it was", () => {
     const html = renderToString(createElement(NodeDetailPanel, { node: nodes().full }));
     expect(html).not.toContain(">Abstract<");
-    expect(html).toContain("Open page");
-  });
-
-  it("labels the open action from writing.nodePanel.openLabel", () => {
-    const { article, abstract } = writingConfig.nodePanel.openLabel;
-    expect(renderToString(createElement(NodeDetailPanel, { node: nodes().full }))).toContain(article);
-    expect(renderToString(createElement(NodeDetailPanel, { node: nodes().record }))).toContain(abstract);
+    expect(html).toContain(writingConfig.nodePanel.openLabel.article);
   });
 
   it("tags only the abstract-only row in List and Topics", () => {
