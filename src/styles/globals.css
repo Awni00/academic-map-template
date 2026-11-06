@@ -434,6 +434,7 @@ html:has(.site-menu:popover-open) {
 .theme-toggle__icon {
   width: 15px;
   height: 15px;
+  overflow: visible;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;
@@ -441,9 +442,30 @@ html:has(.site-menu:popover-open) {
   stroke-linejoin: round;
 }
 
-.theme-toggle[data-theme-preference="light"] .theme-toggle__icon circle {
+.theme-toggle__sun circle {
   fill: currentColor;
   stroke: none;
+}
+
+/* The icon shows the theme on screen; BaseLayout's bootstrap stamps both
+   attributes before the first paint, so there is no wrong-icon flash. */
+:root[data-theme="dark"] .theme-toggle__sun,
+:root:not([data-theme="dark"]) .theme-toggle__moon {
+  display: none;
+}
+
+/* "From your system setting": a monitor cut into the corner of the glyph. */
+.theme-toggle__badge {
+  display: none;
+  stroke-width: 1.5;
+}
+
+:root[data-theme-source="system"] .theme-toggle__badge {
+  display: inline;
+}
+
+:root[data-theme-source="system"] .theme-toggle__glyph {
+  mask: url(#theme-toggle-badge-cut);
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────── */

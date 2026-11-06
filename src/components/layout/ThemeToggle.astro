@@ -1,0 +1,42 @@
+---
+/**
+ * The header's light/dark toggle.
+ *
+ * Static markup: the inline bootstrap in BaseLayout.astro labels it, handles
+ * its clicks, and stamps the state on <html> that the CSS below keys on. So
+ * the icon is right on the first paint, before any island hydrates, and the
+ * toggle shares the one code path every theme change goes through.
+ *
+ * The icon shows the theme on screen: a sun for light, a moon for dark. While
+ * that theme comes from the reader's system setting (`defaultMode: "system"`
+ * and no choice made yet) a small monitor sits in the corner, cut out of the
+ * sun or moon by a mask; it goes once the reader picks a theme, and comes back
+ * if they pick the system's theme again.
+ */
+---
+
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Theme">
+  <svg class="theme-toggle__icon" viewBox="0 0 24 24" aria-hidden="true">
+    <defs>
+      <mask id="theme-toggle-badge-cut" maskUnits="userSpaceOnUse" x="-2" y="-2" width="28" height="28">
+        <rect x="-2" y="-2" width="28" height="28" fill="white"></rect>
+        <rect x="13" y="13.75" width="13" height="12.5" rx="2.5" fill="black"></rect>
+        <!-- and the sun's bottom ray, which would sit as a stub beside the monitor -->
+        <rect x="10.5" y="18" width="3" height="5" fill="black"></rect>
+      </mask>
+    </defs>
+    <g class="theme-toggle__glyph">
+      <g class="theme-toggle__sun">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path
+          d="M12 2.5v2.25M12 19.25v2.25M4.75 4.75l1.6 1.6M17.65 17.65l1.6 1.6M2.5 12h2.25M19.25 12h2.25M4.75 19.25l1.6-1.6M17.65 6.35l1.6-1.6"
+        ></path>
+      </g>
+      <path class="theme-toggle__moon" d="M20.5 14.25A7.8 7.8 0 0 1 9.75 3.5a8.9 8.9 0 1 0 10.75 10.75Z"></path>
+    </g>
+    <g class="theme-toggle__badge">
+      <rect x="14.75" y="15.5" width="9.5" height="6.5" rx="1.25"></rect>
+      <path d="M17.75 24.5h3.5"></path>
+    </g>
+  </svg>
+</button>

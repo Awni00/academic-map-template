@@ -462,7 +462,13 @@ export type ThemeConfig = {
   light: string;
   /** Theme id used when the resolved mode is dark. */
   dark: string;
+  /**
+   * What a reader sees before using the toggle: a fixed theme, or "system" to
+   * follow their OS setting. The toggle itself is always light/dark; a choice
+   * that differs from this is remembered, and choosing it again clears it.
+   */
   defaultMode: "light" | "dark" | "system";
+  /** Show the header toggle. Off, remembered choices are ignored too. */
   allowToggle: boolean;
   typography: {
     body: "serif" | "sans";
