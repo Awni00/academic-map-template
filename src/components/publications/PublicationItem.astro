@@ -2,7 +2,9 @@
 import {
   BookOpen,
   Braces,
+  Check,
   CodeXml,
+  Copy,
   FileCode,
   FileText,
   Globe,
@@ -12,7 +14,8 @@ import {
   Play,
   Presentation,
   Star,
-  TextAlignStart
+  TextAlignStart,
+  X
 } from "@lucide/astro";
 import { publicationsConfig } from "../../config";
 import { renderInlineMath } from "../../lib/math/inlineMath";
@@ -62,6 +65,9 @@ const abstractHtml =
     ? renderInlineMath(publication.abstract, resolveMathMacros({ globalMacros: globalMathMacros }))
     : undefined;
 const dialogId = `bib-${publication.id}`;
+// One block per line, so a long field wraps under its own value (hanging
+// indent) instead of scrolling sideways on a phone.
+const bibtexLines = publication.bibtex.split("\n");
 ---
 
 <article class:list={["publication-item", compact && "publication-item--compact"]}>
@@ -152,10 +158,19 @@ const dialogId = `bib-${publication.id}`;
       </div>
     )}
     {showAbstractButton && (
-      <dialog id={abstractDialogId} class="publication-dialog publication-abstract-dialog" aria-label={`Abstract for ${publication.title}`}>
+      <dialog
+        id={abstractDialogId}
+        class="publication-dialog publication-abstract-dialog"
+        aria-labelledby={`${abstractDialogId}-title`}
+      >
         <div class="publication-dialog__header">
-          <span class="publication-dialog__title">Abstract · {publication.title}</span>
-          <button type="button" class="publication-dialog__close" data-dialog-close aria-label="Close">×</button>
+          <div class="publication-dialog__heading">
+            <p class="publication-dialog__kicker">Abstract</p>
+            <p class="publication-dialog__title" id={`${abstractDialogId}-title`}>{publication.title}</p>
+          </div>
+          <button type="button" class="publication-dialog__close" data-dialog-close aria-label="Close">
+            <X aria-hidden="true" />
+          </button>
         </div>
         <div class="publication-dialog__body">
           {abstractHtml ? <p set:html={abstractHtml} /> : <p>{publication.abstract}</p>}
@@ -163,15 +178,26 @@ const dialogId = `bib-${publication.id}`;
       </dialog>
     )}
     {publication.bibtexShow && (
-      <dialog id={dialogId} class="publication-dialog bibtex-dialog" aria-label={`BibTeX for ${publication.title}`}>
+      <dialog id={dialogId} class="publication-dialog bibtex-dialog" aria-labelledby={`${dialogId}-title`}>
         <div class="publication-dialog__header">
-          <span class="publication-dialog__title">BibTeX · {publication.title}</span>
-          <div class="publication-dialog__actions">
-            <button type="button" class="button bibtex-dialog__copy" data-bib-copy>Copy</button>
-            <button type="button" class="publication-dialog__close" data-dialog-close aria-label="Close">×</button>
+          <div class="publication-dialog__heading">
+            <p class="publication-dialog__kicker">BibTeX</p>
+            <p class="publication-dialog__title" id={`${dialogId}-title`}>{publication.title}</p>
           </div>
+          <button type="button" class="publication-dialog__close" data-dialog-close aria-label="Close">
+            <X aria-hidden="true" />
+          </button>
         </div>
-        <pre class="bibtex-dialog__code"><code>{publication.bibtex}</code></pre>
+        <div class="publication-dialog__body">
+          <pre class="bibtex-dialog__code"><code>{bibtexLines.map((line) => <span class="bibtex-dialog__line">{line || " "}</span>)}</code></pre>
+        </div>
+        <div class="publication-dialog__footer">
+          <button type="button" class="bibtex-dialog__copy" data-bib-copy>
+            <Copy class="bibtex-dialog__icon bibtex-dialog__icon--copy" aria-hidden="true" />
+            <Check class="bibtex-dialog__icon bibtex-dialog__icon--done" aria-hidden="true" />
+            <span data-bib-copy-label aria-live="polite">Copy BibTeX</span>
+          </button>
+        </div>
       </dialog>
     )}
   </div>
@@ -204,19 +230,36 @@ const dialogId = `bib-${publication.id}`;
       "[data-bib-copy]:not([data-publication-dialog-wired])"
     )) {
       copier.dataset.publicationDialogWired = "true";
-      copier.addEventListener("click", async () => {
-        const dialog = copier.closest("dialog");
-        const text = dialog?.querySelector("code")?.textContent?.trim() ?? "";
-        try {
-          await navigator.clipboard.writeText(text);
-          const original = copier.textContent;
-          copier.textContent = "Copied";
+      copier.addEventListener("click", () => {
+        const code = copier.closest("dialog")?.querySelector("code");
+        // Lines are block spans, whose textContent has no newlines: join them.
+        const lines = code ? [...code.querySelectorAll(".bibtex-dialog__line")] : [];
+        const text = lines.length
+          ? lines.map((line) => line.textContent ?? "").join("\n").trim()
+          : (code?.textContent?.trim() ?? "");
+        const label = copier.querySelector("[data-bib-copy-label]");
+        const finish = (message: string, copied: boolean) => {
+          if (label) label.textContent = message;
+          if (copied) copier.dataset.copied = "true";
           window.setTimeout(() => {
-            copier.textContent = original;
-          }, 1200);
-        } catch {
-          /* clipboard unavailable */
+            if (label) label.textContent = "Copy BibTeX";
+            delete copier.dataset.copied;
+          }, 1600);
+        };
+        // Select the entry so the "Press ⌘C" fallback has something to copy.
+        // `navigator.clipboard` is undefined outside a secure context.
+        const fallBack = () => {
+          if (code) window.getSelection()?.selectAllChildren(code);
+          finish("Press ⌘C", false);
+        };
+        if (!navigator.clipboard) {
+          fallBack();
+          return;
         }
+        navigator.clipboard
+          .writeText(text)
+          .then(() => finish("Copied", true))
+          .catch(fallBack);
       });
     }
     for (const dialog of scope.querySelectorAll<HTMLDialogElement>(

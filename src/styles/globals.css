@@ -1666,20 +1666,28 @@ html:has(.site-menu:popover-open) {
 
 /* ── Publication dialog popups ──────────────────────────────────────── */
 
+/* A header naming what the dialog holds over the paper's full title, a body
+   that scrolls on its own, and (for BibTeX) a footer with the copy button. */
 .publication-dialog {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-bg);
   color: var(--color-fg);
   padding: 0;
-  width: min(96vw, 720px);
+  width: min(calc(100vw - 24px), 680px);
   max-height: 86vh;
   /* Tailwind's preflight resets `* { margin: 0 }`, which clobbers the
      browser's default centering of <dialog>. Restore it explicitly. */
   inset: 0;
   margin: auto;
+  overflow: hidden;
   box-shadow: var(--shadow-soft);
   font-family: var(--font-ui);
+}
+
+.publication-dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .publication-dialog::backdrop {
@@ -1689,94 +1697,193 @@ html:has(.site-menu:popover-open) {
 
 .publication-dialog__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex: none;
+  align-items: flex-start;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 18px 14px 14px 22px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-soft);
-  border-radius: 8px 8px 0 0;
+}
+
+.publication-dialog__heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.publication-dialog__kicker {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
 }
 
 .publication-dialog__title {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-fg-soft);
-  letter-spacing: 0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex: 1;
-}
-
-.publication-dialog__actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.bibtex-dialog__copy {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 5px 12px;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-fg);
+  text-wrap: pretty;
 }
 
 .publication-dialog__close {
   display: inline-grid;
+  flex: none;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg);
-  color: var(--color-muted);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  margin-top: -4px;
   padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-quiet),
+    color var(--dur-fast) var(--ease-quiet);
+}
+
+.publication-dialog__close svg {
+  width: 18px;
+  height: 18px;
 }
 
 .publication-dialog__close:hover {
+  background: var(--color-bg-soft);
   color: var(--color-fg);
-  border-color: var(--color-rule);
+}
+
+.publication-dialog__close:focus-visible,
+.bibtex-dialog__copy:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .publication-dialog__body {
-  padding: 18px 20px 20px;
-  max-height: calc(86vh - 60px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  color: var(--color-fg-soft);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.65;
+  padding: 18px 22px 24px;
 }
 
+/* The abstract reads as prose: the serif body face at a book measure. */
 .publication-dialog__body p {
   margin: 0;
+  max-width: 62ch;
+  font-family: var(--font-body);
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--color-fg-soft);
+}
+
+.bibtex-dialog .publication-dialog__body {
+  padding-bottom: 14px;
 }
 
 .bibtex-dialog__code {
   margin: 0;
-  padding: 18px;
-  background: var(--color-bg);
+  padding: 14px 16px;
   border: 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 8px;
+  background: var(--color-bg-soft);
   font-family: var(--font-mono);
   font-size: 12.5px;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--color-fg-soft);
-  overflow-x: auto;
-  max-height: calc(86vh - 60px);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .bibtex-dialog__code code {
+  padding: 0;
+  background: none;
   font: inherit;
   color: inherit;
-  white-space: pre;
+  white-space: inherit;
+}
+
+/* A wrapped line continues 2ch past its field name's indent. */
+.bibtex-dialog__line {
+  display: block;
+  padding-left: 4ch;
+  text-indent: -4ch;
+}
+
+.publication-dialog__footer {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  padding: 0 22px 18px;
+}
+
+.bibtex-dialog__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0.5px solid var(--color-accent-line);
+  border-radius: 6px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-quiet),
+    color var(--dur-fast) var(--ease-quiet);
+}
+
+.bibtex-dialog__copy:hover {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.bibtex-dialog__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.bibtex-dialog__icon--done,
+.bibtex-dialog__copy[data-copied] .bibtex-dialog__icon--copy {
+  display: none;
+}
+
+.bibtex-dialog__copy[data-copied] .bibtex-dialog__icon--done {
+  display: inline;
+}
+
+@media (max-width: 640px) {
+  .publication-dialog__header {
+    padding: 16px 10px 12px 18px;
+  }
+
+  .publication-dialog__body {
+    padding: 16px 18px 20px;
+  }
+
+  .publication-dialog__body p {
+    font-size: 16px;
+  }
+
+  .publication-dialog__footer {
+    padding: 0 18px 16px;
+  }
+}
+
+/* 44px targets on touch screens. */
+@media (pointer: coarse) {
+  .publication-dialog__close {
+    width: 44px;
+    height: 44px;
+    margin: -8px -4px 0 0;
+  }
+
+  .bibtex-dialog__copy {
+    height: 44px;
+  }
 }
 
 .publication-year {
