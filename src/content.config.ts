@@ -68,6 +68,7 @@ const externalLinks = z
     slides: z.string().url().or(z.string().startsWith("/")).optional(),
     poster: z.string().url().or(z.string().startsWith("/")).optional(),
     website: z.string().url().or(z.string().startsWith("/")).optional(),
+    publisher_page: z.string().url().or(z.string().startsWith("/")).optional(),
     video: z.string().url().or(z.string().startsWith("/")).optional()
   })
   .partial()

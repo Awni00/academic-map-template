@@ -126,8 +126,70 @@ describe("identifier URLs", () => {
 
   it("gives publication links the same resolver URLs", () => {
     const links = publicationLinks(parseBibtex(bibtex)[0]);
-    expect(links).toContainEqual({ label: "DOI", href: "https://doi.org/10.0000/sample" });
-    expect(links).toContainEqual({ label: "arXiv", href: "https://arxiv.org/abs/2601.00000" });
+    expect(links).toContainEqual({ kind: "doi", label: "DOI", href: "https://doi.org/10.0000/sample" });
+    expect(links).toContainEqual({ kind: "arxiv", label: "arXiv", href: "https://arxiv.org/abs/2601.00000" });
+  });
+});
+
+describe("publication links", () => {
+  const labels = (entry: string) => publicationLinks(parseBibtex(entry)[0]).map((link) => link.label);
+
+  it("drops a URL that repeats the arXiv or publisher link", () => {
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, arxiv = {2505.15927},
+        url = {http://www.arxiv.org/pdf/2505.15927v2.pdf}}`)
+    ).toEqual(["arXiv"]);
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, journal = {Trends in Cognitive Sciences (TICS)},
+        publisher_page = {https://www.cell.com/fulltext/S1364}, url = {https://www.cell.com/fulltext/S1364/}}`)
+    ).toEqual(["TICS"]);
+  });
+
+  it("keeps a URL that goes somewhere no other link does", () => {
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, arxiv = {2505.15927}, url = {https://example.com/workshop}}`)
+    ).toEqual(["arXiv", "URL"]);
+  });
+
+  it("treats URLs differing only in path case as different pages", () => {
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, publisher_page = {https://openreview.net/forum?id=AbC},
+        url = {https://openreview.net/forum?id=abc}}`)
+    ).toEqual(["Published", "URL"]);
+  });
+
+  it("drops arXiv's own DOI when the arXiv link is shown", () => {
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, arxiv = {2402.08856}, doi = {10.48550/arXiv.2402.08856}}`)
+    ).toEqual(["arXiv"]);
+    expect(labels(`@article{a, title = {T}, year = 2025, doi = {10.48550/arXiv.2402.08856}}`)).toEqual(["DOI"]);
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, arxiv = {2402.08856}, doi = {10.1109/ACC.2023.1}}`)
+    ).toEqual(["arXiv", "DOI"]);
+  });
+
+  it("labels the publisher page with the venue's acronym", () => {
+    const page = "publisher_page = {https://neurips.cc/virtual/2025/poster/1}";
+    expect(
+      labels(`@inproceedings{a, title = {T}, year = 2025, ${page},
+        booktitle = {Neural Information Processing Systems (NeurIPS)}}`)
+    ).toEqual(["NeurIPS"]);
+    // The last group wins; a trailing note after it does not hide it.
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, ${page}, journal = {Neural Information Processing Systems (NeurIPS), spotlight}}`)
+    ).toEqual(["NeurIPS"]);
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, ${page}, journal = {Some Journal (extended version)}}`)
+    ).toEqual(["Published"]);
+    expect(
+      labels(`@article{a, title = {T}, year = 2025, ${page}, journal = {Journal (JX)}, publisher_label = {PMLR}}`)
+    ).toEqual(["PMLR"]);
+  });
+
+  it("reads the award as its own field, outside the copied BibTeX", () => {
+    const [publication] = parseBibtex(`@inproceedings{a, title = {T}, booktitle = {B}, year = 2025, award = {Spotlight}}`);
+    expect(publication.award).toBe("Spotlight");
+    expect(publication.bibtex).not.toContain("award");
   });
 });
 

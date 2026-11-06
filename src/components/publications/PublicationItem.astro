@@ -1,8 +1,27 @@
 ---
+import {
+  BookOpen,
+  Braces,
+  CodeXml,
+  FileCode,
+  FileText,
+  Globe,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  PenLine,
+  Play,
+  Presentation,
+  Star,
+  TextAlignStart
+} from "@lucide/astro";
 import { publicationsConfig } from "../../config";
 import { renderInlineMath } from "../../lib/math/inlineMath";
 import { resolveMathMacros } from "../../lib/math/resolve";
-import { highlightedAuthorParts, publicationLinks } from "../../lib/publications/formatPublication";
+import {
+  highlightedAuthorParts,
+  publicationLinks,
+  type PublicationLinkKind
+} from "../../lib/publications/formatPublication";
 import { globalMathMacros } from "../../site/math";
 import type { PublicationAbstractDisplay } from "../../config/types";
 import type { Publication } from "../../lib/publications/types";
@@ -15,9 +34,23 @@ type Props = {
 
 const { publication, compact = false, abstractDisplay = "popup" } = Astro.props;
 const links = publicationLinks(publication);
+const linkIcons: Record<PublicationLinkKind, typeof FileText> = {
+  pdf: FileText,
+  arxiv: FileText,
+  html: FileCode,
+  code: CodeXml,
+  blog: PenLine,
+  slides: Presentation,
+  poster: ImageIcon,
+  video: Play,
+  website: Globe,
+  publisher: BookOpen,
+  doi: LinkIcon,
+  url: LinkIcon
+};
 const authorParts = highlightedAuthorParts(publication.author);
 const thumbHref =
-  publication.pdf ?? publication.url ?? publication.website ?? undefined;
+  publication.pdf ?? publication.url ?? publication.publisherPage ?? publication.website ?? undefined;
 const effectiveAbstractDisplay: PublicationAbstractDisplay = compact ? "hidden" : abstractDisplay;
 const showInlineAbstract = Boolean(publication.abstract) && effectiveAbstractDisplay === "inline";
 const showAbstractButton = Boolean(publication.abstract) && effectiveAbstractDisplay === "popup";
@@ -64,6 +97,9 @@ const dialogId = `bib-${publication.id}`;
     </p>
     <p class="publication-venue">
       {publication.venue ? <i>{publication.venue}</i> : publication.type}, {publication.year}
+      {publication.award && (
+        <span class="publication-award"><Star aria-hidden="true" />{publication.award}</span>
+      )}
     </p>
     {showInlineAbstract && (
       abstractHtml ? (
@@ -74,26 +110,44 @@ const dialogId = `bib-${publication.id}`;
     )}
     {(links.length > 0 || showAbstractButton || publication.bibtexShow) && (
       <div class="publication-links">
-        {links.map((link) => <a class="publication-link" href={link.href}>{link.label}</a>)}
-        {showAbstractButton && (
-          <button
-            type="button"
-            class="publication-link publication-link--button"
-            data-dialog-open={abstractDialogId}
-            aria-haspopup="dialog"
-          >
-            Abstract
-          </button>
+        {links.length > 0 && (
+          <div class="publication-links__group">
+            {links.map((link) => {
+              const Icon = linkIcons[link.kind];
+              return (
+                <a class="publication-link" href={link.href}>
+                  <Icon aria-hidden="true" />
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
         )}
-        {publication.bibtexShow && (
-          <button
-            type="button"
-            class="publication-link publication-link--button"
-            data-dialog-open={dialogId}
-            aria-haspopup="dialog"
-          >
-            BibTeX
-          </button>
+        {(showAbstractButton || publication.bibtexShow) && (
+          <div class="publication-links__group publication-links__group--toggles">
+            {showAbstractButton && (
+              <button
+                type="button"
+                class="publication-link publication-link--button"
+                data-dialog-open={abstractDialogId}
+                aria-haspopup="dialog"
+              >
+                <TextAlignStart aria-hidden="true" />
+                Abstract
+              </button>
+            )}
+            {publication.bibtexShow && (
+              <button
+                type="button"
+                class="publication-link publication-link--button"
+                data-dialog-open={dialogId}
+                aria-haspopup="dialog"
+              >
+                <Braces aria-hidden="true" />
+                BibTeX
+              </button>
+            )}
+          </div>
         )}
       </div>
     )}
