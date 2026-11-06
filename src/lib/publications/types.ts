@@ -10,6 +10,8 @@ export type Publication = {
   year: string;
   venue?: string;
   abstract?: string;
+  /** One-sentence summary. Not shown on the publications page; available to other consumers, such as a CV. */
+  tldr?: string;
   abbr?: string;
   doi?: string;
   url?: string;

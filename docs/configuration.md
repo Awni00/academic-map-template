@@ -238,23 +238,24 @@ export const siteConfigOverrides = {
 
 ## Publication Links
 
-Each entry in `src/data/publications.bib` gets a link for each of these fields
-it has, in this order: `pdf`, `arxiv`, `html`, `code`, `blog`, `slides`,
-`poster`, `video`, `website`, `publisher_page`, `doi`, `url`. The `Abstract`
+Each entry in `src/data/publications.yaml` gets a link for each of these
+`links` it has, in this order: `pdf`, `arxiv`, `html`, `code`, `blog`, `slides`,
+`poster`, `video`, `website`, `publisher`, `doi`, `url`. The `Abstract`
 and `BibTeX` buttons follow, after a divider (on a phone, on a row of their own).
 
-- `publisher_page` is the paper's page at its venue (proceedings, journal,
+- `publisher` is the paper's page at its venue (proceedings, journal,
   OpenReview, conference site). Its label is the venue's acronym, taken from
-  the last parenthesized group in `journal`/`booktitle`, as in
-  `booktitle = {Neural Information Processing Systems (NeurIPS)}` → "NeurIPS".
-  With no acronym it reads "Published"; `publisher_label = {PMLR}` sets it
+  the last parenthesized group in `venue`, as in
+  `venue: Neural Information Processing Systems (NeurIPS)` → "NeurIPS".
+  With no acronym it reads "Published"; `publisher_label: PMLR` sets it
   explicitly.
 - `url` is shown only when it points somewhere no other link does. BibTeX
   exporters fill it with the arXiv or publisher page, which would repeat a link.
 - `doi` is hidden when it is arXiv's own DOI for the preprint
   (`10.48550/arXiv.…`) and the `arxiv` link is shown.
-- `award = {Spotlight}` adds a badge after the venue. Like the link fields, it
-  never appears in the copied BibTeX.
+- `award: Spotlight` adds a badge after the venue. Like the links, it is a
+  display field and never appears in the copied BibTeX, which is the entry's
+  `bibtex` as written.
 
 ## Publication Abstract Display
 
@@ -827,7 +828,7 @@ The resolved config currently expects these source paths:
 src/content/pages/
 src/content/writing/
 src/data/news.yaml
-src/data/publications.bib
+src/data/publications.yaml
 ```
 
 These paths are site-owned after adoption. The template may include starter

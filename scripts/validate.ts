@@ -16,7 +16,8 @@ import { resolveTocConfig } from "../src/lib/article/toc";
 import { isNavIconName } from "../src/config/navIcons";
 import { buildGraphIndex, graphWarningSeverity } from "../src/lib/graph/buildGraph";
 import type { WritingEntryLike } from "../src/lib/graph/types";
-import { parseBibtexWithIssues } from "../src/lib/publications/parseBibtex";
+import { entryToRecord } from "../src/lib/graph/resolveLinks";
+import { parsePublicationsYaml, publicationForPage } from "../src/lib/publications/loadPublications";
 import { stripSlashes } from "../src/lib/routes/paths";
 import { collectShortLinks } from "../src/lib/routes/shortLinksSource";
 import { checkThemes } from "../src/lib/theme/checkTheme";
@@ -76,7 +77,9 @@ async function readWritingEntries(root: string): Promise<WritingEntryLike[]> {
             tags: parsed.data.tags ?? [],
             links: parsed.data.links ?? [],
             draft: parsed.data.draft ?? false,
-            article: parsed.data.article
+            article: parsed.data.article,
+            shortUrl: parsed.data.shortUrl,
+            bibtex: parsed.data.bibtex
           }
         } as WritingEntryLike;
       })
@@ -174,20 +177,38 @@ function validateShortLinks(): void {
 }
 
 async function validatePublications(): Promise<void> {
+  const source = publicationsConfig.source;
+  let text: string;
   try {
-    const source = await fs.readFile(publicationsConfig.source, "utf8");
-    // The site build skips a malformed entry and keeps going; validation is
-    // where that has to fail, naming every bad entry rather than the first.
-    const { publications, issues } = parseBibtexWithIssues(source);
-    for (const issue of issues) {
-      errors.push(`BibTeX ${publicationsConfig.source}:${issue.line}: ${issue.message}`);
-    }
+    text = await fs.readFile(source, "utf8");
+  } catch (error) {
+    errors.push(`Could not read ${source}: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
+  try {
+    // The site build skips an unreadable entry and keeps going; validation is
+    // where that has to fail, naming every problem rather than the first.
+    const { publications, issues } = parsePublicationsYaml(text);
+    for (const issue of issues) errors.push(`${source} (${issue.entry}): ${issue.message}`);
     if (publications.length === 0) warnings.push("No publications found.");
     if (siteConfig.homepage.selectedPublications.enabled && !publications.some((publication) => publication.selected)) {
       warnings.push("No selected publications found, but the homepage selected-publications section is enabled.");
     }
+
+    // A page whose publication carries a citation takes it from there; a
+    // second, hand-written `bibtex:` in its frontmatter would be ignored.
+    for (const entry of entries) {
+      const data = entry.data as { shortUrl?: string; bibtex?: string };
+      if (!data.bibtex) continue;
+      const publication = publicationForPage(publications, [entryToRecord(entry).node.url, data.shortUrl]);
+      if (publication?.bibtex) {
+        errors.push(
+          `${entry.id}: frontmatter "bibtex" duplicates the citation of publication "${publication.id}" in ${source}, which the page shows instead. Remove it.`
+        );
+      }
+    }
   } catch (error) {
-    errors.push(`Could not read BibTeX ${publicationsConfig.source}: ${error instanceof Error ? error.message : String(error)}`);
+    errors.push(`${source}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

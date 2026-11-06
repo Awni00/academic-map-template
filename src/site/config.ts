@@ -99,9 +99,9 @@ export const siteConfigOverrides: SiteConfigOverrides = {
   //   }
   // },
 
-  // Your BibTeX file, and the name to highlight in author lists.
+  // Your publications file, and the name to highlight in author lists.
   // publications: {
-  //   source: "src/data/publications.bib",
+  //   source: "src/data/publications.yaml",
   //   authorHighlight: ["Your Name"]
   // }
 };

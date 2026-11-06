@@ -16,10 +16,10 @@ describe("cleanLatex", () => {
 });
 
 describe("formatCitationAuthors", () => {
-  it("flips Last, First and shortens long lists", () => {
-    expect(formatCitationAuthors(["Vaswani, Ashish", "Shazeer, Noam"])).toBe("Ashish Vaswani, Noam Shazeer");
-    expect(formatCitationAuthors(["A, X", "B, Y", "C, Z", "D, W"])).toBe("X A, Y B, et al.");
-    expect(formatCitationAuthors(["Plain Name"])).toBe("Plain Name");
+  it("joins names and shortens long lists", () => {
+    expect(formatCitationAuthors(["Ashish Vaswani", "Noam Shazeer"])).toBe("Ashish Vaswani, Noam Shazeer");
+    expect(formatCitationAuthors(["X A", "Y B", "Z C", "W D"])).toBe("X A, Y B, et al.");
+    expect(formatCitationAuthors(["Martin Luther King, Jr."])).toBe("Martin Luther King, Jr.");
   });
 });
 
@@ -76,8 +76,8 @@ describe("remarkHoverNotes", () => {
   });
 
   it("resolves bibliography paths relative to the page and passes them to citing notes", () => {
-    const [citing, plain] = run([note({ cite: "x" }), note()], { bibliography: "publications.bib" });
-    expect(JSON.parse(citing.bibliography)).toEqual([path.resolve("src/data/publications.bib")]);
+    const [citing, plain] = run([note({ cite: "x" }), note()], { bibliography: "../../tests/fixtures/references.bib" });
+    expect(JSON.parse(citing.bibliography)).toEqual([path.resolve("tests/fixtures/references.bib")]);
     expect(plain.bibliography).toBeUndefined();
   });
 

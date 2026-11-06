@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicationList from "../components/publications/PublicationList.astro";
 import { publicationsConfig, siteConfig } from "../config";
-import { loadPublications } from "../lib/publications/parseBibtex";
+import { loadPublications } from "../lib/publications/loadPublications";
 
 const publications = await loadPublications();
 ---

@@ -101,7 +101,7 @@ public/
 
 Writing entries use frontmatter links and `[[wikilinks]]` to build the graph.
 Custom pages are outside the graph. Publications are generated from
-`src/data/publications.bib`.
+`src/data/publications.yaml`.
 
 See [Using The Template](docs/using-the-template.md) for the content model and
 authoring conventions.

@@ -1,0 +1,66 @@
+# Publications, newest first or in any order (the page groups them by year).
+#
+# Display fields are plain text, shown as written: `authors` in reading order,
+# `venue` as it should read on the page ("… (ECL)" also names the publisher
+# link), `award` for a spotlight, oral or prize. `links` can hold pdf, arxiv,
+# html, code, blog, slides, poster, video, website, publisher, doi and url.
+#
+# `bibtex` is the citation readers copy, kept verbatim: paste the venue's
+# official BibTeX. Its key must be the entry's `id`, and its title, year and
+# authors must match the display fields; `npm run validate` checks this.
+# A post whose page is `links.blog` shows the same citation under "Cite".
+#
+# Moving from a .bib file? `npm run publications:from-bib` converts one.
+- id: example2026paperone
+  title: Example Paper 1
+  authors:
+    - Example Author
+    - Example Coauthor
+  year: 2026
+  venue: Example Conference on Learning (ECL)
+  award: Spotlight
+  selected: true
+  abbr: EX1
+  preview: example-preview.svg
+  links:
+    pdf: /publications/example-paper.pdf
+    arxiv: '0000.00000'
+    code: https://github.com/example/entry-3
+    blog: /writing/hub-1/entry-1
+    slides: /publications/example-slides.pdf
+    publisher: https://example.com/ecl-2026/paper-1
+  abstract: Lorem ipsum dolor sit amet, consectetur adipiscing elit. This generic publication demonstrates preview images, link chips, abstract dialogs, and BibTeX disclosure.
+  bibtex: |
+    @inproceedings{example2026paperone,
+      author = {Example Author and Example Coauthor},
+      title = {Example Paper 1},
+      booktitle = {Example Conference on Learning (ECL)},
+      year = {2026}
+    }
+- id: example2025papertwo
+  title: Example Paper 2
+  authors:
+    - Example Author
+    - A. Example
+  year: 2025
+  venue: Journal of Example Publications
+  selected: true
+  abbr: EX2
+  links:
+    website: https://example.com
+  abstract: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas faucibus mollis interdum. Donec sed odio dui.
+  bibtex: |
+    @article{example2025papertwo,
+      author = {Example Author and A. Example},
+      title = {Example Paper 2},
+      journal = {Journal of Example Publications},
+      year = {2025}
+    }
+- id: example2025paperthree
+  title: Example Paper 3
+  authors:
+    - Example Author
+  year: 2025
+  venue: Example Journal 3
+  links:
+    website: https://example.com

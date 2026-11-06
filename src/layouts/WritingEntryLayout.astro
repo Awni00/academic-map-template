@@ -52,6 +52,7 @@ import { relatedEntries } from "../lib/article/related";
 import { justifyClasses } from "../lib/article/justify";
 import { filterHeadingsForToc, resolveTocConfig } from "../lib/article/toc";
 import { venueAcronym } from "../lib/publications/formatPublication";
+import { loadPublications, publicationForPage } from "../lib/publications/loadPublications";
 import { externalLinkHref } from "../lib/publications/identifierUrls";
 import type { GraphIndex, WritingEntryLike } from "../lib/graph/types";
 import BaseLayout from "./BaseLayout.astro";
@@ -89,6 +90,14 @@ const hero = entry.data.hero;
 const authorsRaw = entry.data.authors ?? [];
 const authors = authorsRaw.map((a) => (typeof a === "string" ? { name: a } : a));
 const venue = entry.data.venue;
+// The "Cite" BibTeX comes from the publication that links to this page
+// (`links.blog`), so the page and the publications list copy the same
+// citation. Frontmatter `bibtex:` is for pages with no publication entry.
+const pagePublication = publicationForPage(await loadPublications(), [
+  node.url,
+  (entry.data as { shortUrl?: string }).shortUrl
+]);
+const citeBibtex = pagePublication?.bibtex || (entry.data as { bibtex?: string }).bibtex;
 const hasByline = authors.length > 0 || Boolean(venue);
 
 const chipMeta: Record<string, { label: string; icon: any }> = {
@@ -359,7 +368,7 @@ const components = {
         tocInFoot={false}
         showLocalGraph={localGraphInFooter}
         related={related}
-        bibtex={(entry.data as { bibtex?: string }).bibtex}
+        bibtex={citeBibtex}
       />
     </div>
   </article>

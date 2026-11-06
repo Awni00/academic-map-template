@@ -1,9 +1,8 @@
-import fs from "node:fs/promises";
-
 import { publicationsConfig } from "../../config/publications";
+import { displayName, splitBibtexNames } from "./names";
 import { UNDATED_YEAR, type Publication } from "./types";
 
-type RawEntry = {
+export type RawEntry = {
   type: string;
   key: string;
   fields: Record<string, string>;
@@ -46,23 +45,6 @@ export type BibtexIssue = {
   line: number;
   message: string;
 };
-
-/**
- * Publications for the site, keeping every entry that parses.
- *
- * A malformed entry is skipped and reported as a build warning rather than
- * thrown: the homepage and /publications both call this at build time, and one
- * bad line in a bibliography should not take the whole site down with it.
- * `npm run validate` still fails on the same problems, listing all of them.
- */
-export async function loadPublications(source = publicationsConfig.source): Promise<Publication[]> {
-  const bibtex = await fs.readFile(source, "utf8");
-  const { publications, issues } = parseBibtexWithIssues(bibtex);
-  for (const issue of issues) {
-    console.warn(`[publications] ${source}:${issue.line}: ${issue.message} This entry was skipped.`);
-  }
-  return publications;
-}
 
 /** Strict parse: throws on the first problem. */
 export function parseBibtex(input: string): Publication[] {
@@ -173,8 +155,10 @@ function normalizePublication(entry: RawEntry): Publication {
     Object.entries(entry.fields).map(([key, value]) => [key.toLowerCase(), cleanValue(value)])
   );
   const venue = fields.journal ?? fields.booktitle ?? fields.publisher;
-  const author = fields.author ?? "";
-  const authors = author.split(/\s+and\s+/i).map((name) => name.trim()).filter(Boolean);
+  // Names in reading order with LaTeX decoded: "Altabaa, Awni and Y{\"u}ksel,
+  // Serdar" is shown as "Awni Altabaa, Serdar Yüksel".
+  const authors = splitBibtexNames(fields.author ?? "").map(displayName);
+  const author = authors.join(", ");
   return {
     id: entry.key,
     type: entry.type,
@@ -325,7 +309,7 @@ function skipWhitespaceAndCommas(input: string, start: number): number {
   return cursor;
 }
 
-function cleanValue(value: string): string {
+export function cleanValue(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
@@ -346,7 +330,7 @@ function formatBibtex(entry: RawEntry, fields: Record<string, string>): string {
     .join("\n")}\n}`;
 }
 
-function resolvePreview(value: string | undefined): string | undefined {
+export function resolvePreview(value: string | undefined): string | undefined {
   if (!value) return undefined;
   if (/^https?:\/\//.test(value) || value.startsWith("/")) return value;
   return `${publicationsConfig.previews.basePath}/${value}`;
