@@ -1194,10 +1194,14 @@
   padding-bottom: 48px;
 }
 
+/* minmax(0, 1fr): an implicit auto track would grow to the longest unwrapped
+   hub title and push the rail over the sections; this one keeps the rail's
+   width, so a long title ends in an ellipsis instead. */
 .topics-rail {
   position: sticky;
   top: calc(var(--site-header-height, 56px) + 16px);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
 }
 

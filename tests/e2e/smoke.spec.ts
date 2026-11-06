@@ -226,6 +226,30 @@ test("writing toolbar filters every view the same way", async ({ page, isMobile 
   await expect(page.locator(".wb-count")).toHaveText(`${papers} of ${all} pages`);
 });
 
+test("a long hub title stays inside the Topics rail", async ({ page, isMobile }) => {
+  test.skip(isMobile, "The rail is hidden on a phone.");
+  await page.goto("/writing?view=topics");
+  const rail = page.locator(".topics-rail");
+  await expect(rail).toBeVisible();
+  // The demo hubs have short titles; lengthen one in place, as a site might.
+  await rail
+    .locator(".topics-rail__title")
+    .first()
+    .evaluate((el) => {
+      el.textContent = "Reasoning in Transformers & Large Language Models";
+    });
+
+  const railBox = (await rail.boundingBox())!;
+  const bodyBox = (await page.locator(".topicspage-body").boundingBox())!;
+  for (const item of await rail.locator(".topics-rail__item").all()) {
+    const box = (await item.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(railBox.x + railBox.width + 0.5);
+  }
+  expect(railBox.x + railBox.width).toBeLessThanOrEqual(bodyBox.x);
+  const title = rail.locator(".topics-rail__title").first();
+  expect(await title.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+});
+
 test("publication abstracts open as configured popups", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".publication-abstract")).toHaveCount(0);
