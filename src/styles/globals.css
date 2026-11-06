@@ -500,6 +500,11 @@ html:has(.site-menu:popover-open) {
   border-bottom-color: var(--color-link);
 }
 
+.site-footer__repo {
+  font-family: var(--font-code);
+  overflow-wrap: anywhere;
+}
+
 /* ── Headings & text primitives ─────────────────────────────────────── */
 
 .h1 {

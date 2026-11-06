@@ -8,6 +8,8 @@ import Header from "../components/layout/Header.astro";
 import ThemeStyles from "../components/layout/ThemeStyles.astro";
 import { siteConfig } from "../config/site";
 import { darkTheme, lightTheme, themeConfig } from "../config/theme";
+import { writingConfig } from "../config/writing";
+import { rssFeed } from "../lib/routes/paths";
 import { siteFontCssVariables } from "../site/fonts";
 
 type Props = {
@@ -30,6 +32,9 @@ const {
 const pageTitle = title === siteConfig.title ? title : `${title} | ${siteConfig.name}`;
 const canonical = new URL(Astro.url.pathname, siteConfig.url).toString();
 const resolvedImage = new URL(image, siteConfig.url).toString();
+// Lets feed readers discover the writing feed from any page's URL.
+const feed = rssFeed();
+const feedTitle = `${siteConfig.name} ${writingConfig.label}`;
 /**
  * The pre-paint theme bootstrap.
  *
@@ -174,6 +179,7 @@ const themeScript = `
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" />
+    {feed && <link rel="alternate" type="application/rss+xml" title={feedTitle} href={feed.href} />}
     <Font cssVariable={siteFontCssVariables.serif} />
     <Font cssVariable={siteFontCssVariables.sans} />
     <Font cssVariable={siteFontCssVariables.mono} />
