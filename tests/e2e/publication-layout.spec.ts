@@ -170,3 +170,28 @@ test("Copy BibTeX copies the entry line by line", async ({ browser }) => {
   await expect(dialog).toHaveCount(0);
   await context.close();
 });
+
+test("off-site and PDF links open in a new tab; the site's own pages do not", async ({ page }) => {
+  await page.goto("/publications");
+  // The site's own host is the canonical URL's, not the dev server's.
+  const siteHost = await page
+    .locator('link[rel="canonical"]')
+    .evaluate((link) => new URL((link as HTMLLinkElement).href).host);
+  const links = await page.locator("a.publication-link").evaluateAll((anchors) =>
+    anchors.map((anchor) => ({
+      href: anchor.getAttribute("href") ?? "",
+      target: anchor.getAttribute("target"),
+      rel: anchor.getAttribute("rel"),
+      hint: anchor.querySelector(".visually-hidden")?.textContent ?? null
+    }))
+  );
+  expect(links.length).toBeGreaterThan(0);
+  for (const link of links) {
+    const offSite = /^https?:\/\//.test(link.href) && new URL(link.href).host !== siteHost;
+    const newTab = offSite || /\.pdf$/i.test(link.href);
+    expect(link.target, link.href).toBe(newTab ? "_blank" : null);
+    expect(link.rel, link.href).toBe(newTab ? "noopener" : null);
+    expect(link.hint !== null, link.href).toBe(newTab);
+  }
+  expect(links.some((link) => link.target === null)).toBe(true);
+});
