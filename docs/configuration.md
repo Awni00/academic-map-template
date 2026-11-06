@@ -324,6 +324,40 @@ keep one edge, and `npm run validate` warns. To use an icon not on the list,
 add its name there and its component in `src/components/layout/navIcons.ts`.
 Links to a PDF are marked "PDF" in the menu, and links off the site "↗".
 
+## Crawlers And Site Icons
+
+The build writes these files from `site.url` and `public/favicon.svg`, so
+there is nothing to keep in sync by hand:
+
+- `/robots.txt`: lets every crawler fetch everything and points it at the
+  sitemap (`/sitemap-index.xml`, written by `@astrojs/sitemap`).
+- `/favicon.ico`: the SVG rendered at 16, 32 and 48px, for browsers, feed
+  readers and crawlers that ask for it whatever the page links.
+- `/site.webmanifest` with `/icon-192.png` and `/icon-512.png`: the name and
+  icon used when someone adds the site to a phone home screen. It keeps
+  `display: "browser"`, so the site still opens as a normal web page.
+
+To ask crawlers to skip some paths, list them as URL path prefixes:
+
+```ts
+site: {
+  robots: { disallow: ["/cv.pdf", "/cv/"] }
+}
+```
+
+`robots.txt` is a request that well-behaved crawlers follow. It does not hide
+anything: the files stay public, and a blocked page that other pages link to
+can still appear in search results as a bare link. For per-crawler rules (for
+example, blocking AI training crawlers by name), put your own file at
+`public/robots.txt`; Astro then serves it instead and logs that it skipped the
+generated one. A hand-made `public/favicon.ico` replaces the generated icon
+the same way.
+
+To change the icons, replace `public/favicon.svg`. Add a 180px
+`public/apple-touch-icon.png` for iOS home screens: it should be a square,
+full-bleed image, since iOS rounds the corners itself. The page links it only
+when the file exists.
+
 ## Homepage Hero
 
 The homepage opens with a "margin card": your photo, a short caption (name,

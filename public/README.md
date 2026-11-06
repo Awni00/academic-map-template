@@ -3,10 +3,14 @@
 This directory contains static assets copied directly into the built site.
 
 Ownership: mixed. Downstream sites own personal assets such as `profile.*`,
-`og-image.*`, `cv.pdf`, `public/site/`, and content or publication assets.
+`og-image.*`, `favicon.svg`, `apple-touch-icon.png`, `cv.pdf`, `public/site/`, and content or publication assets.
 Generic template assets, if added here, should be maintained upstream.
 `public/dev/` holds files for the dev-only pages; it is removed from `dist/`
 after every build.
+
+`robots.txt`, `favicon.ico`, `site.webmanifest` and `icon-*.png` are generated
+at build time (see `src/pages/`). A file of the same name here replaces the
+generated one.
 
 When syncing from the template, preserve site-specific public assets unless a
 template change explicitly requires a compatible asset update.

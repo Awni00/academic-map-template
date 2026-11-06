@@ -11,6 +11,7 @@ import { defineTheme } from "../lib/theme/defineTheme";
 import { normalizeTocConfig } from "../lib/article/toc";
 import { validateJustifyConfig } from "../lib/article/justify";
 import { validateGraphSettings } from "../lib/graph/graphSettings";
+import { validateRobotsDisallow } from "../lib/meta/robots";
 import {
   missingHeroLinkKeys,
   normalizeHeroConfig,
@@ -82,6 +83,7 @@ function checkPresentationConfig(): string[] {
   const issues = [
     heroResult,
     validateSiteLinks(links),
+    validateRobotsDisallow(siteConfig.robots.disallow),
     validateLayoutConfig(themeConfig.layout),
     validateJustifyConfig(themeConfig.typography.justify)
   ];

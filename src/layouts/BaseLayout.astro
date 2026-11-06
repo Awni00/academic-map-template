@@ -1,4 +1,6 @@
 ---
+import fs from "node:fs";
+
 import { Font } from "astro:assets";
 import "katex/dist/katex.min.css";
 import "../styles/globals.css";
@@ -7,6 +9,7 @@ import Footer from "../components/layout/Footer.astro";
 import Header from "../components/layout/Header.astro";
 import ThemeStyles from "../components/layout/ThemeStyles.astro";
 import { siteConfig } from "../config/site";
+import { publicFilePath } from "../lib/meta/publicFiles";
 import { darkTheme, lightTheme, themeConfig } from "../config/theme";
 import { writingConfig } from "../config/writing";
 import { rssFeed } from "../lib/routes/paths";
@@ -35,6 +38,9 @@ const resolvedImage = new URL(image, siteConfig.url).toString();
 // Lets feed readers discover the writing feed from any page's URL.
 const feed = rssFeed();
 const feedTitle = `${siteConfig.name} ${writingConfig.label}`;
+// iOS asks for `/apple-touch-icon.png` by convention; link it only when the
+// site provides one, since a rounded-corner SVG makes a poor home-screen icon.
+const hasAppleTouchIcon = fs.existsSync(publicFilePath("apple-touch-icon.png"));
 /**
  * The pre-paint theme bootstrap.
  *
@@ -178,7 +184,11 @@ const themeScript = `
     <meta property="og:image" content={resolvedImage} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {hasAppleTouchIcon && <link rel="apple-touch-icon" href="/apple-touch-icon.png" />}
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
     {feed && <link rel="alternate" type="application/rss+xml" title={feedTitle} href={feed.href} />}
     <Font cssVariable={siteFontCssVariables.serif} />
     <Font cssVariable={siteFontCssVariables.sans} />

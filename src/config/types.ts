@@ -268,6 +268,12 @@ export type SiteConfig = {
   profileImage: string;
   ogImage: string;
   /**
+   * `/robots.txt`. Every crawler may fetch everything except the URL path
+   * prefixes in `disallow` (e.g. `"/cv.pdf"`). This asks well-behaved crawlers
+   * to stay away; it does not hide the files.
+   */
+  robots: { disallow: readonly string[] };
+  /**
    * Profile links by key. Known keys (`email`, `cv`, `scholar`, `github`, `x`,
    * `linkedin`, `orcid`, …) take a URL; anything else may be a `CustomLink`.
    */
