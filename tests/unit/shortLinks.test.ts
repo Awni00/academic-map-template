@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildReservedRoutes,
   normalizeShortUrl,
+  redirectStubHtml,
   resolveShortLinks,
   type ShortLinkSource
 } from "../../src/lib/routes/shortLinks";
@@ -109,5 +110,27 @@ describe("short links", () => {
     const { redirects, issues } = collectShortLinks({ root });
     expect(redirects).toEqual({ "/published": `${W}/hub/published` });
     expect(issues).toEqual([]);
+  });
+});
+
+describe("redirect stub page", () => {
+  const html = redirectStubHtml(`${W}/hub-1`, `https://example.com${W}/hub-1`);
+
+  it("redirects from <head> before the body, keeping the fragment", () => {
+    const script = html.indexOf(`<script>location.replace("${W}/hub-1" + location.hash);</script>`);
+    expect(script).toBeGreaterThan(-1);
+    expect(script).toBeLessThan(html.indexOf("<body>"));
+  });
+
+  it("keeps the no-JavaScript and search-engine fallbacks", () => {
+    expect(html).toContain(`<meta http-equiv="refresh" content="0;url=${W}/hub-1">`);
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).toContain(`<link rel="canonical" href="https://example.com${W}/hub-1">`);
+  });
+
+  it("cannot be broken out of by its target", () => {
+    const hostile = redirectStubHtml('/a"></script><b>', "https://example.com/a");
+    expect(hostile).not.toContain("</script><b>");
+    expect(hostile).not.toContain('"><b>');
   });
 });
