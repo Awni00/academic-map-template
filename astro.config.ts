@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -17,6 +17,7 @@ import { writingConfig } from "./src/config/writing";
 import { remarkHoverNotes } from "./src/lib/citations/remarkHoverNotes";
 import { defaultMathMacros } from "./src/lib/math/macros";
 import { rehypeKatexWithMacros } from "./src/lib/math/rehypeKatexWithMacros";
+import { redirectStubHtml } from "./src/lib/routes/shortLinks";
 import { collectShortLinks } from "./src/lib/routes/shortLinksSource";
 import { remarkWikilinks } from "./src/lib/wikilinks/remarkWikilinks";
 import { markdownSyntaxPlugins } from "./src/lib/wikilinks/wikilinks";
@@ -88,6 +89,24 @@ const dropDevAssets: AstroIntegration = {
   }
 };
 
+// Astro writes a stub page at each short URL, but its template cannot be
+// changed and it shows "Redirecting from ..." text before the meta refresh
+// fires. Once the build is done, each stub is overwritten with one that
+// redirects from `<head>`, before anything is painted (see `redirectStubHtml`).
+// Astro's `redirects` config stays the source of truth, so the dev server
+// still answers short URLs with a real 301.
+const rewriteRedirectStubs: AstroIntegration = {
+  name: "rewrite-redirect-stubs",
+  hooks: {
+    "astro:build:done": async ({ dir }) => {
+      for (const [from, to] of Object.entries(shortLinks.redirects)) {
+        const file = new URL(`${from.replace(/^\/+|\/+$/g, "")}/index.html`, dir);
+        await writeFile(file, redirectStubHtml(to, new URL(to, siteConfig.url).href));
+      }
+    }
+  }
+};
+
 export default defineConfig({
   site: siteConfig.url,
   output: "static",
@@ -107,7 +126,8 @@ export default defineConfig({
     sitemap({
       filter: (page) => !shortLinkPaths.has(new URL(page).pathname.replace(/\/$/, "") || "/")
     }),
-    dropDevAssets
+    dropDevAssets,
+    rewriteRedirectStubs
   ],
   markdown: {
     remarkPlugins,

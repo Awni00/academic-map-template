@@ -146,3 +146,42 @@ export function resolveShortLinks(
 
   return { redirects, issues };
 }
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
+ * The page written at each short URL in place of Astro's built-in redirect
+ * stub. GitHub Pages and similar static hosts cannot send a real 301, so the
+ * redirect happens in the browser. Astro's stub relies on a meta refresh,
+ * which lets the browser paint its "Redirecting from ..." text first; the
+ * `location.replace` in `<head>` starts navigation before anything is drawn
+ * and also carries over a `#fragment`. The meta refresh, canonical link and
+ * `noindex` stay as the fallback for visitors without JavaScript and for
+ * search engines.
+ */
+export function redirectStubHtml(target: string, canonicalUrl: string): string {
+  // `<` is escaped so a value can never close the script element early.
+  const scriptTarget = JSON.stringify(target).replace(/</g, "\\u003c");
+  const href = escapeHtml(target);
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Redirecting…</title>
+    <script>location.replace(${scriptTarget} + location.hash);</script>
+    <meta http-equiv="refresh" content="0;url=${href}">
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="${escapeHtml(canonicalUrl)}">
+  </head>
+  <body>
+    <p>This page has moved to <a href="${href}">${href}</a>.</p>
+  </body>
+</html>
+`;
+}
