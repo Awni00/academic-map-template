@@ -9,6 +9,7 @@ import {
 import type { GraphIndex } from "../../lib/graph/types";
 import type { TocConfig } from "../../config/types";
 import type { RelatedItem } from "../../lib/article/related";
+import { highlightBibtex } from "../../lib/article/bibtexHighlight";
 
 type Heading = TocHeading;
 
@@ -40,6 +41,7 @@ const {
   bibtex
 } = Astro.props;
 
+const bibtexTokens = bibtex ? highlightBibtex(bibtex) : [];
 const tocHeadings = tocInFoot ? filterHeadingsForToc(headings, tocConfig) : [];
 const hasAny =
   (tocInFoot && tocHeadings.length > 0) ||
@@ -95,8 +97,22 @@ const hasAny =
           <div class="entry-foot-label">Cite</div>
           <div class="entry-foot-content">
             <div class="cite-body">
-              <pre class="cite-body__code"><code>{bibtex}</code></pre>
-              <button class="cite-body__copy" type="button">Copy</button>
+              <pre class="cite-body__code"><code>{bibtexTokens.map((token) => token.kind === "plain" ? token.text : <span class={`bib-${token.kind}`}>{token.text}</span>)}</code></pre>
+              <button
+                class="cite-body__copy"
+                type="button"
+                aria-label="Copy BibTeX"
+                title="Copy BibTeX"
+              >
+                <svg class="cite-body__icon cite-body__icon--copy" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+                  <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2" />
+                </svg>
+                <svg class="cite-body__icon cite-body__icon--done" aria-hidden="true" viewBox="0 0 16 16">
+                  <path d="M3 8.5l3 3 7-7" />
+                </svg>
+                <span class="cite-body__status" aria-live="polite"></span>
+              </button>
             </div>
           </div>
         </div>
@@ -111,17 +127,24 @@ const hasAny =
       const body = button.closest(".cite-body");
       const code = body?.querySelector("code");
       const text = code?.textContent?.trim() ?? "";
-      const original = button.textContent;
-      const finish = (label: string) => {
-        button.textContent = label;
-        window.setTimeout(() => {
-          button.textContent = original;
-        }, 1200);
+      const status = button.querySelector(".cite-body__status");
+      // The button is an icon at rest; after a click it shows a short label
+      // ("Copied", with a check mark, or "Press ⌘C") and then returns to it.
+      const finish = (state: "done" | "fallback", label: string) => {
+        button.dataset.state = state;
+        if (status) status.textContent = label;
+        window.clearTimeout(Number(button.dataset.timer));
+        button.dataset.timer = String(
+          window.setTimeout(() => {
+            delete button.dataset.state;
+            if (status) status.textContent = "";
+          }, 1200)
+        );
       };
       // Select the citation so the "Press ⌘C" fallback has something to copy.
       const fallBack = () => {
         if (code) window.getSelection()?.selectAllChildren(code);
-        finish("Press ⌘C");
+        finish("fallback", "Press ⌘C");
       };
       // `navigator.clipboard` is undefined outside a secure context (such as
       // the dev server opened over a LAN address), so calling it directly
@@ -132,7 +155,7 @@ const hasAny =
       }
       navigator.clipboard
         .writeText(text)
-        .then(() => finish("Copied"))
+        .then(() => finish("done", "Copied"))
         .catch(fallBack);
     });
   }
@@ -141,14 +164,14 @@ const hasAny =
 <style>
   /* BibTeX keeps its own line breaks and indentation: a long field scrolls
      sideways (with an edge fade, from overflowHint.ts) rather than wrapping
-     mid-value. The scroller stops short of the Copy button, so no line runs
-     underneath it. */
+     mid-value. The scroller stops short of the copy icon, so no line runs
+     underneath it at any width. */
   .cite-body {
     position: relative;
     min-width: 0;
     background: var(--color-bg-soft);
     border-radius: 6px;
-    padding: 12px 72px 12px 14px;
+    padding: 12px 44px 12px 14px;
   }
   .cite-body__code {
     margin: 0;
@@ -162,29 +185,84 @@ const hasAny =
     white-space: pre;
     overflow-x: auto;
     overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule) transparent;
   }
-  /* Phones: the button takes a row of its own above the record, and the
-     record gets the full width. */
-  @media (max-width: 680px) {
-    .cite-body {
-      padding: 40px 14px 12px;
-    }
+
+  /* Syntax colours come from the theme tokens, so they follow dark mode. */
+  .bib-type {
+    color: var(--color-accent);
   }
+  .bib-key {
+    color: var(--color-fg);
+  }
+  .bib-field {
+    color: var(--color-link);
+  }
+  .bib-punct {
+    color: var(--color-muted);
+  }
+  .bib-value {
+    color: var(--color-fg-soft);
+  }
+
+  /* An icon at rest, muted until the block is hovered; after a click it
+     shows a short label beside the icon. */
   .cite-body__copy {
     position: absolute;
     top: 6px;
     right: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px;
     font-family: var(--font-ui);
     font-size: var(--article-label-size, 12px);
+    line-height: 1;
     color: var(--color-muted);
-    background: var(--color-bg);
-    border: 0.5px solid var(--color-border);
-    border-radius: 3px;
-    padding: 3px 8px;
+    background: transparent;
+    border: 0;
+    border-radius: 5px;
+    opacity: 0.7;
     cursor: pointer;
+    transition:
+      background-color 0.15s,
+      color 0.15s,
+      opacity 0.15s;
   }
-  .cite-body__copy:hover {
+  .cite-body:hover .cite-body__copy,
+  .cite-body__copy:focus-visible,
+  .cite-body__copy[data-state] {
+    opacity: 1;
+  }
+  .cite-body__copy:hover,
+  .cite-body__copy[data-state] {
     color: var(--color-fg);
-    border-color: var(--color-rule);
+    background: var(--color-bg);
+  }
+  .cite-body__copy[data-state="done"] {
+    color: var(--color-accent);
+  }
+  .cite-body__icon {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .cite-body__icon--done {
+    stroke-width: 1.6;
+    display: none;
+  }
+  .cite-body__copy[data-state="done"] .cite-body__icon--copy {
+    display: none;
+  }
+  .cite-body__copy[data-state="done"] .cite-body__icon--done {
+    display: block;
+  }
+  .cite-body__status:empty {
+    display: none;
   }
 </style>

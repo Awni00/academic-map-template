@@ -214,11 +214,11 @@ test.describe("on a phone", () => {
     await page.context().close();
   });
 
-  test("the Copy button sits clear of the first BibTeX line", async ({ browser }) => {
+  test("the copy icon sits clear of the BibTeX lines", async ({ browser }) => {
     const page = await open(browser, 390, 844);
     const button = await page.locator(".cite-body__copy").boundingBox();
     const code = await page.locator(".cite-body__code").boundingBox();
-    expect(button!.y + button!.height).toBeLessThanOrEqual(code!.y + 1);
+    expect(code!.x + code!.width).toBeLessThanOrEqual(button!.x + 1);
     await page.context().close();
   });
 });
