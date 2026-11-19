@@ -1782,35 +1782,6 @@ html:has(.site-menu:popover-open) {
   padding-bottom: 14px;
 }
 
-.bibtex-dialog__code {
-  margin: 0;
-  padding: 14px 16px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--color-bg-soft);
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--color-fg-soft);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.bibtex-dialog__code code {
-  padding: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  white-space: inherit;
-}
-
-/* A wrapped line continues 2ch past its field name's indent. */
-.bibtex-dialog__line {
-  display: block;
-  padding-left: 4ch;
-  text-indent: -4ch;
-}
-
 .publication-dialog__footer {
   display: flex;
   flex: none;
@@ -1847,11 +1818,11 @@ html:has(.site-menu:popover-open) {
 }
 
 .bibtex-dialog__icon--done,
-.bibtex-dialog__copy[data-copied] .bibtex-dialog__icon--copy {
+.bibtex-dialog__copy[data-state="done"] .bibtex-dialog__icon--copy {
   display: none;
 }
 
-.bibtex-dialog__copy[data-copied] .bibtex-dialog__icon--done {
+.bibtex-dialog__copy[data-state="done"] .bibtex-dialog__icon--done {
   display: inline;
 }
 
@@ -1872,12 +1843,6 @@ html:has(.site-menu:popover-open) {
     padding: 0 18px 16px;
   }
 
-  /* Room for an arXiv URL on one continuation line, so its comma does not
-     wrap onto a line of its own. */
-  .bibtex-dialog__code {
-    padding: 12px;
-    font-size: 12px;
-  }
 }
 
 /* 44px targets on touch screens. */

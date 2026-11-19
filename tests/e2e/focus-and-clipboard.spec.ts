@@ -48,15 +48,14 @@ test("cite copy falls back when the Clipboard API is missing", async ({
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.goto(citedEntry);
-  const copy = page.locator(".cite-body__copy");
+  const copy = page.locator(".bibtex-block__copy");
   await copy.click();
 
   await expect(copy).toHaveText("Press ⌘C");
   expect(errors).toEqual([]);
-  const citation = (await page.locator(".cite-body__code code").textContent()) ?? "";
-  expect(await page.evaluate(() => window.getSelection()?.toString().trim())).toBe(
-    citation.trim(),
-  );
+  // The selection is the record exactly, so a manual copy is too.
+  const citation = await page.locator("[data-bibtex]").getAttribute("data-bibtex");
+  expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(citation);
 });
 
 test("cite copy writes the citation when the clipboard is available", async ({
@@ -68,10 +67,10 @@ test("cite copy writes the citation when the clipboard is available", async ({
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(citedEntry);
-  const copy = page.locator(".cite-body__copy");
+  const copy = page.locator(".bibtex-block__copy");
   await copy.click();
 
   await expect(copy).toHaveText("Copied");
-  const citation = (await page.locator(".cite-body__code code").textContent()) ?? "";
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(citation.trim());
+  const citation = await page.locator("[data-bibtex]").getAttribute("data-bibtex");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(citation);
 });

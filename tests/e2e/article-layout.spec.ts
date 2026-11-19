@@ -81,10 +81,10 @@ test("nested lists show markers", async ({ browser }) => {
   await page.context().close();
 });
 
-test("BibTeX lines stay whole and scroll sideways", async ({ browser }) => {
-  const page = await open(browser, 1440);
-  const code = page.locator(".cite-body__code");
-  expect(await code.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe("pre");
+test("BibTeX wraps long lines instead of scrolling sideways", async ({ browser }) => {
+  const page = await open(browser, 390, 844);
+  const code = page.locator(".bibtex-block__code");
+  expect(await code.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0);
   await page.context().close();
 });
 
@@ -216,8 +216,8 @@ test.describe("on a phone", () => {
 
   test("the copy icon sits clear of the BibTeX lines", async ({ browser }) => {
     const page = await open(browser, 390, 844);
-    const button = await page.locator(".cite-body__copy").boundingBox();
-    const code = await page.locator(".cite-body__code").boundingBox();
+    const button = await page.locator(".bibtex-block__copy").boundingBox();
+    const code = await page.locator(".bibtex-block__code").boundingBox();
     expect(code!.x + code!.width).toBeLessThanOrEqual(button!.x + 1);
     await page.context().close();
   });
