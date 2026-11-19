@@ -139,7 +139,7 @@ test("BibTeX dialog wraps on a phone and shows the full title", async ({ browser
   const dialog = page.locator("dialog.bibtex-dialog[open]");
   await expect(dialog).toBeVisible();
   const sizes = await dialog.evaluate((element) => {
-    const code = element.querySelector(".bibtex-dialog__code")!;
+    const code = element.querySelector(".bibtex-block__code")!;
     const title = element.querySelector(".publication-dialog__title")!;
     const box = element.getBoundingClientRect();
     return {
@@ -161,11 +161,14 @@ test("Copy BibTeX copies the entry line by line", async ({ browser }) => {
   await page.goto("/publications");
   await page.locator('[data-dialog-open^="bib-"]').first().click();
   const dialog = page.locator("dialog.bibtex-dialog[open]");
-  await dialog.locator("[data-bib-copy]").click();
-  await expect(dialog.locator("[data-bib-copy-label]")).toHaveText("Copied");
+  await dialog.locator("[data-bibtex-copy]").click();
+  await expect(dialog.locator("[data-bibtex-copy-label]")).toHaveText("Copied");
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toMatch(/^@\w+\{[^,\n]+,\n {2}\w+ = \{/);
-  expect(copied.trim().endsWith("}")).toBe(true);
+  // The record as written, and the same text the block shows.
+  const block = dialog.locator("[data-bibtex]");
+  expect(copied).toBe(await block.getAttribute("data-bibtex"));
+  expect(await block.locator("code").textContent()).toBe(copied);
   await dialog.locator("[data-dialog-close]").click();
   await expect(dialog).toHaveCount(0);
   await context.close();

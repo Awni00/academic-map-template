@@ -28,6 +28,7 @@ import {
 import { newTabAttrs } from "../../lib/routes/newTab";
 import { globalMathMacros } from "../../site/math";
 import type { PublicationAbstractDisplay } from "../../config/types";
+import BibtexBlock from "./BibtexBlock.astro";
 import type { Publication } from "../../lib/publications/types";
 
 type Props = {
@@ -67,9 +68,6 @@ const abstractHtml =
     ? renderInlineMath(publication.abstract, resolveMathMacros({ globalMacros: globalMathMacros }))
     : undefined;
 const dialogId = `bib-${publication.id}`;
-// One block per line, so a long field wraps under its own value (hanging
-// indent) instead of scrolling sideways on a phone.
-const bibtexLines = publication.bibtex.split("\n");
 ---
 
 <article class:list={["publication-item", compact && "publication-item--compact"]}>
@@ -196,7 +194,12 @@ const bibtexLines = publication.bibtex.split("\n");
       </dialog>
     )}
     {publication.bibtexShow && (
-      <dialog id={dialogId} class="publication-dialog bibtex-dialog" aria-label={`BibTeX for ${publication.title}`}>
+      <dialog
+        id={dialogId}
+        class="publication-dialog bibtex-dialog"
+        aria-label={`BibTeX for ${publication.title}`}
+        data-bibtex-scope
+      >
         <div class="publication-dialog__header">
           <div class="publication-dialog__heading">
             <p class="publication-dialog__kicker">BibTeX</p>
@@ -207,13 +210,13 @@ const bibtexLines = publication.bibtex.split("\n");
           </button>
         </div>
         <div class="publication-dialog__body">
-          <pre class="bibtex-dialog__code"><code>{bibtexLines.map((line) => <span class="bibtex-dialog__line">{line || " "}</span>)}</code></pre>
+          <BibtexBlock bibtex={publication.bibtex} copyButton={false} />
         </div>
         <div class="publication-dialog__footer">
-          <button type="button" class="bibtex-dialog__copy" data-bib-copy>
+          <button type="button" class="bibtex-dialog__copy" data-bibtex-copy>
             <Copy class="bibtex-dialog__icon bibtex-dialog__icon--copy" aria-hidden="true" />
             <Check class="bibtex-dialog__icon bibtex-dialog__icon--done" aria-hidden="true" />
-            <span data-bib-copy-label aria-live="polite">Copy BibTeX</span>
+            <span data-bibtex-copy-label aria-live="polite">Copy BibTeX</span>
           </button>
         </div>
       </dialog>
@@ -222,7 +225,7 @@ const bibtexLines = publication.bibtex.split("\n");
 </article>
 
 <script>
-  // Idempotently wire up publication dialog openers, closers, and copy buttons
+  // Idempotently wire up publication dialog openers and closers
   // across every PublicationItem on the page. Re-running this is a no-op.
   function wirePublicationDialogs(scope: ParentNode = document) {
     for (const trigger of scope.querySelectorAll<HTMLButtonElement>(
@@ -242,42 +245,6 @@ const bibtexLines = publication.bibtex.split("\n");
       closer.dataset.publicationDialogWired = "true";
       closer.addEventListener("click", () => {
         closer.closest("dialog")?.close();
-      });
-    }
-    for (const copier of scope.querySelectorAll<HTMLButtonElement>(
-      "[data-bib-copy]:not([data-publication-dialog-wired])"
-    )) {
-      copier.dataset.publicationDialogWired = "true";
-      copier.addEventListener("click", () => {
-        const code = copier.closest("dialog")?.querySelector("code");
-        // Lines are block spans, whose textContent has no newlines: join them.
-        const lines = code ? [...code.querySelectorAll(".bibtex-dialog__line")] : [];
-        const text = lines.length
-          ? lines.map((line) => line.textContent ?? "").join("\n").trim()
-          : (code?.textContent?.trim() ?? "");
-        const label = copier.querySelector("[data-bib-copy-label]");
-        const finish = (message: string, copied: boolean) => {
-          if (label) label.textContent = message;
-          if (copied) copier.dataset.copied = "true";
-          window.setTimeout(() => {
-            if (label) label.textContent = "Copy BibTeX";
-            delete copier.dataset.copied;
-          }, 1600);
-        };
-        // Select the entry so the "Press ⌘C" fallback has something to copy.
-        // `navigator.clipboard` is undefined outside a secure context.
-        const fallBack = () => {
-          if (code) window.getSelection()?.selectAllChildren(code);
-          finish("Press ⌘C", false);
-        };
-        if (!navigator.clipboard) {
-          fallBack();
-          return;
-        }
-        navigator.clipboard
-          .writeText(text)
-          .then(() => finish("Copied", true))
-          .catch(fallBack);
       });
     }
     for (const dialog of scope.querySelectorAll<HTMLDialogElement>(
