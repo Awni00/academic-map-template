@@ -53,8 +53,9 @@ const linkIcons: Record<PublicationLinkKind, typeof FileText> = {
   url: LinkIcon
 };
 const authorParts = highlightedAuthorParts(publication.author);
-const thumbHref =
-  publication.pdf ?? publication.url ?? publication.publisherPage ?? publication.website ?? undefined;
+// The preview opens full-size in a dialog; the paper itself is reached
+// through the link row.
+const previewDialogId = `preview-${publication.id}`;
 const effectiveAbstractDisplay: PublicationAbstractDisplay = compact ? "hidden" : abstractDisplay;
 const showInlineAbstract = Boolean(publication.abstract) && effectiveAbstractDisplay === "inline";
 const showAbstractButton = Boolean(publication.abstract) && effectiveAbstractDisplay === "popup";
@@ -73,28 +74,20 @@ const bibtexLines = publication.bibtex.split("\n");
 
 <article class:list={["publication-item", compact && "publication-item--compact"]}>
   {!compact && (
-    thumbHref ? (
-      <a
-        href={thumbHref}
-        class="publication-preview"
-        aria-hidden="true"
-        tabindex="-1"
-        {...newTabAttrs(thumbHref, siteConfig.url)}
+    publication.preview ? (
+      <button
+        type="button"
+        class="publication-preview publication-preview--zoom"
+        data-dialog-open={previewDialogId}
+        aria-haspopup="dialog"
+        aria-label={`Enlarge preview image: ${publication.title}`}
       >
-        {publication.preview ? (
-          <img src={publication.preview} alt="" loading="lazy" />
-        ) : (
-          <div class="publication-thumb-fallback" />
-        )}
+        <img src={publication.preview} alt="" loading="lazy" />
         {publication.abbr && <span class="publication-thumb-tag">{publication.abbr}</span>}
-      </a>
+      </button>
     ) : (
       <div class="publication-preview" aria-hidden="true">
-        {publication.preview ? (
-          <img src={publication.preview} alt="" loading="lazy" />
-        ) : (
-          <div class="publication-thumb-fallback" />
-        )}
+        <div class="publication-thumb-fallback" />
         {publication.abbr && <span class="publication-thumb-tag">{publication.abbr}</span>}
       </div>
     )
@@ -166,6 +159,21 @@ const bibtexLines = publication.bibtex.split("\n");
           </div>
         )}
       </div>
+    )}
+    {!compact && publication.preview && (
+      <dialog
+        id={previewDialogId}
+        class="publication-dialog publication-preview-dialog"
+        aria-label={`Preview image for ${publication.title}`}
+      >
+        {/* Not lazy: a closed dialog's image would otherwise wait until the
+            dialog opens. It is the thumbnail's own file, so it costs nothing. */}
+        <button type="button" class="publication-preview-dialog__close" data-dialog-close aria-label="Close">
+          <X aria-hidden="true" />
+        </button>
+        <img src={publication.preview} alt="" />
+        <p class="publication-preview-dialog__caption">{publication.title}</p>
+      </dialog>
     )}
     {showAbstractButton && (
       <dialog

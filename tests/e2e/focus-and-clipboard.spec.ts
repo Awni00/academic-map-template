@@ -22,15 +22,35 @@ for (const path of ["/publications", "/"]) {
   }) => {
     await page.goto(path);
     await expect(page.locator(".publication-item").first()).toBeVisible();
-    // The thumbnail link stays clickable; it only leaves the tab order,
-    // since the title and the PDF link already reach the same place.
-    await expect(page.locator("a.publication-preview").first()).toHaveAttribute(
-      "href",
-      /.+/,
-    );
     expect(await hiddenTabStops(page, ".publication-item")).toEqual([]);
   });
 }
+
+test("a publication preview opens enlarged", async ({ page }) => {
+  await page.goto("/publications");
+  const thumb = page.locator("button.publication-preview").first();
+  // A real tab stop with a name, since it does something the link row does not.
+  await expect(thumb).toHaveAttribute("aria-label", /^Enlarge preview image: .+/);
+  await thumb.focus();
+  await page.keyboard.press("Enter");
+
+  const dialog = page.locator("dialog.publication-preview-dialog[open]");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator("img")).toHaveAttribute(
+    "src",
+    (await thumb.locator("img").getAttribute("src"))!,
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+
+  // The close button sits outside the card, above it, and still works.
+  await thumb.click();
+  const close = dialog.locator(".publication-preview-dialog__close");
+  const [closeBox, cardBox] = [await close.boundingBox(), await dialog.boundingBox()];
+  expect(closeBox!.y + closeBox!.height).toBeLessThanOrEqual(cardBox!.y);
+  await close.click();
+  await expect(dialog).toHaveCount(0);
+});
 
 const citedEntry = "/writing/hub-1/entry-1";
 
