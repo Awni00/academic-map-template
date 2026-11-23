@@ -36,6 +36,8 @@ const showPubs =
   siteConfig.homepage.selectedPublications.enabled && selectedPublications.length > 0;
 const showRecent = siteConfig.homepage.recentWriting.enabled && recentWriting.length > 0;
 const showNews = siteConfig.homepage.news.enabled && news.length > 0;
+const newsBeside = showNews && siteConfig.homepage.news.placement === "beside-publications";
+const newsBelow = showNews && siteConfig.homepage.news.placement === "below-publications";
 const showResearch = siteConfig.homepage.researchSummary.enabled;
 ---
 
@@ -78,9 +80,9 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
   }
 
   {
-    (showPubs || showNews) && (
+    (showPubs || newsBeside) && (
       <section class="section">
-        <div class={showPubs && showNews ? "cols2" : "cols2 cols2--single"}>
+        <div class={showPubs && newsBeside ? "cols2" : "cols2 cols2--single"}>
           {showPubs && (
             <section>
               <h2 class="h2">Selected publications</h2>
@@ -98,12 +100,25 @@ const showResearch = siteConfig.homepage.researchSummary.enabled;
               </a>
             </section>
           )}
-          {showNews && (
+          {newsBeside && (
             <aside>
               <h2 class="h2">News</h2>
               <NewsList items={news} />
             </aside>
           )}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    newsBelow && (
+      <section class="section">
+        <div class="cols2 cols2--single">
+          <aside>
+            <h2 class="h2">News</h2>
+            <NewsList items={news} twoPerRow />
+          </aside>
         </div>
       </section>
     )

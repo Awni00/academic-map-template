@@ -12,6 +12,7 @@ import { normalizeTocConfig } from "../lib/article/toc";
 import { validateJustifyConfig } from "../lib/article/justify";
 import { validateGraphSettings } from "../lib/graph/graphSettings";
 import { validateRobotsDisallow } from "../lib/meta/robots";
+import { validateNewsConfig } from "../lib/news/newsConfig";
 import {
   missingHeroLinkKeys,
   normalizeHeroConfig,
@@ -85,7 +86,8 @@ function checkPresentationConfig(): string[] {
     validateSiteLinks(links),
     validateRobotsDisallow(siteConfig.robots.disallow),
     validateLayoutConfig(themeConfig.layout),
-    validateJustifyConfig(themeConfig.typography.justify)
+    validateJustifyConfig(themeConfig.typography.justify),
+    validateNewsConfig(siteConfig.homepage.news)
   ];
   const errors = issues.flatMap((issue) => issue.errors);
   if (errors.length > 0) {

@@ -593,6 +593,42 @@ export const siteConfigOverrides = {
   `description` is the line beneath, default `"Browse {writing.label}"`, so it
   follows a renamed section; `""` hides it.
 
+## Homepage News
+
+News items come from `src/data/news.yaml` (see
+[Publications And News](using-the-template.md#publications-and-news) for the
+item format).
+
+```ts
+export const siteConfigOverrides = {
+  site: {
+    homepage: {
+      news: {
+        enabled: true,
+        maxItems: 6,
+        placement: "below-publications"
+      }
+    }
+  }
+} satisfies SiteConfigOverrides;
+```
+
+- `enabled`: show or hide the section. It is also hidden when `news.yaml` has
+  no items, and a site with news off can delete the file.
+- `maxItems`: how many items to show, newest first as written, default `5`.
+- `placement`: where News sits relative to Selected publications.
+  - `"beside-publications"` (default): a narrow column to the right of them.
+    When the two lists differ in height, the shorter one leaves a gap below it.
+  - `"below-publications"`: a full-width section after them, with
+    publications taking the whole row. On wide screens the items run two to a
+    row, newest first, reading across, with a date column wide enough for
+    dates like `September 18, 2026`. A long item makes its row taller than
+    its neighbour.
+
+  Either way, News takes the full width when selected publications are off,
+  and phones show one item per row below the publications. Any other value
+  stops the build.
+
 ## Entry Type Registry
 
 Entry types are configured records, not hard-coded layout branches. Each record

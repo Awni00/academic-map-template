@@ -3,17 +3,22 @@
  * Homepage news: a date column beside each title. Titles arrive as HTML
  * rendered from inline Markdown and escaped by `toNewsItem`
  * (src/lib/news/loadNews.ts); an item with a `url` links its whole title.
+ *
+ * `twoPerRow` is the full-width layout of `news.placement:
+ * "below-publications"`: on wide screens the items run two to a row, newest
+ * first, reading across. On phones it is the usual single column.
  */
 import type { NewsItem } from "../../lib/news/loadNews";
 
 type Props = {
   items: NewsItem[];
+  twoPerRow?: boolean;
 };
 
-const { items } = Astro.props;
+const { items, twoPerRow = false } = Astro.props;
 ---
 
-<dl class="news">
+<dl class:list={["news", twoPerRow && "news--two-per-row"]}>
   {
     items.map((item) => (
       <>
