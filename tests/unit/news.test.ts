@@ -3,8 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
+import { defaultSiteConfig } from "../../src/config/defaults/site";
+import type { SiteConfig } from "../../src/config/types";
 import { renderInlineMarkdown } from "../../src/lib/news/inlineMarkdown";
 import { loadNews } from "../../src/lib/news/loadNews";
+import { validateNewsConfig } from "../../src/lib/news/newsConfig";
 
 async function newsFile(contents: string): Promise<string> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "news-"));
@@ -151,5 +154,24 @@ describe("news entries with inline Markdown", () => {
     await expect(loadNews({ enabled: true, maxItems: 5, path: inUrl })).rejects.toThrow(
       'url "javascript:alert(1)" is not allowed'
     );
+  });
+});
+
+describe("news placement config", () => {
+  const news = (placement: unknown) =>
+    ({ enabled: true, maxItems: 5, placement }) as SiteConfig["homepage"]["news"];
+
+  it("defaults to beside publications, today's layout", () => {
+    expect(defaultSiteConfig.homepage.news.placement).toBe("beside-publications");
+  });
+
+  it.each(["beside-publications", "below-publications"])("accepts %s", (placement) => {
+    expect(validateNewsConfig(news(placement))).toEqual({ errors: [], warnings: [] });
+  });
+
+  it.each([["below"], ["Beside-Publications"], [undefined], [2]])("rejects %j, naming the setting and the choices", (placement) => {
+    expect(validateNewsConfig(news(placement)).errors).toEqual([
+      `site.homepage.news.placement is ${JSON.stringify(placement)}; expected "beside-publications" or "below-publications".`
+    ]);
   });
 });

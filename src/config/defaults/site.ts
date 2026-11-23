@@ -82,7 +82,8 @@ export const defaultSiteConfig = {
     },
     news: {
       enabled: true,
-      maxItems: 5
+      maxItems: 5,
+      placement: "beside-publications"
     }
   }
 } as const satisfies SiteConfig;

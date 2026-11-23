@@ -15,6 +15,7 @@ export type PlacementGraph = "header" | "footer" | "none";
  */
 export type PlacementRelated = "footer" | "none";
 export type AsidePlacement = "margin" | "inline";
+export type NewsPlacement = "beside-publications" | "below-publications";
 /**
  * Article presentation mode. "article" is the standard long-form layout;
  * "abstract" renders a short paper-record page whose body is the abstract.
@@ -342,6 +343,14 @@ export type SiteConfig = {
     news: {
       enabled: boolean;
       maxItems: number;
+      /**
+       * Where News sits relative to Selected publications.
+       * "beside-publications": a narrow column to the right of them.
+       * "below-publications": a full-width section after them, two items per
+       * row on wide screens. Either way News takes the full row when
+       * publications are off, and stacks below them on phones.
+       */
+      placement: NewsPlacement;
     };
   };
 };

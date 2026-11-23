@@ -4,10 +4,11 @@ import NewsList from "../components/home/NewsList.astro";
 import { toNewsItem } from "../lib/news/loadNews";
 
 const title = "News List Fixture";
-const description = "Internal fixture page for homepage news titles with inline Markdown.";
+const description = "Internal fixture page for homepage news titles and both news placements.";
 
-// One entry per kind of title. Below, the homepage's news aside sits beside a
-// stand-in for the publications column, so the news column has its real width.
+// One entry per kind of title. The first section is news.placement
+// "beside-publications": the homepage's news aside beside a stand-in for the
+// publications column, so the news column has its real width.
 const items = [
   {
     date: "June 8, 2026",
@@ -21,10 +22,26 @@ const items = [
   { date: "Mar 2026", title: "Released *Entry 1*, linked as a whole", url: "/publications" },
   { date: "Feb 2026", title: "Plain title with <b>raw HTML</b> & `code`" }
 ].map((item, index) => toNewsItem(item, `fixture item ${index + 1}`));
+
+// The second is "below-publications": the stand-in takes the full row and
+// News follows in its own section, two items to a row. The long date must
+// stay on one line, and the long third entry makes its row taller.
+const rowItems = [
+  { date: "September 18, 2026", title: "New preprint: [*Putting Transformer Theories to the Test*](https://arxiv.org/abs/2610.32104)" },
+  { date: "August 2, 2026", title: "Gave a talk at the [FLaNN Seminar](https://flannseminars.github.io/)" },
+  {
+    date: "June 8, 2026",
+    title:
+      "*A Paper Title* accepted at **ICML** 2026, with a long note about the camera-ready version, the poster session, and the workshop where an early version first appeared"
+  },
+  { date: "May 2026", title: "Released *Entry 1*, linked as a whole", url: "/publications" },
+  { date: "Apr 2026", title: "Joined the program committee" },
+  { date: "Mar 2026", title: "Plain title with `code`" }
+].map((item, index) => toNewsItem(item, `fixture row item ${index + 1}`));
 ---
 
 <BaseLayout title={title} description={description}>
-  <section class="section">
+  <section class="section" data-news-placement="beside-publications">
     <div class="cols2">
       <section>
         <h2 class="h2">Stand-in column</h2>
@@ -36,4 +53,23 @@ const items = [
       </aside>
     </div>
   </section>
+
+  <div data-news-placement="below-publications">
+    <section class="section">
+      <div class="cols2 cols2--single">
+        <section>
+          <h2 class="h2">Stand-in column</h2>
+          <p>Selected publications take the full row when News sits below them.</p>
+        </section>
+      </div>
+    </section>
+    <section class="section">
+      <div class="cols2 cols2--single">
+        <aside>
+          <h2 class="h2">News</h2>
+          <NewsList items={rowItems} twoPerRow />
+        </aside>
+      </div>
+    </section>
+  </div>
 </BaseLayout>

@@ -1410,6 +1410,18 @@ html:has(.site-menu:popover-open) {
   text-decoration: underline;
 }
 
+/* news.placement "below-publications": full width, two items to a row,
+   reading across. The wider date column keeps a long date such as
+   "September 18, 2026" on one line. A long entry makes its row tall; the
+   items start at the row's top, so the shorter one simply ends early.
+   Phones get the single column back (see Mobile). */
+.news--two-per-row {
+  grid-template-columns: 140px minmax(0, 1fr) 140px minmax(0, 1fr);
+  column-gap: 20px;
+  row-gap: 16px;
+  align-items: start;
+}
+
 /* ── Publications list (homepage selected + /publications) ──────────── */
 
 .publist {
@@ -2304,6 +2316,12 @@ html:has(.site-menu:popover-open) {
   .cols2 {
     grid-template-columns: 1fr;
     gap: 32px;
+  }
+
+  .news--two-per-row {
+    grid-template-columns: 92px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 10px;
   }
 
   .entry-list {

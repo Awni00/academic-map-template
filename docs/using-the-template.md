@@ -388,6 +388,10 @@ other schemes, such as `javascript:`, fail the build. Everything else stays
 literal text, including HTML tags and anything that would start a block (a
 title beginning `1.` or `#` is not a list or heading).
 
+`site.homepage.news` sets how many items show and whether News sits beside
+Selected publications or in a full-width section below them; see
+[Homepage News](configuration.md#homepage-news).
+
 ## Article Components
 
 MDX entries can use built-in technical writing components:
